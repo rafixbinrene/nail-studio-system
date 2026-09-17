@@ -1,0 +1,184 @@
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT:
+| Sidebar Notification Badge
+|--------------------------------------------------------------------------
+| Purpose:
+| - Shows unread notification count beside the Notifications menu.
+|--------------------------------------------------------------------------
+*/
+
+.notification-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 7px;
+    margin-left: 8px;
+    border-radius: 999px;
+    background: #b84d4d;
+    color: white;
+    font-size: 11px;
+    font-weight: 900;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+:root {
+    --brown: #6f4e37;
+    --dark: #2f2118;
+    --muted: #7d6d60;
+    --cream: #f8f6f2;
+    --glass: rgba(255,255,255,.48);
+    --border: rgba(255,255,255,.7);
+    --danger: #b84d4d;
+}
+
+body {
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at top left, #ead8c4, transparent 35%),
+        radial-gradient(circle at bottom right, #f3ebe2, transparent 35%),
+        linear-gradient(135deg, #f8f6f2, #efe4d8);
+    color: var(--dark);
+}
+
+.dashboard {
+    min-height: 100vh;
+}
+
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+
+    width: 260px;
+    height: 100vh;
+
+    padding: 24px;
+
+    display: flex;
+    flex-direction: column;
+
+    background: rgba(255,255,255,.45);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+
+    border-right: 1px solid rgba(255,255,255,.75);
+
+    overflow: hidden;
+}
+
+.logo {
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 32px;
+    flex-shrink: 0;
+}
+
+.user-card {
+    padding: 18px;
+    border-radius: 24px;
+    background: rgba(255,255,255,.55);
+    border: 1px solid var(--border);
+    box-shadow: 0 16px 40px rgba(47,33,24,.08);
+    margin-bottom: 28px;
+    flex-shrink: 0;
+}
+
+.user-card small {
+    color: var(--muted);
+    font-weight: 700;
+    font-size: 11px;
+}
+
+.user-card h3 {
+    margin-top: 8px;
+    font-size: 15px;
+}
+
+.user-card p {
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.menu {
+    flex: 1;
+    overflow-y: auto;
+
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    padding-right: 4px;
+}
+
+.menu::-webkit-scrollbar {
+    width: 6px;
+}
+
+.menu::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.menu::-webkit-scrollbar-thumb {
+    background: rgba(111,78,55,.25);
+    border-radius: 999px;
+}
+
+.menu a {
+    text-decoration: none;
+    color: var(--dark);
+    padding: 14px 16px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.menu a.active,
+.menu a:hover {
+    background: rgba(255,255,255,.65);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+}
+
+.signout {
+    margin-top: 18px;
+    padding-top: 18px;
+
+    border-top: 1px solid rgba(255,255,255,.65);
+
+    color: #b84d4d;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 700;
+
+    flex-shrink: 0;
+}
+
+.main {
+    margin-left: 260px;
+    padding: 28px 5%;
+    min-height: 100vh;
+}
+
+@media(max-width: 900px) {
+    .sidebar {
+        position: fixed;
+        width: 230px;
+        height: 100vh;
+        z-index: 999;
+    }
+
+    .main {
+        margin-left: 230px;
+        padding: 24px;
+    }
+}
