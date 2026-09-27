@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\ContentManagementController;
 use App\Http\Controllers\Admin\CustomerManagementController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Auth\StaffActivationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -177,6 +178,21 @@ Route::middleware(['auth', 'role:staff'])
         Route::patch('/notifications/{notification}/read', [NotificationController::class, 'read'])
             ->name('notifications.read');
     });
+
+
+/*
+|--------------------------------------------------------------------------
+| Staff Account Activation
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/staff/activate/{token}', [StaffActivationController::class, 'show'])
+    ->middleware('guest')
+    ->name('staff.activate.form');
+
+Route::post('/staff/activate/{token}', [StaffActivationController::class, 'store'])
+    ->middleware('guest')
+    ->name('staff.activate.store');
 
 /*
 |--------------------------------------------------------------------------

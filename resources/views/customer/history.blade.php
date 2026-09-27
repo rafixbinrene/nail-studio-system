@@ -11,10 +11,13 @@
 | - Filters bookings by all, active, finished, cancelled, no-show, and backjob.
 | - Allows customers to view details, cancel active bookings, give feedback,
 |   and request follow-up/backjob from finished bookings.
+| - Shows submitted feedback after the customer gives feedback.
 |
 | Defense explanation:
 | This page gives customers transparency over their booking history while
-| keeping customer actions limited based on booking status.
+| keeping customer actions limited based on booking status. Submitted feedback
+| is displayed directly under the finished booking so customers can confirm
+| that their rating and comment were successfully recorded.
 |--------------------------------------------------------------------------
 --}}
 
@@ -220,7 +223,18 @@
     font-weight: 700;
 }
 
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT:
+| Shared Information Boxes
+|--------------------------------------------------------------------------
+| Purpose:
+| - Uses the same visual structure for selected services, submitted feedback,
+|   and backjob/follow-up information.
+|--------------------------------------------------------------------------
+*/
 .service-list,
+.feedback-box,
 .followup-box {
     margin-bottom: 18px;
     padding: 16px;
@@ -229,12 +243,18 @@
     border: 1px solid rgba(255,255,255,.6);
 }
 
+.feedback-box {
+    background: rgba(81,148,91,.10);
+    border: 1px solid rgba(81,148,91,.22);
+}
+
 .followup-box {
     background: rgba(138,113,88,.10);
     border: 1px solid rgba(138,113,88,.22);
 }
 
 .service-list small,
+.feedback-box small,
 .followup-box small {
     display: block;
     color: var(--muted);
@@ -254,6 +274,7 @@
     font-weight: 700;
 }
 
+.feedback-box p,
 .followup-box p {
     color: #7d6d60;
     font-size: 13px;
@@ -516,6 +537,39 @@
                 @endforelse
             </div>
 
+            {{-- 
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT:
+            | Submitted Feedback Display
+            |--------------------------------------------------------------------------
+            | Purpose:
+            | - Shows the customer's submitted feedback directly in Booking History.
+            | - Prevents confusion after feedback submission.
+            |--------------------------------------------------------------------------
+            --}}
+            @if ($appointment->feedback)
+                <div class="feedback-box">
+                    <small>YOUR SUBMITTED FEEDBACK</small>
+
+                    <p>
+                        <strong>Rating:</strong>
+                        {{ str_repeat('★', (int) $appointment->feedback->rating) }}
+                        {{ str_repeat('☆', 5 - (int) $appointment->feedback->rating) }}
+                        ({{ $appointment->feedback->rating }}/5)
+                    </p>
+
+                    <p>
+                        <strong>Comment:</strong>
+                        {{ $appointment->feedback->comment ?: 'No comment provided.' }}
+                    </p>
+
+                    <p>
+                        <strong>Submitted At:</strong>
+                        {{ $appointment->feedback->created_at ? \Carbon\Carbon::parse($appointment->feedback->created_at)->format('F d, Y h:i A') : 'Not recorded' }}
+                    </p>
+                </div>
+            @endif
+
             @if ($bookingType === 'followup')
                 <div class="followup-box">
                     <small>BACKJOB / FOLLOW-UP CONNECTION</small>
@@ -553,9 +607,15 @@
                 @endif
 
                 @if ($historyType === 'finished')
-                    <a href="{{ route('customer.feedback', $appointment->id) }}" class="action-btn feedback-btn">
-                        Give Feedback
-                    </a>
+                    @if ($appointment->feedback)
+                        <span class="action-btn view-btn">
+                            Feedback Submitted
+                        </span>
+                    @else
+                        <a href="{{ route('customer.feedback', $appointment->id) }}" class="action-btn feedback-btn">
+                            Give Feedback
+                        </a>
+                    @endif
 
                     @if ($bookingType !== 'followup')
                         <a

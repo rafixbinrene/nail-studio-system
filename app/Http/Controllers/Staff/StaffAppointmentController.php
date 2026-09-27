@@ -26,12 +26,14 @@ use Illuminate\Validation\Rule;
 | - Loads dynamic staff profile data.
 | - Allows staff to update phone number and password.
 | - Sends in-app and email notifications when staff updates booking status.
+| - Loads customer feedback connected to assigned appointments.
 |
 | Defense explanation:
 | This controller connects the staff account to the staff profile through
 | the logged-in user's email address. Staff members can only view and update
 | appointments assigned to them, which protects booking records from
-| unauthorized access.
+| unauthorized access. Feedback is also loaded so staff can review customer
+| satisfaction after completed services.
 |--------------------------------------------------------------------------
 */
 
@@ -54,6 +56,15 @@ class StaffAppointmentController extends Controller
             ->first();
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT:
+    | FUNCTION: Staff Dashboard
+    |--------------------------------------------------------------------------
+    | Purpose:
+    | - Shows dashboard counts and today's/upcoming appointments.
+    |--------------------------------------------------------------------------
+    */
     public function dashboard(Request $request)
     {
         $staffProfile = $this->getStaffProfile($request);
@@ -72,9 +83,12 @@ class StaffAppointmentController extends Controller
             $todayAppointments = Appointment::with([
                     'customer',
                     'services',
+                    'feedback',
+                    'feedback.customer',
                     'followUpAppointment',
                     'followUpAppointment.services',
                     'followUpAppointment.staff',
+                    'followUpAppointment.feedback',
                 ])
                 ->where('staff_id', $staffProfile->id)
                 ->whereDate('appointment_date', now()->toDateString())
@@ -84,9 +98,12 @@ class StaffAppointmentController extends Controller
             $upcomingAppointments = Appointment::with([
                     'customer',
                     'services',
+                    'feedback',
+                    'feedback.customer',
                     'followUpAppointment',
                     'followUpAppointment.services',
                     'followUpAppointment.staff',
+                    'followUpAppointment.feedback',
                 ])
                 ->where('staff_id', $staffProfile->id)
                 ->whereDate('appointment_date', '>', now()->toDateString())
@@ -131,6 +148,16 @@ class StaffAppointmentController extends Controller
         ]);
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT:
+    | FUNCTION: Staff Appointments Page
+    |--------------------------------------------------------------------------
+    | Purpose:
+    | - Loads all appointments assigned to the logged-in staff member.
+    | - Loads submitted feedback so staff can view customer rating/comment.
+    |--------------------------------------------------------------------------
+    */
     public function index(Request $request)
     {
         $staffProfile = $this->getStaffProfile($request);
@@ -138,13 +165,43 @@ class StaffAppointmentController extends Controller
         $appointments = collect();
 
         if ($staffProfile) {
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT:
+            | Staff Appointment Query
+            |--------------------------------------------------------------------------
+            | Purpose:
+            | - Loads assigned appointments only.
+            | - Loads customer, services, follow-up data, status/cancellation data,
+            |   and submitted customer feedback.
+            |--------------------------------------------------------------------------
+            */
             $appointments = Appointment::with([
                     'customer',
                     'services',
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | NS BEAUTY COMMENT:
+                    | Feedback Relationship
+                    |--------------------------------------------------------------------------
+                    | Required in Appointment model:
+                    | public function feedback()
+                    | {
+                    |     return $this->hasOne(Feedback::class);
+                    | }
+                    |--------------------------------------------------------------------------
+                    */
+                    'feedback',
+                    'feedback.customer',
+                    'feedback.staff',
+
                     'followUpAppointment',
                     'followUpAppointment.services',
                     'followUpAppointment.staff',
                     'followUpAppointment.customer',
+                    'followUpAppointment.feedback',
+
                     'statusUpdatedBy',
                     'cancelledBy',
                 ])
@@ -190,6 +247,17 @@ class StaffAppointmentController extends Controller
         ]);
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT:
+    | FUNCTION: Update Appointment Status
+    |--------------------------------------------------------------------------
+    | Purpose:
+    | - Allows staff to update assigned bookings only.
+    | - Allows status changes to ongoing, finished, or no-show.
+    | - Prevents changing closed bookings.
+    |--------------------------------------------------------------------------
+    */
     public function updateStatus(Request $request, Appointment $appointment)
     {
         $validated = $request->validate([
@@ -264,7 +332,9 @@ class StaffAppointmentController extends Controller
         $notificationService->notifyAdmins(
             'Staff Updated Booking Status',
             $staffProfile->full_name . ' updated booking #' . $bookingCode . ' to ' . $newStatus . '.',
-            route('admin.bookings', [], false),
+            route('admin.bookings', [
+                'search' => $bookingCode,
+            ], false),
             'staff_status_update'
         );
 
@@ -281,6 +351,12 @@ class StaffAppointmentController extends Controller
         return back()->with('success', 'Appointment status updated successfully.');
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT:
+    | FUNCTION: Staff Profile Page
+    |--------------------------------------------------------------------------
+    */
     public function profile(Request $request)
     {
         $staffProfile = $this->getStaffProfile($request);
@@ -309,6 +385,12 @@ class StaffAppointmentController extends Controller
         ]);
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT:
+    | FUNCTION: Update Staff Profile
+    |--------------------------------------------------------------------------
+    */
     public function updateProfile(Request $request)
     {
         $staffProfile = $this->getStaffProfile($request);
@@ -339,6 +421,12 @@ class StaffAppointmentController extends Controller
         return back()->with('success', 'Profile updated successfully.');
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT:
+    | FUNCTION: Change Staff Password
+    |--------------------------------------------------------------------------
+    */
     public function updatePassword(Request $request)
     {
         $validated = $request->validate([
@@ -368,6 +456,16 @@ class StaffAppointmentController extends Controller
         return back()->with('success', 'Password updated successfully.');
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT:
+    | PRIVATE FUNCTION: Safe Audit Log Creation
+    |--------------------------------------------------------------------------
+    | Purpose:
+    | - Saves audit logs only using columns that exist in the database.
+    | - Prevents errors if the audit_logs table structure is still being updated.
+    |--------------------------------------------------------------------------
+    */
     private function createAuditLog(
         int $userId,
         string $userType,
@@ -376,16 +474,6 @@ class StaffAppointmentController extends Controller
         string $description,
         Request $request
     ): void {
-        /*
-        |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT:
-        | Safe Audit Log Creation
-        |--------------------------------------------------------------------------
-        | Purpose:
-        | - Saves audit logs only using columns that exist in the database.
-        | - Prevents errors if the audit_logs table structure is still being updated.
-        |--------------------------------------------------------------------------
-        */
         $data = [
             'user_type' => $userType,
             'action' => $action,

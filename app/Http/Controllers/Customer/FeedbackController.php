@@ -131,6 +131,11 @@ class FeedbackController extends Controller
         | Purpose:
         | - Notifies admin that customer feedback was submitted.
         | - Notifies assigned staff that feedback was received.
+        |
+        | Update:
+        | - Admin notification now opens Booking Management instead of Dashboard.
+        | - The booking code is included in the URL so the admin can easily find
+        |   the appointment connected to the feedback.
         |--------------------------------------------------------------------------
         */
         $notificationService = app(NotificationService::class);
@@ -138,18 +143,46 @@ class FeedbackController extends Controller
         $bookingCode = 'BK-' . str_pad($appointment->id, 4, '0', STR_PAD_LEFT);
         $mainService = $appointment->services->first()?->service_name ?? 'Beauty Service';
 
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT:
+        | Admin Feedback Notification Link
+        |--------------------------------------------------------------------------
+        | Best option:
+        | - Open Admin Booking Management because feedback is connected to
+        |   a finished booking.
+        | - The search query helps Admin locate the exact booking faster.
+        |--------------------------------------------------------------------------
+        */
+        $adminFeedbackUrl = route('admin.bookings', [
+            'search' => $bookingCode,
+            'feedback' => $appointment->id,
+        ], false);
+
         $notificationService->notifyAdmins(
             'New Customer Feedback',
             $customer->full_name . ' submitted a ' . $validated['rating'] . '-star feedback for booking #' . $bookingCode . ' (' . $mainService . ').',
-            route('admin.dashboard', [], false),
+            $adminFeedbackUrl,
             'new_feedback'
         );
 
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT:
+        | Staff Feedback Notification Link
+        |--------------------------------------------------------------------------
+        | Staff is sent to Staff Appointments so they can see the related
+        | appointment and customer feedback context.
+        |--------------------------------------------------------------------------
+        */
         $notificationService->notifyStaff(
             $appointment->staff,
             'New Feedback Received',
             $customer->full_name . ' submitted feedback for booking #' . $bookingCode . ' (' . $mainService . ').',
-            route('staff.appointments', [], false),
+            route('staff.appointments', [
+                'search' => $bookingCode,
+                'feedback' => $appointment->id,
+            ], false),
             'staff_feedback'
         );
 

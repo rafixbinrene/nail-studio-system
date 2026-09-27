@@ -6,6 +6,24 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT:
+|--------------------------------------------------------------------------
+| Appointment Model
+|
+| Purpose:
+| - Represents customer booking records.
+| - Connects appointments to customer, staff, services, follow-up bookings,
+|   cancellation records, status updates, and feedback.
+|
+| Defense explanation:
+| This model centralizes booking relationships so the system can display
+| complete appointment information across customer, staff, and admin modules.
+|--------------------------------------------------------------------------
+*/
 
 class Appointment extends Model
 {
@@ -88,5 +106,21 @@ class Appointment extends Model
     public function statusUpdatedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'status_updated_by');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT:
+    | Appointment Feedback Relationship
+    |--------------------------------------------------------------------------
+    | Purpose:
+    | - Loads the customer feedback connected to this appointment.
+    | - Used in Customer Booking History, Admin Booking Management, and
+    |   Staff Appointments.
+    |--------------------------------------------------------------------------
+    */
+    public function feedback(): HasOne
+    {
+        return $this->hasOne(Feedback::class);
     }
 }

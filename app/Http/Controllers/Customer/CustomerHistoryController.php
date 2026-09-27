@@ -17,10 +17,12 @@ use Illuminate\Http\Request;
 | - Loads all booking records owned by the logged-in customer.
 | - Separates bookings into active, finished, cancelled, no-show, and follow-up.
 | - Supports the Booking History page tabs.
+| - Loads submitted feedback for each appointment.
 |
 | Defense explanation:
 | This controller helps customers review their complete transaction history
-| while ensuring they can only access their own booking records.
+| while ensuring they can only access their own booking records. Feedback is
+| loaded so customers can see the rating and comment they already submitted.
 |--------------------------------------------------------------------------
 */
 
@@ -30,6 +32,16 @@ class CustomerHistoryController extends Controller
     {
         $user = $request->user();
 
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT:
+        | Customer Ownership Check
+        |--------------------------------------------------------------------------
+        | Purpose:
+        | - Finds the customer profile connected to the logged-in user.
+        | - Supports both user_id and email matching.
+        |--------------------------------------------------------------------------
+        */
         $customer = Customer::where('user_id', $user->id)
             ->orWhere('email', $user->email)
             ->first();
@@ -37,14 +49,33 @@ class CustomerHistoryController extends Controller
         $appointments = collect();
 
         if ($customer) {
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT:
+            | Customer Booking History Query
+            |--------------------------------------------------------------------------
+            | Purpose:
+            | - Loads customer bookings.
+            | - Loads staff and services.
+            | - Loads follow-up/backjob connection.
+            | - Loads feedback so submitted rating/comment appears in history.
+            |--------------------------------------------------------------------------
+            */
             $appointments = Appointment::with([
                     'staff',
                     'services',
+                    'feedback',
+                    'feedback.staff',
+                    'feedback.customer',
+
                     'followUpAppointment',
                     'followUpAppointment.services',
                     'followUpAppointment.staff',
                     'followUpAppointment.customer',
+                    'followUpAppointment.feedback',
+
                     'followUpBookings',
+                    'followUpBookings.feedback',
                 ])
                 ->where('customer_id', $customer->id)
                 ->orderByDesc('appointment_date')

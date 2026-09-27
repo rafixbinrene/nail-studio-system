@@ -236,7 +236,18 @@ textarea {
     font-weight: 700;
 }
 
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT:
+| Booking Information Boxes
+|--------------------------------------------------------------------------
+| Purpose:
+| - Uses consistent styling for services, feedback, cancellation details,
+|   and follow-up/backjob details.
+|--------------------------------------------------------------------------
+*/
 .service-list,
+.feedback-info,
 .cancel-info,
 .followup-info {
     padding: 16px;
@@ -246,12 +257,22 @@ textarea {
     margin-bottom: 18px;
 }
 
+.feedback-info {
+    background: rgba(81,148,91,.10);
+    border: 1px solid rgba(81,148,91,.22);
+}
+
 .followup-info {
     background: rgba(138,113,88,.10);
     border: 1px solid rgba(138,113,88,.22);
 }
 
+.cancel-info {
+    background: rgba(255,255,255,.38);
+}
+
 .service-list small,
+.feedback-info small,
 .cancel-info small,
 .followup-info small {
     display: block;
@@ -272,6 +293,7 @@ textarea {
     font-weight: 700;
 }
 
+.feedback-info p,
 .cancel-info p,
 .followup-info p {
     color: #7d6d60;
@@ -436,7 +458,7 @@ textarea {
 
 <div class="page-header">
     <h1>Booking Management</h1>
-    <p>View regular bookings, backjob/follow-up bookings, staff assignments, and cancellation records.</p>
+    <p>View regular bookings, backjob/follow-up bookings, staff assignments, customer feedback, and cancellation records.</p>
 </div>
 
 @if (session('success'))
@@ -502,7 +524,7 @@ textarea {
                     type="text"
                     name="search"
                     value="{{ $filters['search'] }}"
-                    placeholder="Search booking ID, customer, staff, service..."
+                    placeholder="Search booking ID, customer, staff, service, feedback..."
                 >
             </div>
 
@@ -547,6 +569,12 @@ textarea {
     @forelse ($bookings as $booking)
 
         @php
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT:
+            | Booking Display Preparation
+            |--------------------------------------------------------------------------
+            */
             $statusKey = strtolower(str_replace(' ', '-', $booking->status));
             $statusLabel = ucwords(str_replace('-', ' ', $statusKey));
 
@@ -698,6 +726,44 @@ textarea {
                 @endforelse
             </div>
 
+            {{-- 
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT:
+            | Admin Feedback Display
+            |--------------------------------------------------------------------------
+            | Purpose:
+            | - Allows admin to see customer feedback directly in Booking Management.
+            | - Feedback is connected to the finished appointment record.
+            |--------------------------------------------------------------------------
+            --}}
+            @if ($booking->feedback)
+                <div class="feedback-info">
+                    <small>CUSTOMER FEEDBACK</small>
+
+                    <p>
+                        <strong>Rating:</strong>
+                        {{ str_repeat('★', (int) $booking->feedback->rating) }}
+                        {{ str_repeat('☆', 5 - (int) $booking->feedback->rating) }}
+                        ({{ $booking->feedback->rating }}/5)
+                    </p>
+
+                    <p>
+                        <strong>Comment:</strong>
+                        {{ $booking->feedback->comment ?: 'No comment provided.' }}
+                    </p>
+
+                    <p>
+                        <strong>Submitted By:</strong>
+                        {{ $booking->feedback->customer?->full_name ?? $booking->customer?->full_name ?? 'Unknown customer' }}
+                    </p>
+
+                    <p>
+                        <strong>Submitted At:</strong>
+                        {{ $booking->feedback->created_at ? \Carbon\Carbon::parse($booking->feedback->created_at)->format('F d, Y h:i A') : 'Not recorded' }}
+                    </p>
+                </div>
+            @endif
+
             @if ($bookingType === 'followup')
                 <div class="followup-info">
                     <small>BACKJOB / FOLLOW-UP CONNECTION</small>
@@ -810,6 +876,16 @@ textarea {
                 <p>
                     <strong>Follow-up Reason:</strong>
                     {{ $booking->follow_up_reason ?? 'Not applicable' }}
+                </p>
+
+                <p>
+                    <strong>Feedback Rating:</strong>
+                    {{ $booking->feedback ? $booking->feedback->rating . '/5' : 'No feedback submitted' }}
+                </p>
+
+                <p>
+                    <strong>Feedback Comment:</strong>
+                    {{ $booking->feedback?->comment ?: 'No feedback submitted' }}
                 </p>
 
                 <p>

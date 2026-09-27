@@ -11,12 +11,14 @@
 | - Shows customer details, selected services, booking type, and status.
 | - Allows staff to update appointment status.
 | - Shows backjob/follow-up connection when applicable.
+| - Shows customer feedback after it is submitted.
 | - Locks finished, cancelled, and no-show bookings from further updates.
 |
 | Defense explanation:
 | This page supports staff workflow because each staff member can monitor
 | assigned bookings and update appointment progress without accessing
-| admin-only booking controls.
+| admin-only booking controls. Feedback is displayed so staff can review
+| customer satisfaction for completed services.
 |--------------------------------------------------------------------------
 --}}
 
@@ -217,7 +219,18 @@
     word-break: break-word;
 }
 
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT:
+| Staff Appointment Information Boxes
+|--------------------------------------------------------------------------
+| Purpose:
+| - Uses consistent styling for selected services, feedback, follow-up data,
+|   and cancellation records.
+|--------------------------------------------------------------------------
+*/
 .service-list,
+.feedback-box,
 .followup-box,
 .cancel-box {
     padding: 16px;
@@ -225,6 +238,11 @@
     background: rgba(255,255,255,.38);
     border: 1px solid rgba(255,255,255,.6);
     margin-bottom: 18px;
+}
+
+.feedback-box {
+    background: rgba(81,148,91,.10);
+    border: 1px solid rgba(81,148,91,.22);
 }
 
 .followup-box {
@@ -238,6 +256,7 @@
 }
 
 .service-list small,
+.feedback-box small,
 .followup-box small,
 .cancel-box small {
     display: block;
@@ -258,6 +277,7 @@
     font-weight: 700;
 }
 
+.feedback-box p,
 .followup-box p,
 .cancel-box p {
     color: #7d6d60;
@@ -356,7 +376,7 @@
 
 <div class="page-header">
     <h1>Appointments</h1>
-    <p>View assigned customer bookings, backjob requests, and update appointment status.</p>
+    <p>View assigned customer bookings, backjob requests, feedback, and update appointment status.</p>
 </div>
 
 @if (!$staffProfile)
@@ -425,7 +445,7 @@
             /*
             |--------------------------------------------------------------------------
             | NS BEAUTY COMMENT:
-            | Appointment display preparation.
+            | Appointment Display Preparation
             |--------------------------------------------------------------------------
             | Purpose:
             | - Normalizes appointment status for CSS and filtering.
@@ -579,6 +599,44 @@
                     <span>No service recorded</span>
                 @endforelse
             </div>
+
+            {{-- 
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT:
+            | Staff Feedback Display
+            |--------------------------------------------------------------------------
+            | Purpose:
+            | - Allows staff to see feedback for appointments assigned to them.
+            | - Feedback appears after the customer submits it from Booking History.
+            |--------------------------------------------------------------------------
+            --}}
+            @if ($appointment->feedback)
+                <div class="feedback-box">
+                    <small>CUSTOMER FEEDBACK</small>
+
+                    <p>
+                        <strong>Rating:</strong>
+                        {{ str_repeat('★', (int) $appointment->feedback->rating) }}
+                        {{ str_repeat('☆', 5 - (int) $appointment->feedback->rating) }}
+                        ({{ $appointment->feedback->rating }}/5)
+                    </p>
+
+                    <p>
+                        <strong>Comment:</strong>
+                        {{ $appointment->feedback->comment ?: 'No comment provided.' }}
+                    </p>
+
+                    <p>
+                        <strong>Submitted By:</strong>
+                        {{ $appointment->feedback->customer?->full_name ?? $appointment->customer?->full_name ?? 'Unknown customer' }}
+                    </p>
+
+                    <p>
+                        <strong>Submitted At:</strong>
+                        {{ $appointment->feedback->created_at ? \Carbon\Carbon::parse($appointment->feedback->created_at)->format('F d, Y h:i A') : 'Not recorded' }}
+                    </p>
+                </div>
+            @endif
 
             @if ($bookingType === 'followup')
                 <div class="followup-box">
