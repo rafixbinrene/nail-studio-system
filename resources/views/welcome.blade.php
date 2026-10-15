@@ -5,15 +5,17 @@
 | NS BEAUTY COMMENT: Public Welcome Page
 |--------------------------------------------------------------------------
 | Purpose:
-| - Displays live business content managed by the administrator.
-| - Retrieves hero and studio images from Laravel Cloud Object Storage.
-| - Displays available beauty services.
-| - Provides login, registration, and dashboard navigation.
+| - Display business information managed by the administrator.
+| - Display hero slideshow and studio images from Cloud Object Storage.
+| - Display services as text-only cards.
+| - Allow customers to view service details without service images.
+| - Preserve Login, Register, and Dashboard navigation.
 |
 | Defense Explanation:
-| Content Management is connected to the public website through
-| the database and Laravel filesystem. Administrators can update
-| website content without modifying this view.
+| The website retrieves business information and service data from
+| the centralized database. Service images are no longer required
+| because services are represented by their name, description,
+| price, and duration.
 |--------------------------------------------------------------------------
 */
 
@@ -25,8 +27,8 @@ use Illuminate\Support\Str;
 |--------------------------------------------------------------------------
 | NS BEAUTY COMMENT: Content Settings
 |--------------------------------------------------------------------------
-| HomeController provides these settings from the database.
-| The view uses safe defaults when some fields are empty.
+| Keep the existing settings mapping to preserve the working
+| Admin Content Management integration.
 |--------------------------------------------------------------------------
 */
 
@@ -64,15 +66,11 @@ $setting = function ($key, $default = '') use ($settingsArray) {
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Image URL Resolver
+| NS BEAUTY COMMENT: Cloud Image URL Resolver
 |--------------------------------------------------------------------------
-| New homepage images use the content_images disk.
-| Existing service images may still use the public disk.
+| This resolver is used ONLY for homepage hero and studio images.
 |
-| Important:
-| - Never expose bucket access keys in HTML.
-| - Laravel generates the appropriate public URL.
-| - The bucket must permit public reads for public website images.
+| Service images have been removed from the website.
 |--------------------------------------------------------------------------
 */
 
@@ -112,44 +110,7 @@ $contentImageUrl = function ($path) {
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Legacy Service Image Resolver
-|--------------------------------------------------------------------------
-| Service Management may still store images in the original public
-| disk. We keep that functionality unchanged.
-|--------------------------------------------------------------------------
-*/
-
-$serviceImageUrl = function ($path) {
-    if (blank($path)) {
-        return null;
-    }
-
-    $path = trim((string) $path);
-
-    if (Str::startsWith($path, [
-        'http://',
-        'https://',
-        '//',
-    ])) {
-        return $path;
-    }
-
-    $path = ltrim($path, '/');
-
-    if (Str::startsWith($path, [
-        'images/',
-        'assets/',
-        'storage/',
-    ])) {
-        return asset($path);
-    }
-
-    return asset('storage/' . $path);
-};
-
-/*
-|--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Business Identity
+| NS BEAUTY COMMENT: Business Information
 |--------------------------------------------------------------------------
 */
 
@@ -218,10 +179,11 @@ $businessHours = $setting(
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Uploaded Hero Slides
+| NS BEAUTY COMMENT: Hero Slideshow
 |--------------------------------------------------------------------------
-| Prioritizes the five image paths provided by HomeController.
-| Each image comes from Admin > Content Management.
+| Important:
+| Preserve the five images uploaded through Admin Content Management.
+| They are stored in the content_images Laravel Cloud disk.
 |--------------------------------------------------------------------------
 */
 
@@ -246,30 +208,24 @@ for ($i = 1; $i <= 5; $i++) {
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Optional Controller Slide Fallback
-|--------------------------------------------------------------------------
-| Supports older homepage data when Content Management has not yet
-| uploaded any slide images.
+| NS BEAUTY COMMENT: Controller Slide Fallback
 |--------------------------------------------------------------------------
 */
 
 if ($heroSlides->isEmpty()) {
     $heroSlides = collect($heroSlideSource ?? []);
-
-    if ($heroSlides->isEmpty() && isset($heroSlideSource)) {
-        $heroSlides = collect($heroSlideSource);
-    }
 }
 
 /*
 |--------------------------------------------------------------------------
 | NS BEAUTY COMMENT: Studio Image
 |--------------------------------------------------------------------------
+| The studio image is NOT a service image.
+| This remains connected to Admin Content Management.
+|--------------------------------------------------------------------------
 */
 
-$studioImagePath = $setting(
-    'studio_image_path'
-);
+$studioImagePath = $setting('studio_image_path');
 
 $studioImage = $studioImagePath
     ? $contentImageUrl($studioImagePath)
@@ -277,7 +233,12 @@ $studioImage = $studioImagePath
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Services
+| NS BEAUTY COMMENT: Service Synchronization
+|--------------------------------------------------------------------------
+| The same services table is used by Admin Service Management.
+|
+| Only Available services are displayed on the public website.
+| No service image fields are read or displayed.
 |--------------------------------------------------------------------------
 */
 
@@ -292,6 +253,12 @@ $landingServices = collect(
 
     return (bool) data_get($service, 'is_active', true);
 })->values();
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Service Price
+|--------------------------------------------------------------------------
+*/
 
 $formatPrice = function ($service) {
     $priceLabel = data_get($service, 'price_label');
@@ -310,6 +277,12 @@ $formatPrice = function ($service) {
         ? 'RM ' . number_format((float) $price, 2)
         : 'Price to be updated';
 };
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Service Duration
+|--------------------------------------------------------------------------
+*/
 
 $formatDuration = function ($service) {
     $minutes = data_get(
@@ -342,7 +315,7 @@ $formatDuration = function ($service) {
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Authentication Links
+| NS BEAUTY COMMENT: Authentication
 |--------------------------------------------------------------------------
 */
 
@@ -368,7 +341,7 @@ if (auth()->check()) {
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Business Statistics
+| NS BEAUTY COMMENT: Statistics
 |--------------------------------------------------------------------------
 */
 
@@ -397,7 +370,7 @@ if ($statCards->isEmpty()) {
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Benefits
+| NS BEAUTY COMMENT: Why Choose Us
 |--------------------------------------------------------------------------
 */
 
@@ -434,20 +407,19 @@ if ($whyCards->isEmpty()) {
 
 <head>
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <meta name="description"
-          content="Nail Studio & Beauty online booking and beauty services.">
+    <meta
+        name="description"
+        content="Nail Studio & Beauty online booking and beauty services."
+    >
 
     <title>{{ $businessName }} | Beauty Appointment System</title>
 
     <style>
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Visual Theme
-        |--------------------------------------------------------------------------
-        | Muji-inspired brown, cream, and glass design.
+        | NS BEAUTY COMMENT: Website Theme
         |--------------------------------------------------------------------------
         */
 
@@ -507,7 +479,7 @@ if ($whyCards->isEmpty()) {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Navigation Bar
+        | NS BEAUTY COMMENT: Navigation
         |--------------------------------------------------------------------------
         */
 
@@ -668,9 +640,9 @@ if ($whyCards->isEmpty()) {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Homepage Slideshow
+        | NS BEAUTY COMMENT: Hero Slideshow
         |--------------------------------------------------------------------------
-        | Uploaded images are displayed inside this slideshow.
+        | Cloud-hosted hero images remain unchanged.
         |--------------------------------------------------------------------------
         */
 
@@ -772,7 +744,7 @@ if ($whyCards->isEmpty()) {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Service Cards
+        | NS BEAUTY COMMENT: General Sections
         |--------------------------------------------------------------------------
         */
 
@@ -798,6 +770,14 @@ if ($whyCards->isEmpty()) {
             line-height: 1.7;
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Text-Only Service Cards
+        |--------------------------------------------------------------------------
+        | Service image elements have been removed completely.
+        |--------------------------------------------------------------------------
+        */
+
         .services-grid {
             display: grid;
             grid-template-columns: repeat(3,1fr);
@@ -806,11 +786,14 @@ if ($whyCards->isEmpty()) {
 
         .service-card {
             width: 100%;
+            min-height: 230px;
+            display: flex;
+            flex-direction: column;
             text-align: left;
             border: 1px solid rgba(255,255,255,.72);
             background: rgba(255,255,255,.48);
             border-radius: 30px;
-            padding: 14px;
+            padding: 26px;
             color: var(--brown-dark);
             box-shadow: 0 22px 48px rgba(47,33,24,.1);
             transition: .24s ease;
@@ -822,57 +805,52 @@ if ($whyCards->isEmpty()) {
             box-shadow: 0 34px 72px rgba(47,33,24,.18);
         }
 
-        .service-img {
-            height: 238px;
-            border-radius: 24px;
-            overflow: hidden;
-            position: relative;
-            margin-bottom: 18px;
-            background: linear-gradient(135deg,#d9c2ac,#fff7ee);
-        }
-
-        .service-img img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .service-badge {
-            position: absolute;
-            top: 14px;
-            right: 14px;
-            background: rgba(255,253,249,.85);
-            padding: 8px 13px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: 900;
-            color: var(--brown);
+        .service-card:focus-visible {
+            outline: 3px solid var(--brown);
+            outline-offset: 3px;
         }
 
         .service-card h3 {
-            font-size: 18px;
-            margin: 0 8px 10px;
+            font-size: 20px;
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+
+        .service-description {
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.7;
+            margin-bottom: 20px;
+            white-space: pre-line;
+            overflow-wrap: anywhere;
+            flex: 1;
         }
 
         .service-meta {
-            margin: 0 8px 12px;
             display: flex;
             flex-wrap: wrap;
+            align-items: center;
             gap: 9px;
+            margin-bottom: 18px;
         }
 
         .service-meta span {
             border-radius: 999px;
-            padding: 7px 10px;
-            background: rgba(255,255,255,.55);
-            color: var(--muted);
+            padding: 9px 12px;
+            background: rgba(255,255,255,.7);
+            border: 1px solid rgba(255,255,255,.75);
+            color: var(--brown);
             font-size: 12px;
+            font-weight: 800;
         }
 
         .click-note {
-            margin: 0 8px 8px;
+            margin-top: auto;
+            padding-top: 12px;
+            border-top: 1px solid rgba(111,78,55,.12);
             color: #9a8778;
             font-size: 12px;
+            font-weight: 700;
         }
 
         .empty-state {
@@ -926,7 +904,7 @@ if ($whyCards->isEmpty()) {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Studio and Contact Section
+        | NS BEAUTY COMMENT: Studio Information
         |--------------------------------------------------------------------------
         */
 
@@ -964,6 +942,15 @@ if ($whyCards->isEmpty()) {
             white-space: pre-line;
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Cloud-Hosted Studio Image
+        |--------------------------------------------------------------------------
+        | This image remains because it represents the salon itself,
+        | not a service.
+        |--------------------------------------------------------------------------
+        */
+
         .studio-image {
             min-height: 430px;
             border-radius: 34px;
@@ -998,7 +985,7 @@ if ($whyCards->isEmpty()) {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Call to Action and Footer
+        | NS BEAUTY COMMENT: Call to Action
         |--------------------------------------------------------------------------
         */
 
@@ -1022,6 +1009,12 @@ if ($whyCards->isEmpty()) {
             color: var(--muted);
             line-height: 1.7;
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Footer
+        |--------------------------------------------------------------------------
+        */
 
         footer {
             width: min(1180px,92%);
@@ -1050,7 +1043,9 @@ if ($whyCards->isEmpty()) {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Service Details Popup
+        | NS BEAUTY COMMENT: Text-Only Service Details Popup
+        |--------------------------------------------------------------------------
+        | No image container or image JavaScript is used.
         |--------------------------------------------------------------------------
         */
 
@@ -1079,40 +1074,28 @@ if ($whyCards->isEmpty()) {
             box-shadow: 0 35px 90px rgba(47,33,24,.26);
         }
 
-        .modal-image-wrap {
-            height: 260px;
-            position: relative;
-            overflow: hidden;
-            background: linear-gradient(135deg,#d9c2ac,#fff7ee);
-        }
-
-        .modal-image-wrap img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
         .modal-content {
-            padding: 28px;
+            padding: 32px;
         }
 
         .modal-content h3 {
             font-size: 25px;
-            margin-bottom: 12px;
+            margin-bottom: 14px;
         }
 
         .modal-meta {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
-            margin-bottom: 18px;
+            margin-bottom: 20px;
         }
 
         .modal-meta span {
             background: rgba(255,255,255,.8);
             border-radius: 999px;
-            padding: 8px 12px;
+            padding: 9px 12px;
             font-size: 12px;
+            font-weight: 800;
             color: var(--brown);
         }
 
@@ -1120,6 +1103,8 @@ if ($whyCards->isEmpty()) {
             color: var(--muted);
             line-height: 1.75;
             margin-bottom: 22px;
+            white-space: pre-line;
+            overflow-wrap: anywhere;
         }
 
         .close-btn {
@@ -1135,7 +1120,7 @@ if ($whyCards->isEmpty()) {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Responsive Layout
+        | NS BEAUTY COMMENT: Responsive Design
         |--------------------------------------------------------------------------
         */
 
@@ -1231,6 +1216,14 @@ if ($whyCards->isEmpty()) {
             .cta .btn {
                 width: 100%;
             }
+
+            .service-card {
+                min-height: 0;
+            }
+
+            .modal-content {
+                padding: 24px;
+            }
         }
     </style>
 </head>
@@ -1246,11 +1239,8 @@ if ($whyCards->isEmpty()) {
     <nav class="top-nav glass" aria-label="Main navigation">
 
         <a href="{{ url('/') }}" class="brand">
-
             <span class="brand-mark">NS</span>
-
             <span class="brand-name">{{ $businessName }}</span>
-
         </a>
 
         <button
@@ -1267,11 +1257,8 @@ if ($whyCards->isEmpty()) {
         <div class="nav-links" id="navLinks">
 
             <a href="{{ url('/') }}">Home</a>
-
             <a href="#services">Services</a>
-
             <a href="#about">About</a>
-
             <a href="#visit">Visit</a>
 
             @auth
@@ -1291,7 +1278,6 @@ if ($whyCards->isEmpty()) {
             @endauth
 
         </div>
-
     </nav>
 
     <main>
@@ -1318,17 +1304,26 @@ if ($whyCards->isEmpty()) {
 
                     @auth
 
-                        <a href="{{ $dashboardUrl }}" class="btn btn-brown">
+                        <a
+                            href="{{ $dashboardUrl }}"
+                            class="btn btn-brown"
+                        >
                             Go to dashboard
                         </a>
 
                     @else
 
-                        <a href="{{ $registerUrl }}" class="btn btn-brown">
+                        <a
+                            href="{{ $registerUrl }}"
+                            class="btn btn-brown"
+                        >
                             Create account to book
                         </a>
 
-                        <a href="{{ $loginUrl }}" class="btn btn-light">
+                        <a
+                            href="{{ $loginUrl }}"
+                            class="btn btn-light"
+                        >
                             Login
                         </a>
 
@@ -1340,9 +1335,9 @@ if ($whyCards->isEmpty()) {
 
             {{--
             |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT: Hero Image Slideshow
+            | NS BEAUTY COMMENT: Homepage Hero Slideshow
             |--------------------------------------------------------------------------
-            | These images are retrieved from the content_images disk.
+            | Remains connected to the Laravel Cloud bucket.
             |--------------------------------------------------------------------------
             --}}
 
@@ -1386,7 +1381,9 @@ if ($whyCards->isEmpty()) {
 
                 <div class="floating-card">
 
-                    <h2>Clean, calm, and organized beauty care</h2>
+                    <h2>
+                        Clean, calm, and organized beauty care
+                    </h2>
 
                     <p>
                         Beauty appointments, convenient scheduling,
@@ -1423,7 +1420,12 @@ if ($whyCards->isEmpty()) {
 
         {{--
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Available Services
+        | NS BEAUTY COMMENT: Text-Only Service Catalog
+        |--------------------------------------------------------------------------
+        | Displays Available services from the database.
+        |
+        | Admin updates are reflected when the page reloads.
+        | Service images are completely removed.
         |--------------------------------------------------------------------------
         --}}
 
@@ -1447,7 +1449,11 @@ if ($whyCards->isEmpty()) {
                             $serviceName = data_get(
                                 $service,
                                 'service_name',
-                                data_get($service, 'name', 'Beauty Service')
+                                data_get(
+                                    $service,
+                                    'name',
+                                    'Beauty Service'
+                                )
                             );
 
                             $description = data_get(
@@ -1460,25 +1466,27 @@ if ($whyCards->isEmpty()) {
                                 )
                             );
 
+                            $description = blank($description)
+                                ? 'No service description available.'
+                                : $description;
+
                             $price = $formatPrice($service);
+
                             $duration = $formatDuration($service);
 
                             $category = data_get(
                                 $service,
                                 'category.name',
-                                data_get($service, 'category_name', 'Beauty Service')
+                                data_get(
+                                    $service,
+                                    'category_name',
+                                    'Beauty Service'
+                                )
                             );
 
                             if (!is_string($category)) {
                                 $category = 'Beauty Service';
                             }
-
-                            $imagePath = data_get($service, 'image_path')
-                                ?? data_get($service, 'image')
-                                ?? data_get($service, 'photo')
-                                ?? data_get($service, 'thumbnail');
-
-                            $serviceImage = $serviceImageUrl($imagePath);
                         @endphp
 
                         <button
@@ -1490,38 +1498,28 @@ if ($whyCards->isEmpty()) {
                             data-price="{{ $price }}"
                             data-duration="{{ $duration }}"
                             data-category="{{ $category }}"
-                            data-image="{{ $serviceImage }}"
                         >
 
-                            <div class="service-img">
+                            <h3>{{ $serviceName }}</h3>
 
-                                @if ($serviceImage)
+                            <p class="service-description">
+                                {{ $description }}
+                            </p>
 
-                                    <img
-                                        src="{{ $serviceImage }}"
-                                        alt="{{ $serviceName }}"
-                                        loading="lazy"
-                                        onerror="handleImageError(this)"
-                                    >
+                            <div class="service-meta">
 
-                                @endif
-
-                                <span class="service-badge">
+                                <span>
                                     {{ $price }}
+                                </span>
+
+                                <span>
+                                    ⏱ {{ $duration }}
                                 </span>
 
                             </div>
 
-                            <h3>{{ $serviceName }}</h3>
-
-                            <div class="service-meta">
-
-                                <span>⏱ {{ $duration }}</span>
-
-                            </div>
-
                             <div class="click-note">
-                                Click to view description
+                                Click to view full details
                             </div>
 
                         </button>
@@ -1534,7 +1532,9 @@ if ($whyCards->isEmpty()) {
 
                 <div class="empty-state">
 
-                    <strong>No services are available yet.</strong>
+                    <strong>
+                        No services are available yet.
+                    </strong>
 
                     <p>
                         Services will appear here once they are
@@ -1569,7 +1569,9 @@ if ($whyCards->isEmpty()) {
 
                     <div class="why-card glass">
 
-                        <span>{{ data_get($card, 'icon', '✨') }}</span>
+                        <span>
+                            {{ data_get($card, 'icon', '✨') }}
+                        </span>
 
                         <h3>{{ data_get($card, 'title') }}</h3>
 
@@ -1585,7 +1587,7 @@ if ($whyCards->isEmpty()) {
 
         {{--
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Studio and Business Information
+        | NS BEAUTY COMMENT: Studio Information
         |--------------------------------------------------------------------------
         --}}
 
@@ -1615,44 +1617,69 @@ if ($whyCards->isEmpty()) {
 
                     <h3>Contact</h3>
 
-                    @if ($businessPhone || $businessEmail || $facebookUrl || $instagramUrl)
+                    @if (
+                        $businessPhone ||
+                        $businessEmail ||
+                        $facebookUrl ||
+                        $instagramUrl
+                    )
 
                         <p>
-                            Contact the studio through the available
-                            channels below.
+                            Contact the studio through the
+                            available channels below.
                         </p>
 
                         <div class="contact-links">
 
                             @if ($businessPhone)
-                                <a href="tel:{{ preg_replace('/\s+/', '', $businessPhone) }}">
+
+                                <a
+                                    href="tel:{{ preg_replace('/\s+/', '', $businessPhone) }}"
+                                >
                                     {{ $businessPhone }}
                                 </a>
+
                             @endif
 
                             @if ($businessEmail)
+
                                 <a href="mailto:{{ $businessEmail }}">
                                     {{ $businessEmail }}
                                 </a>
+
                             @endif
 
                             @if ($facebookUrl)
-                                <a href="{{ $facebookUrl }}" target="_blank" rel="noopener">
+
+                                <a
+                                    href="{{ $facebookUrl }}"
+                                    target="_blank"
+                                    rel="noopener"
+                                >
                                     Facebook
                                 </a>
+
                             @endif
 
                             @if ($instagramUrl)
-                                <a href="{{ $instagramUrl }}" target="_blank" rel="noopener">
+
+                                <a
+                                    href="{{ $instagramUrl }}"
+                                    target="_blank"
+                                    rel="noopener"
+                                >
                                     Instagram
                                 </a>
+
                             @endif
 
                         </div>
 
                     @else
 
-                        <p>Contact details will be available soon.</p>
+                        <p>
+                            Contact details will be available soon.
+                        </p>
 
                     @endif
 
@@ -1664,11 +1691,14 @@ if ($whyCards->isEmpty()) {
             |--------------------------------------------------------------------------
             | NS BEAUTY COMMENT: Studio Image
             |--------------------------------------------------------------------------
-            | Uploaded through Admin Content Management.
+            | Preserves the image uploaded through Admin Content Management.
             |--------------------------------------------------------------------------
             --}}
 
-            <div class="studio-image" id="studioImageWrapper">
+            <div
+                class="studio-image"
+                id="studioImageWrapper"
+            >
 
                 @if ($studioImage)
 
@@ -1700,21 +1730,27 @@ if ($whyCards->isEmpty()) {
                 </h2>
 
                 <p>
-                    Create an account or log in to manage
-                    your appointment.
+                    Create an account or log in to
+                    manage your appointment.
                 </p>
 
             </div>
 
             @auth
 
-                <a href="{{ $dashboardUrl }}" class="btn btn-brown">
+                <a
+                    href="{{ $dashboardUrl }}"
+                    class="btn btn-brown"
+                >
                     Go to dashboard
                 </a>
 
             @else
 
-                <a href="{{ $registerUrl }}" class="btn btn-brown">
+                <a
+                    href="{{ $registerUrl }}"
+                    class="btn btn-brown"
+                >
                     Create account
                 </a>
 
@@ -1735,7 +1771,8 @@ if ($whyCards->isEmpty()) {
         <h3>{{ $businessName }}</h3>
 
         <p>
-            {{ $businessTagline }}<br>
+            {{ $businessTagline }}
+            <br>
             {{ $businessArea }}
         </p>
 
@@ -1748,7 +1785,9 @@ if ($whyCards->isEmpty()) {
 
     {{--
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: Service Details Modal
+    | NS BEAUTY COMMENT: Text-Only Service Details Popup
+    |--------------------------------------------------------------------------
+    | No image container, image source, or service image handling.
     |--------------------------------------------------------------------------
     --}}
 
@@ -1762,17 +1801,6 @@ if ($whyCards->isEmpty()) {
     >
 
         <div class="modal-box">
-
-            <div class="modal-image-wrap" id="modalImageWrap">
-
-                <img
-                    id="modalImage"
-                    src=""
-                    alt="Service image"
-                    onerror="handleImageError(this)"
-                >
-
-            </div>
 
             <div class="modal-content">
 
@@ -1808,6 +1836,8 @@ if ($whyCards->isEmpty()) {
         /*
         |--------------------------------------------------------------------------
         | NS BEAUTY COMMENT: Hero Slideshow
+        |--------------------------------------------------------------------------
+        | Preserves automatic image rotation.
         |--------------------------------------------------------------------------
         */
 
@@ -1849,14 +1879,15 @@ if ($whyCards->isEmpty()) {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Service Popup
+        | NS BEAUTY COMMENT: Text-Only Service Popup
+        |--------------------------------------------------------------------------
+        | Displays service information stored in data attributes.
+        | No service image is loaded or displayed.
         |--------------------------------------------------------------------------
         */
 
         function openServiceModal(button) {
             const modal = document.getElementById("serviceModal");
-            const modalImage = document.getElementById("modalImage");
-            const imageWrap = document.getElementById("modalImageWrap");
 
             document.getElementById("modalTitle").textContent =
                 button.dataset.title || "Beauty Service";
@@ -1873,20 +1904,16 @@ if ($whyCards->isEmpty()) {
             document.getElementById("modalCategory").textContent =
                 button.dataset.category || "";
 
-            imageWrap.classList.remove("image-placeholder");
-
-            if (button.dataset.image) {
-                modalImage.src = button.dataset.image;
-                modalImage.style.display = "block";
-            } else {
-                modalImage.removeAttribute("src");
-                modalImage.style.display = "none";
-                imageWrap.classList.add("image-placeholder");
-            }
-
             modal.classList.add("show");
+
             document.body.classList.add("modal-open");
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Close Service Popup
+        |--------------------------------------------------------------------------
+        */
 
         function closeServiceModal(event) {
             if (event.target.id === "serviceModal") {
@@ -1903,15 +1930,16 @@ if ($whyCards->isEmpty()) {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Image Error Handling
+        | NS BEAUTY COMMENT: Hero and Studio Image Error Handling
         |--------------------------------------------------------------------------
-        | Shows a placeholder when the requested file is unavailable.
+        | Service images have been removed.
+        | This function is only for the hero slideshow and studio.
         |--------------------------------------------------------------------------
         */
 
         function handleImageError(image) {
             const wrapper = image.closest(
-                ".slideshow, .service-img, .studio-image, .modal-image-wrap"
+                ".slideshow, .studio-image"
             );
 
             image.style.display = "none";
@@ -1921,11 +1949,23 @@ if ($whyCards->isEmpty()) {
             }
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Escape Key
+        |--------------------------------------------------------------------------
+        */
+
         document.addEventListener("keydown", function(event) {
             if (event.key === "Escape") {
                 closeModalButton();
             }
         });
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Navigation Links
+        |--------------------------------------------------------------------------
+        */
 
         document.querySelectorAll("#navLinks a").forEach((link) => {
             link.addEventListener("click", () => {
