@@ -1,3 +1,4 @@
+
 <?php
 
 use App\Http\Controllers\Frontend\HomeController;
@@ -20,20 +21,21 @@ use App\Http\Controllers\Admin\StaffManagementController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\ContentManagementController;
 use App\Http\Controllers\Admin\CustomerManagementController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\StaffActivationController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Landing Page
+| NS BEAUTY COMMENT: Landing Page
 |--------------------------------------------------------------------------
 */
 
-Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/', [HomeController::class, 'index'])
+    ->name('home');
 
 /*
 |--------------------------------------------------------------------------
-| Guest Authentication Pages
+| NS BEAUTY COMMENT: Guest Authentication Pages
 |--------------------------------------------------------------------------
 */
 
@@ -74,7 +76,7 @@ Route::middleware('guest')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Logout
+| NS BEAUTY COMMENT: Logout
 |--------------------------------------------------------------------------
 */
 
@@ -84,7 +86,9 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
 
 /*
 |--------------------------------------------------------------------------
-| Customer Pages
+| NS BEAUTY COMMENT: Customer Pages
+|--------------------------------------------------------------------------
+| All customer booking routes require an authenticated customer account
 |--------------------------------------------------------------------------
 */
 
@@ -92,55 +96,126 @@ Route::middleware(['auth', 'role:customer'])
     ->prefix('customer')
     ->name('customer.')
     ->group(function () {
-        Route::get('/dashboard', [CustomerDashboardController::class, 'index'])
-            ->name('dashboard');
 
-        Route::get('/booking', [CustomerBookingController::class, 'create'])
-            ->name('booking');
+        Route::get('/dashboard', [
+            CustomerDashboardController::class,
+            'index'
+        ])->name('dashboard');
 
-        Route::post('/booking', [CustomerBookingController::class, 'store'])
-            ->name('booking.store');
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Customer Booking
+        |--------------------------------------------------------------------------
+        | Booking page and booking submission
+        |--------------------------------------------------------------------------
+        */
 
-        Route::get('/history', [CustomerHistoryController::class, 'index'])
-            ->name('history');
+        Route::get('/booking', [
+            CustomerBookingController::class,
+            'create'
+        ])->name('booking');
 
-        Route::get('/profile', [CustomerProfileController::class, 'show'])
-            ->name('profile');
+        Route::post('/booking', [
+            CustomerBookingController::class,
+            'store'
+        ])->name('booking.store');
 
-        Route::patch('/profile', [CustomerProfileController::class, 'update'])
-            ->name('profile.update');
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Real-Time Appointment Availability
+        |--------------------------------------------------------------------------
+        | New route:
+        | GET /customer/booking/availability
+        |
+        | Purpose:
+        | - Retrieve time slots for the selected date and beautician
+        | - Check actual database appointments
+        | - Check total selected service duration
+        | - Mark overlapping appointments as fully booked
+        | - Disable staff day-offs and elapsed Malaysian times
+        |
+        | Security:
+        | - Customer authentication required
+        | - Customer role required
+        | - Inputs validated in BookingController::availability
+        |--------------------------------------------------------------------------
+        */
 
-        Route::patch('/profile/password', [CustomerProfileController::class, 'updatePassword'])
-            ->name('password.update');
+        Route::get('/booking/availability', [
+            CustomerBookingController::class,
+            'availability'
+        ])->name('booking.availability');
 
-        Route::get('/feedback/{id}', [FeedbackController::class, 'show'])
-            ->name('feedback');
+        Route::get('/history', [
+            CustomerHistoryController::class,
+            'index'
+        ])->name('history');
 
-        Route::post('/feedback/{id}', [FeedbackController::class, 'store'])
-            ->name('feedback.store');
+        Route::get('/profile', [
+            CustomerProfileController::class,
+            'show'
+        ])->name('profile');
 
-        Route::get('/booking-details/{id}', [BookingDetailsController::class, 'show'])
-            ->name('booking.details');
+        Route::patch('/profile', [
+            CustomerProfileController::class,
+            'update'
+        ])->name('profile.update');
 
-        Route::get('/cancel-booking/{id}', [CustomerCancelBookingController::class, 'show'])
-            ->name('booking.cancel.form');
+        Route::patch('/profile/password', [
+            CustomerProfileController::class,
+            'updatePassword'
+        ])->name('password.update');
 
-        Route::patch('/cancel-booking/{id}', [CustomerCancelBookingController::class, 'cancel'])
-            ->name('booking.cancel');
+        Route::get('/feedback/{id}', [
+            FeedbackController::class,
+            'show'
+        ])->name('feedback');
 
-        Route::get('/notifications', [NotificationController::class, 'index'])
-            ->name('notifications');
+        Route::post('/feedback/{id}', [
+            FeedbackController::class,
+            'store'
+        ])->name('feedback.store');
 
-        Route::patch('/notifications/read-all', [NotificationController::class, 'readAll'])
-            ->name('notifications.read-all');
+        Route::get('/booking-details/{id}', [
+            BookingDetailsController::class,
+            'show'
+        ])->name('booking.details');
 
-        Route::patch('/notifications/{notification}/read', [NotificationController::class, 'read'])
-            ->name('notifications.read');
+        Route::get('/cancel-booking/{id}', [
+            CustomerCancelBookingController::class,
+            'show'
+        ])->name('booking.cancel.form');
+
+        Route::patch('/cancel-booking/{id}', [
+            CustomerCancelBookingController::class,
+            'cancel'
+        ])->name('booking.cancel');
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Customer Notifications
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('/notifications', [
+            NotificationController::class,
+            'index'
+        ])->name('notifications');
+
+        Route::patch('/notifications/read-all', [
+            NotificationController::class,
+            'readAll'
+        ])->name('notifications.read-all');
+
+        Route::patch('/notifications/{notification}/read', [
+            NotificationController::class,
+            'read'
+        ])->name('notifications.read');
     });
 
 /*
 |--------------------------------------------------------------------------
-| Staff Pages
+| NS BEAUTY COMMENT: Staff Pages
 |--------------------------------------------------------------------------
 */
 
@@ -148,55 +223,79 @@ Route::middleware(['auth', 'role:staff'])
     ->prefix('staff')
     ->name('staff.')
     ->group(function () {
-        Route::get('/dashboard', [StaffAppointmentController::class, 'dashboard'])
-            ->name('dashboard');
 
-        Route::get('/appointments', [StaffAppointmentController::class, 'index'])
-            ->name('appointments');
+        Route::get('/dashboard', [
+            StaffAppointmentController::class,
+            'dashboard'
+        ])->name('dashboard');
 
-        Route::patch('/appointments/{appointment}/status', [StaffAppointmentController::class, 'updateStatus'])
-            ->name('appointments.status');
+        Route::get('/appointments', [
+            StaffAppointmentController::class,
+            'index'
+        ])->name('appointments');
+
+        Route::patch('/appointments/{appointment}/status', [
+            StaffAppointmentController::class,
+            'updateStatus'
+        ])->name('appointments.status');
 
         Route::view('/availability', 'staff.availability')
             ->name('availability');
 
-        Route::get('/profile', [StaffAppointmentController::class, 'profile'])
-            ->name('profile');
+        Route::get('/profile', [
+            StaffAppointmentController::class,
+            'profile'
+        ])->name('profile');
 
-        Route::patch('/profile', [StaffAppointmentController::class, 'updateProfile'])
-            ->name('profile.update');
+        Route::patch('/profile', [
+            StaffAppointmentController::class,
+            'updateProfile'
+        ])->name('profile.update');
 
-        Route::patch('/profile/password', [StaffAppointmentController::class, 'updatePassword'])
-            ->name('password.update');
+        Route::patch('/profile/password', [
+            StaffAppointmentController::class,
+            'updatePassword'
+        ])->name('password.update');
 
-        Route::get('/notifications', [NotificationController::class, 'index'])
-            ->name('notifications');
+        Route::get('/notifications', [
+            NotificationController::class,
+            'index'
+        ])->name('notifications');
 
-        Route::patch('/notifications/read-all', [NotificationController::class, 'readAll'])
-            ->name('notifications.read-all');
+        Route::patch('/notifications/read-all', [
+            NotificationController::class,
+            'readAll'
+        ])->name('notifications.read-all');
 
-        Route::patch('/notifications/{notification}/read', [NotificationController::class, 'read'])
-            ->name('notifications.read');
+        Route::patch('/notifications/{notification}/read', [
+            NotificationController::class,
+            'read'
+        ])->name('notifications.read');
     });
-
 
 /*
 |--------------------------------------------------------------------------
-| Staff Account Activation
+| NS BEAUTY COMMENT: Staff Account Activation
 |--------------------------------------------------------------------------
 */
 
-Route::get('/staff/activate/{token}', [StaffActivationController::class, 'show'])
+Route::get('/staff/activate/{token}', [
+    StaffActivationController::class,
+    'show'
+])
     ->middleware('guest')
     ->name('staff.activate.form');
 
-Route::post('/staff/activate/{token}', [StaffActivationController::class, 'store'])
+Route::post('/staff/activate/{token}', [
+    StaffActivationController::class,
+    'store'
+])
     ->middleware('guest')
     ->name('staff.activate.store');
 
 /*
 |--------------------------------------------------------------------------
-| Admin Pages
+| NS BEAUTY COMMENT: Admin Pages
 |--------------------------------------------------------------------------
 */
 
@@ -204,87 +303,178 @@ Route::middleware(['auth', 'role:admin'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
-        Route::get('/dashboard', [AdminDashboardController::class, 'index'])
-            ->name('dashboard');
 
-        Route::get('/bookings', [BookingManagementController::class, 'index'])
-            ->name('bookings');
+        Route::get('/dashboard', [
+            AdminDashboardController::class,
+            'index'
+        ])->name('dashboard');
 
-        Route::patch('/bookings/{booking}/cancel', [BookingManagementController::class, 'cancel'])
-            ->name('bookings.cancel');
+        Route::get('/bookings', [
+            BookingManagementController::class,
+            'index'
+        ])->name('bookings');
 
-        Route::get('/services', [ServiceManagementController::class, 'index'])
-            ->name('services');
+        Route::patch('/bookings/{booking}/cancel', [
+            BookingManagementController::class,
+            'cancel'
+        ])->name('bookings.cancel');
 
-        Route::post('/services', [ServiceManagementController::class, 'store'])
-            ->name('services.store');
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Service Management
+        |--------------------------------------------------------------------------
+        */
 
-        Route::patch('/services/{service}', [ServiceManagementController::class, 'update'])
-            ->name('services.update');
+        Route::get('/services', [
+            ServiceManagementController::class,
+            'index'
+        ])->name('services');
 
-        Route::patch('/services/{service}/status', [ServiceManagementController::class, 'toggleStatus'])
-            ->name('services.status');
+        Route::post('/services', [
+            ServiceManagementController::class,
+            'store'
+        ])->name('services.store');
 
-        Route::delete('/services/{service}', [ServiceManagementController::class, 'destroy'])
-            ->name('services.destroy');
+        Route::patch('/services/{service}', [
+            ServiceManagementController::class,
+            'update'
+        ])->name('services.update');
 
-        Route::patch('/services/{id}/restore', [ServiceManagementController::class, 'restore'])
-            ->name('services.restore');
+        Route::patch('/services/{service}/status', [
+            ServiceManagementController::class,
+            'toggleStatus'
+        ])->name('services.status');
 
-        Route::delete('/services/{id}/force-delete', [ServiceManagementController::class, 'forceDelete'])
-            ->name('services.force-delete');
+        Route::delete('/services/{service}', [
+            ServiceManagementController::class,
+            'destroy'
+        ])->name('services.destroy');
 
-        Route::get('/customers', [CustomerManagementController::class, 'index'])
-            ->name('customers');
+        Route::patch('/services/{id}/restore', [
+            ServiceManagementController::class,
+            'restore'
+        ])->name('services.restore');
 
-        Route::patch('/customers/{customer}/block', [CustomerManagementController::class, 'block'])
-            ->name('customers.block');
+        Route::delete('/services/{id}/force-delete', [
+            ServiceManagementController::class,
+            'forceDelete'
+        ])->name('services.force-delete');
 
-        Route::patch('/customers/{customer}/unblock', [CustomerManagementController::class, 'unblock'])
-            ->name('customers.unblock');
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Customer Management
+        |--------------------------------------------------------------------------
+        */
 
-        Route::get('/staff', [StaffManagementController::class, 'index'])
-            ->name('staff');
+        Route::get('/customers', [
+            CustomerManagementController::class,
+            'index'
+        ])->name('customers');
 
-        Route::post('/staff', [StaffManagementController::class, 'store'])
-            ->name('staff.store');
+        Route::patch('/customers/{customer}/block', [
+            CustomerManagementController::class,
+            'block'
+        ])->name('customers.block');
 
-        Route::patch('/staff/{staff}', [StaffManagementController::class, 'update'])
-            ->name('staff.update');
+        Route::patch('/customers/{customer}/unblock', [
+            CustomerManagementController::class,
+            'unblock'
+        ])->name('customers.unblock');
 
-        Route::patch('/staff/{staff}/status', [StaffManagementController::class, 'toggleStatus'])
-            ->name('staff.status');
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Staff Management
+        |--------------------------------------------------------------------------
+        */
 
-        Route::delete('/staff/{staff}', [StaffManagementController::class, 'destroy'])
-            ->name('staff.destroy');
+        Route::get('/staff', [
+            StaffManagementController::class,
+            'index'
+        ])->name('staff');
 
-        Route::patch('/staff/{id}/restore', [StaffManagementController::class, 'restore'])
-            ->name('staff.restore');
+        Route::post('/staff', [
+            StaffManagementController::class,
+            'store'
+        ])->name('staff.store');
 
-        Route::delete('/staff/{id}/force-delete', [StaffManagementController::class, 'forceDelete'])
-            ->name('staff.force-delete');
+        Route::patch('/staff/{staff}', [
+            StaffManagementController::class,
+            'update'
+        ])->name('staff.update');
 
-        Route::delete('/staff-day-offs/{dayOff}', [StaffManagementController::class, 'destroyDayOff'])
-            ->name('staff.day-offs.destroy');
+        Route::patch('/staff/{staff}/status', [
+            StaffManagementController::class,
+            'toggleStatus'
+        ])->name('staff.status');
 
-        Route::get('/content', [ContentManagementController::class, 'index'])
-            ->name('content');
+        Route::delete('/staff/{staff}', [
+            StaffManagementController::class,
+            'destroy'
+        ])->name('staff.destroy');
 
-        Route::patch('/content', [ContentManagementController::class, 'update'])
-            ->name('content.update');
+        Route::patch('/staff/{id}/restore', [
+            StaffManagementController::class,
+            'restore'
+        ])->name('staff.restore');
 
-        Route::get('/audit-logs', [AuditLogController::class, 'index'])
-            ->name('auditlogs');
+        Route::delete('/staff/{id}/force-delete', [
+            StaffManagementController::class,
+            'forceDelete'
+        ])->name('staff.force-delete');
+
+        Route::delete('/staff-day-offs/{dayOff}', [
+            StaffManagementController::class,
+            'destroyDayOff'
+        ])->name('staff.day-offs.destroy');
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Content Management
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('/content', [
+            ContentManagementController::class,
+            'index'
+        ])->name('content');
+
+        Route::patch('/content', [
+            ContentManagementController::class,
+            'update'
+        ])->name('content.update');
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Audit Logs
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('/audit-logs', [
+            AuditLogController::class,
+            'index'
+        ])->name('auditlogs');
 
         Route::view('/settings', 'admin.settings')
             ->name('settings');
 
-        Route::get('/notifications', [NotificationController::class, 'index'])
-            ->name('notifications');
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Admin Notifications
+        |--------------------------------------------------------------------------
+        */
 
-        Route::patch('/notifications/read-all', [NotificationController::class, 'readAll'])
-            ->name('notifications.read-all');
+        Route::get('/notifications', [
+            NotificationController::class,
+            'index'
+        ])->name('notifications');
 
-        Route::patch('/notifications/{notification}/read', [NotificationController::class, 'read'])
-            ->name('notifications.read');
+        Route::patch('/notifications/read-all', [
+            NotificationController::class,
+            'readAll'
+        ])->name('notifications.read-all');
+
+        Route::patch('/notifications/{notification}/read', [
+            NotificationController::class,
+            'read'
+        ])->name('notifications.read');
     });
