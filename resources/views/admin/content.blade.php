@@ -6,22 +6,27 @@
 | NS BEAUTY COMMENT: Admin Content Management
 |--------------------------------------------------------------------------
 | Purpose:
-| - Update public website information.
-| - Upload and preview homepage slideshow images.
-| - Upload and preview the studio image.
-| - Display content saved in the database.
+| - Manage public website information
+| - Upload and preview five hero slideshow images
+| - Upload and preview the studio image
+| - Manage Facebook, Instagram, TikTok, and WhatsApp
+| - Manage public announcements with Active/Inactive status
+| - Preview content saved in the database
 |
 | Defense Explanation:
-| The Content Management module enables administrators to update
-| website information without modifying source code.
-|
-| Images are stored using the content_images filesystem disk.
-| On Laravel Cloud, this disk connects to Object Storage.
+| Administrators can update website information through this interface
+| without editing the public Welcome Page source code
 |--------------------------------------------------------------------------
 --}}
 
 @section('styles')
 <style>
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Page Header
+    |--------------------------------------------------------------------------
+    */
+
     .page-header {
         margin-bottom: 24px;
     }
@@ -34,7 +39,14 @@
     .page-header p {
         color: var(--muted);
         font-size: 14px;
+        line-height: 1.6;
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Alerts
+    |--------------------------------------------------------------------------
+    */
 
     .alert-success,
     .alert-error {
@@ -57,28 +69,41 @@
         border: 1px solid rgba(184, 77, 77, .25);
     }
 
+    .alert-error ul {
+        margin: 10px 0 0 20px;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Main Layout
+    |--------------------------------------------------------------------------
+    */
+
     .content-grid {
         display: grid;
         grid-template-columns: 1.2fr .8fr;
         gap: 24px;
+        align-items: start;
     }
 
     .form-card,
     .preview-card {
         background: var(--glass);
         backdrop-filter: blur(28px);
+        -webkit-backdrop-filter: blur(28px);
         border: 1px solid var(--border);
         border-radius: 28px;
         box-shadow:
-            0 20px 60px rgba(47, 33, 24, .08),
-            inset 0 1px 0 rgba(255, 255, 255, .7);
+            0 20px 60px rgba(47,33,24,.08),
+            inset 0 1px 0 rgba(255,255,255,.7);
         padding: 26px;
+        min-width: 0;
     }
 
     .section-title {
         margin-bottom: 18px;
         padding-bottom: 12px;
-        border-bottom: 1px solid rgba(47, 33, 24, .10);
+        border-bottom: 1px solid rgba(47,33,24,.10);
     }
 
     .section-title h2 {
@@ -99,19 +124,21 @@
     .form-grid,
     .image-upload-grid {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 18px;
     }
 
     .form-group {
         margin-bottom: 18px;
+        min-width: 0;
     }
 
     .form-group.full {
         grid-column: 1 / -1;
     }
 
-    label {
+    .form-group label,
+    .image-upload-box > label {
         display: block;
         margin-bottom: 8px;
         font-size: 13px;
@@ -119,27 +146,41 @@
         color: var(--dark);
     }
 
-    input,
-    textarea,
-    select {
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Form Inputs
+    |--------------------------------------------------------------------------
+    */
+
+    .form-card input:not([type="checkbox"]),
+    .form-card textarea,
+    .form-card select {
         width: 100%;
         padding: 14px 16px;
         border-radius: 16px;
         border: 1px solid var(--border);
-        background: rgba(255, 255, 255, .65);
+        background: rgba(255,255,255,.65);
         outline: none;
         color: var(--dark);
         font-family: inherit;
+        font-size: 14px;
     }
 
-    textarea {
+    .form-card input:focus,
+    .form-card textarea:focus,
+    .form-card select:focus {
+        border-color: #8a7158;
+        box-shadow: 0 0 0 3px rgba(138,113,88,.12);
+    }
+
+    .form-card textarea {
         min-height: 120px;
         resize: vertical;
     }
 
-    input[type="file"] {
+    .form-card input[type="file"] {
         padding: 12px;
-        background: rgba(255, 255, 255, .75);
+        background: rgba(255,255,255,.75);
     }
 
     small.help {
@@ -158,11 +199,20 @@
         font-weight: 800;
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Image Upload and Preview
+    |--------------------------------------------------------------------------
+    | Preserve the existing content_images integration
+    |--------------------------------------------------------------------------
+    */
+
     .image-upload-box {
         padding: 16px;
         border-radius: 20px;
-        background: rgba(255, 255, 255, .45);
-        border: 1px solid rgba(255, 255, 255, .65);
+        background: rgba(255,255,255,.45);
+        border: 1px solid rgba(255,255,255,.65);
+        min-width: 0;
     }
 
     .image-preview {
@@ -171,7 +221,7 @@
         height: 170px;
         border-radius: 18px;
         overflow: hidden;
-        background: rgba(255, 255, 255, .45);
+        background: rgba(255,255,255,.45);
         border: 1px solid var(--border);
     }
 
@@ -195,18 +245,26 @@
     }
 
     .remove-check {
-        display: flex;
+        display: flex !important;
         gap: 8px;
         align-items: center;
         margin-top: 10px;
         font-size: 12px;
         color: #b84d4d;
         font-weight: 900;
+        cursor: pointer;
     }
 
     .remove-check input {
         width: auto;
+        flex-shrink: 0;
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Save and Reset
+    |--------------------------------------------------------------------------
+    */
 
     .action-row {
         display: flex;
@@ -225,18 +283,25 @@
         cursor: pointer;
         text-decoration: none;
         font-size: 14px;
+        text-align: center;
     }
 
     .save-btn {
-        background: linear-gradient(135deg, #8a7158, #5d3f2c);
+        background: linear-gradient(135deg,#8a7158,#5d3f2c);
         color: white;
     }
 
     .reset-btn {
-        background: rgba(255, 255, 255, .55);
+        background: rgba(255,255,255,.55);
         border: 1px solid var(--border);
         color: var(--dark);
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Saved Content Preview
+    |--------------------------------------------------------------------------
+    */
 
     .preview-card {
         position: sticky;
@@ -245,8 +310,8 @@
     }
 
     .preview-box {
-        background: rgba(255, 255, 255, .42);
-        border: 1px solid rgba(255, 255, 255, .65);
+        background: rgba(255,255,255,.42);
+        border: 1px solid rgba(255,255,255,.65);
         border-radius: 24px;
         padding: 22px;
         margin-bottom: 18px;
@@ -255,14 +320,57 @@
     .preview-box h3 {
         color: var(--brown);
         margin-bottom: 8px;
+        font-size: 17px;
     }
 
     .preview-box p {
         color: var(--muted);
         font-size: 13px;
-        line-height: 1.6;
+        line-height: 1.7;
         white-space: pre-line;
+        overflow-wrap: anywhere;
     }
+
+    .preview-list {
+        display: grid;
+        gap: 12px;
+    }
+
+    .preview-item {
+        border-bottom: 1px solid rgba(47,33,24,.08);
+        padding-bottom: 10px;
+    }
+
+    .preview-item:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    .preview-item strong {
+        display: block;
+        font-size: 12px;
+        margin-bottom: 4px;
+    }
+
+    .preview-item span,
+    .preview-item a {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        overflow-wrap: anywhere;
+        line-height: 1.5;
+    }
+
+    .preview-item a {
+        color: var(--brown);
+        text-decoration: underline;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Announcement Status
+    |--------------------------------------------------------------------------
+    */
 
     .status-pill {
         display: inline-block;
@@ -274,14 +382,20 @@
     }
 
     .status-pill.active {
-        background: rgba(81, 148, 91, .18);
+        background: rgba(81,148,91,.18);
         color: #2f7d3c;
     }
 
     .status-pill.inactive {
-        background: rgba(184, 77, 77, .15);
+        background: rgba(184,77,77,.15);
         color: #b84d4d;
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Responsive Layout
+    |--------------------------------------------------------------------------
+    */
 
     @media (max-width: 1100px) {
         .content-grid {
@@ -306,7 +420,6 @@
         .save-btn,
         .reset-btn {
             width: 100%;
-            text-align: center;
         }
     }
 </style>
@@ -319,13 +432,8 @@
     |--------------------------------------------------------------------------
     | NS BEAUTY COMMENT: Image URL Resolver
     |--------------------------------------------------------------------------
-    | Purpose:
-    | - Use the content_images disk for new uploads.
-    | - Keep support for image paths stored on the previous public disk.
-    | - Avoid exposing storage credentials to the browser.
-    |
-    | Note:
-    | A database path alone does not prove that an image still exists.
+    | New content images use the content_images disk
+    | Existing public image paths remain supported
     |--------------------------------------------------------------------------
     */
 
@@ -372,7 +480,7 @@
     <h1>Content Management</h1>
     <p>
         Update public website content, homepage images,
-        business information, and announcements.
+        contact information, and announcements
     </p>
 </div>
 
@@ -384,9 +492,9 @@
 
 @if ($errors->any())
     <div class="alert-error">
-        Please check the form. Some fields need correction.
+        Please check the form. Some fields need correction
 
-        <ul style="margin: 10px 0 0 20px;">
+        <ul>
             @foreach ($errors->all() as $error)
                 <li>{{ $error }}</li>
             @endforeach
@@ -414,9 +522,7 @@
         <div class="form-section">
             <div class="section-title">
                 <h2>Business Identity</h2>
-                <p>
-                    Basic salon name and tagline displayed on the website.
-                </p>
+                <p>Salon name and tagline displayed on the public website</p>
             </div>
 
             <div class="form-grid">
@@ -460,14 +566,14 @@
 
         {{--
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Hero Text
+        | NS BEAUTY COMMENT: Homepage Hero Text
         |--------------------------------------------------------------------------
         --}}
 
         <div class="form-section">
             <div class="section-title">
                 <h2>Homepage Hero Section</h2>
-                <p>Main welcome message shown to customers.</p>
+                <p>Main welcome message shown to customers</p>
             </div>
 
             <div class="form-group">
@@ -497,7 +603,7 @@
                 >{{ old('hero_subtitle', $content->hero_subtitle) }}</textarea>
 
                 <small class="help">
-                    Short message shown below the hero title.
+                    This message appears below the main hero title
                 </small>
 
                 @error('hero_subtitle')
@@ -508,9 +614,10 @@
 
         {{--
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Website Image Uploads
+        | NS BEAUTY COMMENT: Website Images
         |--------------------------------------------------------------------------
-        | Five slideshow photos and one studio photo are supported.
+        | Five hero slides and one studio image
+        | Existing Cloud storage integration is preserved
         |--------------------------------------------------------------------------
         --}}
 
@@ -518,8 +625,8 @@
             <div class="section-title">
                 <h2>Website Images</h2>
                 <p>
-                    Upload homepage slideshow images and studio image.
-                    New images are stored in the Content Images bucket.
+                    Upload hero slideshow images and the studio image
+                    to the connected Content Images storage
                 </p>
             </div>
 
@@ -548,14 +655,14 @@
                         >
 
                         <small class="help">
-                            Accepted: JPG, PNG, WEBP.
-                            Maximum size: 4 MB.
+                            JPG, PNG, or WEBP — Maximum 4 MB
                         </small>
 
                         @if ($currentImage)
 
                             <div class="image-preview">
                                 @if ($previewUrl)
+
                                     <img
                                         src="{{ $previewUrl }}"
                                         alt="Hero slide {{ $i }}"
@@ -567,14 +674,17 @@
                                         class="image-missing"
                                         style="display:none;"
                                     >
-                                        Image unavailable. You may need
-                                        to upload this picture again.
+                                        Image unavailable
+                                        Upload a replacement if needed
                                     </div>
+
                                 @else
+
                                     <div class="image-missing">
-                                        Image URL unavailable.
-                                        Upload a replacement picture.
+                                        Image URL unavailable
+                                        Upload a replacement
                                     </div>
+
                                 @endif
                             </div>
 
@@ -625,8 +735,8 @@
                     >
 
                     <small class="help">
-                        This picture appears in the Visit Our Studio section.
-                        Maximum size: 4 MB.
+                        Displayed in the Visit Our Studio section
+                        Maximum 4 MB
                     </small>
 
                     @if ($content->studio_image_path)
@@ -634,6 +744,7 @@
                         <div class="image-preview">
 
                             @if ($studioPreviewUrl)
+
                                 <img
                                     src="{{ $studioPreviewUrl }}"
                                     alt="Studio image"
@@ -645,14 +756,17 @@
                                     class="image-missing"
                                     style="display:none;"
                                 >
-                                    Studio image unavailable.
-                                    Upload a replacement picture.
+                                    Studio image unavailable
+                                    Upload a replacement if needed
                                 </div>
+
                             @else
+
                                 <div class="image-missing">
-                                    Image URL unavailable.
-                                    Upload a replacement picture.
+                                    Image URL unavailable
+                                    Upload a replacement
                                 </div>
+
                             @endif
 
                         </div>
@@ -688,7 +802,7 @@
         <div class="form-section">
             <div class="section-title">
                 <h2>About Section</h2>
-                <p>Description of Nail Studio & Beauty.</p>
+                <p>Introduce Nail Studio & Beauty to website visitors</p>
             </div>
 
             <div class="form-group">
@@ -733,13 +847,17 @@
         |--------------------------------------------------------------------------
         | NS BEAUTY COMMENT: Contact Details
         |--------------------------------------------------------------------------
+        | Existing fields are preserved
+        | TikTok and WhatsApp fields are added below
+        |--------------------------------------------------------------------------
         --}}
 
         <div class="form-section">
             <div class="section-title">
                 <h2>Contact Details</h2>
                 <p>
-                    Business contact information displayed to customers.
+                    Contact information and social media displayed
+                    on the public Welcome Page
                 </p>
             </div>
 
@@ -769,7 +887,7 @@
                     </label>
 
                     <input
-                        type="text"
+                        type="tel"
                         id="phone_number"
                         name="phone_number"
                         value="{{ old('phone_number', $content->phone_number) }}"
@@ -784,7 +902,9 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="email">Email Address</label>
+                    <label for="email">
+                        Email Address
+                    </label>
 
                     <input
                         type="email"
@@ -812,6 +932,7 @@
                         name="facebook_url"
                         value="{{ old('facebook_url', $content->facebook_url) }}"
                         maxlength="255"
+                        placeholder="https://www.facebook.com/..."
                     >
 
                     @error('facebook_url')
@@ -832,9 +953,109 @@
                         name="instagram_url"
                         value="{{ old('instagram_url', $content->instagram_url) }}"
                         maxlength="255"
+                        placeholder="https://www.instagram.com/..."
                     >
 
                     @error('instagram_url')
+                        <span class="error-text">
+                            {{ $message }}
+                        </span>
+                    @enderror
+                </div>
+
+                {{--
+                |--------------------------------------------------------------------------
+                | NS BEAUTY COMMENT: TikTok URL
+                |--------------------------------------------------------------------------
+                | Saved in content_settings.tiktok_url
+                |--------------------------------------------------------------------------
+                --}}
+
+                <div class="form-group">
+                    <label for="tiktok_url">
+                        TikTok URL
+                    </label>
+
+                    <input
+                        type="url"
+                        id="tiktok_url"
+                        name="tiktok_url"
+                        value="{{ old('tiktok_url', $content->tiktok_url) }}"
+                        maxlength="255"
+                        placeholder="https://www.tiktok.com/@username"
+                    >
+
+                    <small class="help">
+                        Paste the official NS Beauty TikTok profile link
+                    </small>
+
+                    @error('tiktok_url')
+                        <span class="error-text">
+                            {{ $message }}
+                        </span>
+                    @enderror
+                </div>
+
+                {{--
+                |--------------------------------------------------------------------------
+                | NS BEAUTY COMMENT: WhatsApp URL
+                |--------------------------------------------------------------------------
+                | Example: https://wa.me/60123456789
+                |--------------------------------------------------------------------------
+                --}}
+
+                <div class="form-group">
+                    <label for="whatsapp_url">
+                        WhatsApp URL
+                    </label>
+
+                    <input
+                        type="url"
+                        id="whatsapp_url"
+                        name="whatsapp_url"
+                        value="{{ old('whatsapp_url', $content->whatsapp_url) }}"
+                        maxlength="255"
+                        placeholder="https://wa.me/60123456789"
+                    >
+
+                    <small class="help">
+                        Paste a direct WhatsApp chat link
+                    </small>
+
+                    @error('whatsapp_url')
+                        <span class="error-text">
+                            {{ $message }}
+                        </span>
+                    @enderror
+                </div>
+
+                {{--
+                |--------------------------------------------------------------------------
+                | NS BEAUTY COMMENT: WhatsApp Number
+                |--------------------------------------------------------------------------
+                | Used as a fallback when WhatsApp URL is empty
+                |--------------------------------------------------------------------------
+                --}}
+
+                <div class="form-group">
+                    <label for="whatsapp_number">
+                        WhatsApp Number
+                    </label>
+
+                    <input
+                        type="tel"
+                        id="whatsapp_number"
+                        name="whatsapp_number"
+                        value="{{ old('whatsapp_number', $content->whatsapp_number) }}"
+                        maxlength="30"
+                        placeholder="60123456789"
+                    >
+
+                    <small class="help">
+                        Include Malaysia country code 60, without spaces or +
+                    </small>
+
+                    @error('whatsapp_number')
                         <span class="error-text">
                             {{ $message }}
                         </span>
@@ -853,8 +1074,7 @@
                     >{{ old('opening_hours', $content->opening_hours) }}</textarea>
 
                     <small class="help">
-                        Example:
-                        Monday - Saturday: 9:00 AM - 6:00 PM
+                        Example: Monday - Saturday: 9:00 AM - 6:00 PM
                     </small>
 
                     @error('opening_hours')
@@ -869,7 +1089,12 @@
 
         {{--
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Announcements
+        | NS BEAUTY COMMENT: Public Announcements
+        |--------------------------------------------------------------------------
+        | Existing announcement functionality remains unchanged
+        |
+        | Active: Announcement appears on the Welcome Page
+        | Inactive: Announcement is hidden
         |--------------------------------------------------------------------------
         --}}
 
@@ -878,7 +1103,8 @@
             <div class="section-title">
                 <h2>Announcement</h2>
                 <p>
-                    Optional public announcement for customers.
+                    Publish important updates, promotions,
+                    or temporary scheduling notices to customers
                 </p>
             </div>
 
@@ -932,6 +1158,7 @@
                         name="announcement_title"
                         value="{{ old('announcement_title', $content->announcement_title) }}"
                         maxlength="150"
+                        placeholder="e.g. Special Weekend Promotion"
                     >
 
                     @error('announcement_title')
@@ -952,6 +1179,7 @@
                         id="announcement_message"
                         name="announcement_message"
                         maxlength="1000"
+                        placeholder="Enter the announcement details"
                     >{{ old('announcement_message', $content->announcement_message) }}</textarea>
 
                     @error('announcement_message')
@@ -963,7 +1191,6 @@
                 </div>
 
             </div>
-
         </div>
 
         {{--
@@ -973,6 +1200,7 @@
         --}}
 
         <div class="action-row">
+
             <a
                 href="{{ route('admin.content') }}"
                 class="reset-btn"
@@ -986,6 +1214,7 @@
             >
                 Save Content Changes
             </button>
+
         </div>
 
     </form>
@@ -994,6 +1223,8 @@
     |--------------------------------------------------------------------------
     | NS BEAUTY COMMENT: Saved Content Preview
     |--------------------------------------------------------------------------
+    | Displays the values currently saved in the database
+    |--------------------------------------------------------------------------
     --}}
 
     <aside class="preview-card">
@@ -1001,7 +1232,7 @@
         <div class="section-title">
             <h2>Content Preview</h2>
             <p>
-                Quick view of the current saved content.
+                Quick view of the current saved website content
             </p>
         </div>
 
@@ -1012,69 +1243,117 @@
 
         <div class="preview-box">
             <h3>{{ $content->hero_title }}</h3>
+
             <p>
-                {{ $content->hero_subtitle ?: 'No hero subtitle set.' }}
+                {{ $content->hero_subtitle ?: 'No hero subtitle set' }}
             </p>
         </div>
 
         <div class="preview-box">
-
             <h3>Uploaded Images</h3>
 
-            <p>
-                Hero Slide 1:
-                {{ $content->hero_slide_1_image ? 'Uploaded' : 'Not uploaded' }}
+            <div class="preview-list">
 
-                Hero Slide 2:
-                {{ $content->hero_slide_2_image ? 'Uploaded' : 'Not uploaded' }}
+                @for ($i = 1; $i <= 5; $i++)
+                    @php
+                        $imageField = 'hero_slide_' . $i . '_image';
+                    @endphp
 
-                Hero Slide 3:
-                {{ $content->hero_slide_3_image ? 'Uploaded' : 'Not uploaded' }}
+                    <div class="preview-item">
+                        <strong>Hero Slide {{ $i }}</strong>
+                        <span>
+                            {{ $content->{$imageField} ? 'Uploaded' : 'Not uploaded' }}
+                        </span>
+                    </div>
+                @endfor
 
-                Hero Slide 4:
-                {{ $content->hero_slide_4_image ? 'Uploaded' : 'Not uploaded' }}
+                <div class="preview-item">
+                    <strong>Studio Image</strong>
+                    <span>
+                        {{ $content->studio_image_path ? 'Uploaded' : 'Not uploaded' }}
+                    </span>
+                </div>
 
-                Hero Slide 5:
-                {{ $content->hero_slide_5_image ? 'Uploaded' : 'Not uploaded' }}
-
-                Studio Image:
-                {{ $content->studio_image_path ? 'Uploaded' : 'Not uploaded' }}
-            </p>
-
+            </div>
         </div>
 
         <div class="preview-box">
             <h3>{{ $content->about_title }}</h3>
 
             <p>
-                {{ $content->about_description ?: 'No about description set.' }}
+                {{ $content->about_description ?: 'No about description set' }}
             </p>
         </div>
 
-        <div class="preview-box">
+        {{--
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Contact Preview
+        |--------------------------------------------------------------------------
+        | Includes saved TikTok and WhatsApp information
+        |--------------------------------------------------------------------------
+        --}}
 
+        <div class="preview-box">
             <h3>Contact Details</h3>
 
-            <p>
-                Address:
-                {{ $content->address ?: 'Not set' }}
+            <div class="preview-list">
 
-                Phone:
-                {{ $content->phone_number ?: 'Not set' }}
+                <div class="preview-item">
+                    <strong>Address</strong>
+                    <span>{{ $content->address ?: 'Not set' }}</span>
+                </div>
 
-                Email:
-                {{ $content->email ?: 'Not set' }}
-            </p>
+                <div class="preview-item">
+                    <strong>Phone</strong>
+                    <span>{{ $content->phone_number ?: 'Not set' }}</span>
+                </div>
 
+                <div class="preview-item">
+                    <strong>Email</strong>
+                    <span>{{ $content->email ?: 'Not set' }}</span>
+                </div>
+
+                <div class="preview-item">
+                    <strong>Facebook</strong>
+                    <span>{{ $content->facebook_url ?: 'Not set' }}</span>
+                </div>
+
+                <div class="preview-item">
+                    <strong>Instagram</strong>
+                    <span>{{ $content->instagram_url ?: 'Not set' }}</span>
+                </div>
+
+                <div class="preview-item">
+                    <strong>TikTok</strong>
+                    <span>{{ $content->tiktok_url ?: 'Not set' }}</span>
+                </div>
+
+                <div class="preview-item">
+                    <strong>WhatsApp URL</strong>
+                    <span>{{ $content->whatsapp_url ?: 'Not set' }}</span>
+                </div>
+
+                <div class="preview-item">
+                    <strong>WhatsApp Number</strong>
+                    <span>{{ $content->whatsapp_number ?: 'Not set' }}</span>
+                </div>
+
+            </div>
         </div>
 
         <div class="preview-box">
             <h3>Opening Hours</h3>
 
             <p>
-                {{ $content->opening_hours ?: 'No opening hours set.' }}
+                {{ $content->opening_hours ?: 'No opening hours set' }}
             </p>
         </div>
+
+        {{--
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Announcement Preview
+        |--------------------------------------------------------------------------
+        --}}
 
         <div class="preview-box">
 
@@ -1083,7 +1362,7 @@
             </h3>
 
             <p>
-                {{ $content->announcement_message ?: 'No announcement message set.' }}
+                {{ $content->announcement_message ?: 'No announcement message set' }}
             </p>
 
             <span class="status-pill {{ $content->announcement_status }}">

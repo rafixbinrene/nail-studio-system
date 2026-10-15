@@ -16,18 +16,15 @@ use Illuminate\Validation\ValidationException;
 | NS BEAUTY COMMENT: Admin Content Management Controller
 |--------------------------------------------------------------------------
 | Purpose:
-| - Updates public website content.
-| - Uploads hero slideshow and studio images.
-| - Stores images in the dedicated content_images filesystem.
-| - Records uploaded image paths in the database.
-| - Records administrative updates in Audit Logs.
+| - Manage public website content
+| - Upload and remove hero slideshow and studio images
+| - Save announcements and their visibility status
+| - Save business contact details and social media links
+| - Record administrative changes through Audit Logs
 |
 | Defense Explanation:
-| This module allows administrators to manage website images and
-| information dynamically without manually editing website code.
-|
-| In production, content_images connects to Laravel Cloud Object Storage.
-| In local development, it uses the configured local fallback.
+| This module enables administrators to update the public website
+| using the centralized database without editing website source code
 |--------------------------------------------------------------------------
 */
 
@@ -35,9 +32,10 @@ class ContentManagementController extends Controller
 {
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: Image Storage Configuration
+    | NS BEAUTY COMMENT: Cloud Image Storage
     |--------------------------------------------------------------------------
-    | The disk name matches the bucket connected in Laravel Cloud.
+    | Images are stored in the content_images filesystem disk
+    | connected to Laravel Cloud Object Storage
     |--------------------------------------------------------------------------
     */
 
@@ -72,27 +70,61 @@ class ContentManagementController extends Controller
     |--------------------------------------------------------------------------
     | NS BEAUTY COMMENT: Update Website Content
     |--------------------------------------------------------------------------
-    | Validates submitted information, uploads images, and saves changes.
-    |--------------------------------------------------------------------------
     */
 
     public function update(Request $request)
     {
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Content Validation
+        |--------------------------------------------------------------------------
+        | Preserve all existing validation requirements
+        |--------------------------------------------------------------------------
+        */
+
         $rules = [
-            'salon_name' => ['required', 'string', 'max:120'],
-            'tagline' => ['required', 'string', 'max:150'],
+            'salon_name' => [
+                'required',
+                'string',
+                'max:120',
+            ],
 
-            'hero_title' => ['required', 'string', 'max:150'],
-            'hero_subtitle' => ['nullable', 'string', 'max:500'],
+            'tagline' => [
+                'required',
+                'string',
+                'max:150',
+            ],
 
-            'about_title' => ['required', 'string', 'max:150'],
+            'hero_title' => [
+                'required',
+                'string',
+                'max:150',
+            ],
+
+            'hero_subtitle' => [
+                'nullable',
+                'string',
+                'max:500',
+            ],
+
+            'about_title' => [
+                'required',
+                'string',
+                'max:150',
+            ],
+
             'about_description' => [
                 'nullable',
                 'string',
                 'max:1500',
             ],
 
-            'address' => ['nullable', 'string', 'max:255'],
+            'address' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+
             'phone_number' => [
                 'nullable',
                 'string',
@@ -123,6 +155,12 @@ class ContentManagementController extends Controller
                 'max:1000',
             ],
 
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Announcement Validation
+            |--------------------------------------------------------------------------
+            */
+
             'announcement_title' => [
                 'nullable',
                 'string',
@@ -143,10 +181,45 @@ class ContentManagementController extends Controller
 
         /*
         |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: TikTok and WhatsApp Validation
+        |--------------------------------------------------------------------------
+        | Only accept these fields when their database columns exist
+        |
+        | This avoids attempting to save into nonexistent columns
+        | while we verify the ContentSetting migration
+        |--------------------------------------------------------------------------
+        */
+
+        if (Schema::hasColumn('content_settings', 'tiktok_url')) {
+            $rules['tiktok_url'] = [
+                'nullable',
+                'url',
+                'max:255',
+            ];
+        }
+
+        if (Schema::hasColumn('content_settings', 'whatsapp_url')) {
+            $rules['whatsapp_url'] = [
+                'nullable',
+                'string',
+                'max:255',
+            ];
+        }
+
+        if (Schema::hasColumn('content_settings', 'whatsapp_number')) {
+            $rules['whatsapp_number'] = [
+                'nullable',
+                'string',
+                'max:30',
+            ];
+        }
+
+        /*
+        |--------------------------------------------------------------------------
         | NS BEAUTY COMMENT: Image Validation
         |--------------------------------------------------------------------------
-        | Accepts JPG, JPEG, PNG, and WEBP images.
-        | Each image must not exceed 4 MB.
+        | Allow JPG, JPEG, PNG and WEBP
+        | Maximum size: 4 MB
         |--------------------------------------------------------------------------
         */
 
@@ -179,7 +252,7 @@ class ContentManagementController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Separate Text and Image Fields
+        | NS BEAUTY COMMENT: Separate Text Fields from Images
         |--------------------------------------------------------------------------
         */
 
@@ -196,9 +269,7 @@ class ContentManagementController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Prepare Upload Tracking
-        |--------------------------------------------------------------------------
-        | These arrays track newly uploaded and replaced files.
+        | NS BEAUTY COMMENT: Track Image Uploads
         |--------------------------------------------------------------------------
         */
 
@@ -208,10 +279,9 @@ class ContentManagementController extends Controller
         try {
             /*
             |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT: Upload Images to Cloud Storage
+            | NS BEAUTY COMMENT: Upload and Remove Images
             |--------------------------------------------------------------------------
-            | Actual files are saved in content_images.
-            | The database stores only the relative image paths.
+            | Image uploads take priority over removal checkboxes
             |--------------------------------------------------------------------------
             */
 
@@ -221,11 +291,6 @@ class ContentManagementController extends Controller
                 );
 
                 $upload = $request->file($field);
-
-                /*
-                | Uploading a replacement takes priority over
-                | checking the Remove Image checkbox.
-                */
 
                 if ($upload) {
                     $path = $upload->store(
@@ -240,35 +305,35 @@ class ContentManagementController extends Controller
                     }
 
                     $newPaths[] = $path;
-
                     $oldPaths[] = $content->{$field};
-
                     $data[$field] = $path;
 
                 } elseif ($remove) {
                     $oldPaths[] = $content->{$field};
-
                     $data[$field] = null;
                 }
             }
 
             /*
             |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT: Save Settings to Database
+            | NS BEAUTY COMMENT: Save Content Changes
+            |--------------------------------------------------------------------------
+            | Force-fill only fields that passed validation
+            |
+            | This also supports the new social media fields without
+            | depending on their inclusion in the model's $fillable
             |--------------------------------------------------------------------------
             */
 
             $data['updated_by'] = auth()->id();
 
-            $content->update($data);
+            $content->forceFill($data);
+            $content->save();
 
         } catch (\Throwable $e) {
-
             /*
             |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT: Handle Upload Failures
-            |--------------------------------------------------------------------------
-            | If saving fails, newly uploaded files are cleaned up.
+            | NS BEAUTY COMMENT: Remove Newly Uploaded Images on Failure
             |--------------------------------------------------------------------------
             */
 
@@ -278,17 +343,17 @@ class ContentManagementController extends Controller
                         ->delete($path);
 
                 } catch (\Throwable $ignored) {
-                    // Preserve the original upload error.
+                    // NS BEAUTY COMMENT: Preserve the original error
                 }
             }
 
             report($e);
 
             throw ValidationException::withMessages([
-                'images' =>
-                    'Your image could not be saved. '
-                    . 'Check the connected Content Images bucket '
-                    . 'and try again.',
+                'content' =>
+                    'The website content could not be saved. '
+                    . 'Please verify the settings and image storage '
+                    . 'configuration, then try again.',
             ]);
         }
 
@@ -296,8 +361,7 @@ class ContentManagementController extends Controller
         |--------------------------------------------------------------------------
         | NS BEAUTY COMMENT: Delete Replaced Images
         |--------------------------------------------------------------------------
-        | Only remove images no longer referenced by the settings.
-        | Previous files stored on other disks remain unaffected.
+        | Delete only images no longer referenced by Content Management
         |--------------------------------------------------------------------------
         */
 
@@ -327,14 +391,15 @@ class ContentManagementController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Record Audit Log
+        | NS BEAUTY COMMENT: Record Administrative Action
         |--------------------------------------------------------------------------
         */
 
         $this->createAuditLog(
             action: 'update_content_management',
             description:
-                'Admin updated website content and uploaded image settings.'
+                'Admin updated website content, social media, '
+                . 'announcement, or uploaded image settings.'
         );
 
         /*
@@ -355,16 +420,18 @@ class ContentManagementController extends Controller
     |--------------------------------------------------------------------------
     | NS BEAUTY COMMENT: Default Website Content
     |--------------------------------------------------------------------------
-    | Used if no Content Management record exists.
+    | Only original database-supported fields are initialized here
     |--------------------------------------------------------------------------
     */
 
     private function defaultContent(): array
     {
         return [
-            'salon_name' => 'Nail Studio & Beauty',
+            'salon_name' =>
+                'Nail Studio & Beauty',
 
-            'tagline' => 'Your Beauty, Our Priority',
+            'tagline' =>
+                'Your Beauty, Our Priority',
 
             'hero_title' =>
                 'Welcome to Nail Studio & Beauty',
@@ -403,8 +470,6 @@ class ContentManagementController extends Controller
     /*
     |--------------------------------------------------------------------------
     | NS BEAUTY COMMENT: Audit Logging
-    |--------------------------------------------------------------------------
-    | Tracks changes made by administrators.
     |--------------------------------------------------------------------------
     */
 
