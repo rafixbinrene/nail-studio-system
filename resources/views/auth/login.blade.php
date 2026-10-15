@@ -7,7 +7,7 @@
 <title>Login | Nail Studio & Beauty</title>
 
 <style>
-/*
+/* 
 |--------------------------------------------------------------------------
 | NS BEAUTY COMMENT:
 | Login Page Styling

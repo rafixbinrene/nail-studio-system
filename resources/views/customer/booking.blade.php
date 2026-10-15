@@ -933,7 +933,7 @@ textarea{
 
     <section class="panel form-step" id="step4">
         <h2>Confirm Booking</h2>
-        <p>Please review your details before submitting.</p>
+        <p>Please review your details before submitting</p>
 
         <div class="confirm-grid">
             <div class="summary">
@@ -1025,7 +1025,7 @@ textarea{
             <h2>Booking Confirmed</h2>
 
             <p>
-                {{ session('booking_message', 'Your booking has been confirmed and recorded successfully.') }}
+                {{ session('booking_message', 'Your booking has been confirmed and recorded successfully') }}
             </p>
 
             @if (session('booking_id'))
@@ -1082,7 +1082,7 @@ function checkActiveBookingLimit(){
     const allowedLimit = getBookingLimit();
 
     if(customerActiveBookings >= allowedLimit){
-        showAlert("You have reached your active booking limit.");
+        showAlert("You have reached your active booking limit");
         return false;
     }
 
@@ -1116,12 +1116,12 @@ function nextStep(){
 
     if(currentStep === 1){
         if(selectedServices.length === 0){
-            showAlert("Please select at least 1 service.");
+            showAlert("Please select at least 1 service");
             return;
         }
 
         if(selectedServices.length > 3){
-            showAlert("Only 3 services are allowed per transaction.");
+            showAlert("Only 3 services are allowed per transaction");
             return;
         }
 
@@ -1133,19 +1133,19 @@ function nextStep(){
 
     if(currentStep === 2){
         if(document.getElementById('staffInput').value === ""){
-            showAlert("Please select a beautician.");
+            showAlert("Please select a beautician");
             return;
         }
     }
 
     if(currentStep === 3){
         if(selectedDate === ""){
-            showAlert("Please select an appointment date.");
+            showAlert("Please select an appointment date");
             return;
         }
 
         if(selectedTime === ""){
-            showAlert("Please select an appointment time.");
+            showAlert("Please select an appointment time");
             return;
         }
     }
@@ -1212,7 +1212,7 @@ function selectRegularService(card, id, name, price, duration){
         selectedServices.splice(existingIndex, 1);
     }else{
         if(selectedServices.length >= 3){
-            showAlert("Maximum of 3 services only per transaction.");
+            showAlert("Maximum of 3 services only per transaction");
             return;
         }
 
@@ -1429,12 +1429,12 @@ function validateSubmit(){
 
     if(selectedBookingType === "followup"){
         if(selectedFollowUpId === ""){
-            showAlert("Please select service/s from one finished booking history.");
+            showAlert("Please select service/s from one finished booking history");
             return false;
         }
 
         if(selectedFollowUpDuration <= 0){
-            showAlert("The selected backjob service duration is invalid.");
+            showAlert("The selected backjob service duration is invalid");
             return false;
         }
     }
@@ -1445,12 +1445,12 @@ function validateSubmit(){
     }
 
     if(selectedDate === ""){
-        showAlert("Please select an appointment date.");
+        showAlert("Please select an appointment date");
         return false;
     }
 
     if(selectedTime === ""){
-        showAlert("Please select an appointment time.");
+        showAlert("Please select an appointment time");
         return false;
     }
 
