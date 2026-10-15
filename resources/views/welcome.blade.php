@@ -1508,7 +1508,7 @@ if ($whyCards->isEmpty()) {
 
                 <div class="announcement-heading">
                     <span class="announcement-label">
-                        📢 Latest Announcement
+                        Latest Announcement
                     </span>
                 </div>
 
