@@ -1,4 +1,3 @@
-
 <?php
 
 namespace App\Http\Controllers\Admin;
@@ -28,7 +27,7 @@ use Illuminate\Validation\ValidationException;
 | information dynamically without manually editing website code.
 |
 | In production, content_images connects to Laravel Cloud Object Storage.
-| In local development, it can use the configured local fallback.
+| In local development, it uses the configured local fallback.
 |--------------------------------------------------------------------------
 */
 
@@ -38,7 +37,7 @@ class ContentManagementController extends Controller
     |--------------------------------------------------------------------------
     | NS BEAUTY COMMENT: Image Storage Configuration
     |--------------------------------------------------------------------------
-    | The disk name must match the disk connected in Laravel Cloud.
+    | The disk name matches the bucket connected in Laravel Cloud.
     |--------------------------------------------------------------------------
     */
 
@@ -87,18 +86,54 @@ class ContentManagementController extends Controller
             'hero_subtitle' => ['nullable', 'string', 'max:500'],
 
             'about_title' => ['required', 'string', 'max:150'],
-            'about_description' => ['nullable', 'string', 'max:1500'],
+            'about_description' => [
+                'nullable',
+                'string',
+                'max:1500',
+            ],
 
             'address' => ['nullable', 'string', 'max:255'],
-            'phone_number' => ['nullable', 'string', 'max:30'],
-            'email' => ['nullable', 'email', 'max:120'],
+            'phone_number' => [
+                'nullable',
+                'string',
+                'max:30',
+            ],
 
-            'facebook_url' => ['nullable', 'url', 'max:255'],
-            'instagram_url' => ['nullable', 'url', 'max:255'],
-            'opening_hours' => ['nullable', 'string', 'max:1000'],
+            'email' => [
+                'nullable',
+                'email',
+                'max:120',
+            ],
 
-            'announcement_title' => ['nullable', 'string', 'max:150'],
-            'announcement_message' => ['nullable', 'string', 'max:1000'],
+            'facebook_url' => [
+                'nullable',
+                'url',
+                'max:255',
+            ],
+
+            'instagram_url' => [
+                'nullable',
+                'url',
+                'max:255',
+            ],
+
+            'opening_hours' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+
+            'announcement_title' => [
+                'nullable',
+                'string',
+                'max:150',
+            ],
+
+            'announcement_message' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
 
             'announcement_status' => [
                 'required',
@@ -108,10 +143,10 @@ class ContentManagementController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Validate Image Files
+        | NS BEAUTY COMMENT: Image Validation
         |--------------------------------------------------------------------------
-        | Only JPG, JPEG, PNG, and WEBP images are accepted.
-        | Maximum file size: 4 MB per image.
+        | Accepts JPG, JPEG, PNG, and WEBP images.
+        | Each image must not exceed 4 MB.
         |--------------------------------------------------------------------------
         */
 
@@ -131,6 +166,12 @@ class ContentManagementController extends Controller
 
         $validated = $request->validate($rules);
 
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Retrieve Current Settings
+        |--------------------------------------------------------------------------
+        */
+
         $content = ContentSetting::firstOrCreate(
             ['id' => 1],
             $this->defaultContent()
@@ -138,7 +179,7 @@ class ContentManagementController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Separate Text and Image Data
+        | NS BEAUTY COMMENT: Separate Text and Image Fields
         |--------------------------------------------------------------------------
         */
 
@@ -155,10 +196,9 @@ class ContentManagementController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Upload Images
+        | NS BEAUTY COMMENT: Prepare Upload Tracking
         |--------------------------------------------------------------------------
-        | New images are uploaded before database changes are saved.
-        | If an upload fails, newly uploaded files are cleaned up.
+        | These arrays track newly uploaded and replaced files.
         |--------------------------------------------------------------------------
         */
 
@@ -166,13 +206,25 @@ class ContentManagementController extends Controller
         $oldPaths = [];
 
         try {
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Upload Images to Cloud Storage
+            |--------------------------------------------------------------------------
+            | Actual files are saved in content_images.
+            | The database stores only the relative image paths.
+            |--------------------------------------------------------------------------
+            */
+
             foreach (self::IMAGE_FIELDS as $field) {
-                $remove = $request->boolean('remove_' . $field);
+                $remove = $request->boolean(
+                    'remove_' . $field
+                );
+
                 $upload = $request->file($field);
 
                 /*
-                | If an admin uploads a replacement image and also checks
-                | Remove, the newly uploaded image takes priority.
+                | Uploading a replacement takes priority over
+                | checking the Remove Image checkbox.
                 */
 
                 if ($upload) {
@@ -188,9 +240,11 @@ class ContentManagementController extends Controller
                     }
 
                     $newPaths[] = $path;
+
                     $oldPaths[] = $content->{$field};
 
                     $data[$field] = $path;
+
                 } elseif ($remove) {
                     $oldPaths[] = $content->{$field};
 
@@ -200,9 +254,7 @@ class ContentManagementController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT: Save Database Changes
-            |--------------------------------------------------------------------------
-            | MySQL stores the image path, not the actual image file.
+            | NS BEAUTY COMMENT: Save Settings to Database
             |--------------------------------------------------------------------------
             */
 
@@ -214,16 +266,17 @@ class ContentManagementController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT: Upload Failure Handling
+            | NS BEAUTY COMMENT: Handle Upload Failures
             |--------------------------------------------------------------------------
-            | Clean up newly uploaded images if saving fails.
-            | Record technical errors in the Laravel log.
+            | If saving fails, newly uploaded files are cleaned up.
             |--------------------------------------------------------------------------
             */
 
             foreach ($newPaths as $path) {
                 try {
-                    Storage::disk(self::IMAGE_DISK)->delete($path);
+                    Storage::disk(self::IMAGE_DISK)
+                        ->delete($path);
+
                 } catch (\Throwable $ignored) {
                     // Preserve the original upload error.
                 }
@@ -243,12 +296,15 @@ class ContentManagementController extends Controller
         |--------------------------------------------------------------------------
         | NS BEAUTY COMMENT: Delete Replaced Images
         |--------------------------------------------------------------------------
-        | Only delete old images that are no longer referenced.
-        | Older files from the original public disk are not deleted here.
+        | Only remove images no longer referenced by the settings.
+        | Previous files stored on other disks remain unaffected.
         |--------------------------------------------------------------------------
         */
 
-        foreach (array_filter(array_unique($oldPaths)) as $oldPath) {
+        foreach (
+            array_filter(array_unique($oldPaths))
+            as $oldPath
+        ) {
             try {
                 $stillUsed = false;
 
@@ -281,6 +337,12 @@ class ContentManagementController extends Controller
                 'Admin updated website content and uploaded image settings.'
         );
 
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Return Success Message
+        |--------------------------------------------------------------------------
+        */
+
         return redirect()
             ->route('admin.content')
             ->with(
@@ -293,32 +355,41 @@ class ContentManagementController extends Controller
     |--------------------------------------------------------------------------
     | NS BEAUTY COMMENT: Default Website Content
     |--------------------------------------------------------------------------
+    | Used if no Content Management record exists.
+    |--------------------------------------------------------------------------
     */
 
     private function defaultContent(): array
     {
         return [
             'salon_name' => 'Nail Studio & Beauty',
+
             'tagline' => 'Your Beauty, Our Priority',
 
-            'hero_title' => 'Welcome to Nail Studio & Beauty',
+            'hero_title' =>
+                'Welcome to Nail Studio & Beauty',
 
             'hero_subtitle' =>
                 'Book your nail, lash, brow, facial, '
                 . 'and beauty services with ease.',
 
-            'about_title' => 'About Nail Studio & Beauty',
+            'about_title' =>
+                'About Nail Studio & Beauty',
 
             'about_description' =>
                 'Nail Studio & Beauty provides professional '
                 . 'beauty services with organized booking, '
                 . 'staff scheduling, and customer care.',
 
-            'address' => 'Donggongon, Penampang, Sabah',
+            'address' =>
+                'Donggongon, Penampang, Sabah',
 
             'phone_number' => '',
+
             'email' => '',
+
             'facebook_url' => '',
+
             'instagram_url' => '',
 
             'opening_hours' =>
@@ -333,7 +404,7 @@ class ContentManagementController extends Controller
     |--------------------------------------------------------------------------
     | NS BEAUTY COMMENT: Audit Logging
     |--------------------------------------------------------------------------
-    | Tracks administrative changes to website content.
+    | Tracks changes made by administrators.
     |--------------------------------------------------------------------------
     */
 
@@ -342,24 +413,47 @@ class ContentManagementController extends Controller
         string $description
     ): void {
         $data = [
-            'user_type' => auth()->user()->role ?? 'admin',
+            'user_type' =>
+                auth()->user()->role ?? 'admin',
+
             'action' => $action,
+
             'description' => $description,
         ];
 
-        if (Schema::hasColumn('audit_logs', 'user_id')) {
+        if (
+            Schema::hasColumn(
+                'audit_logs',
+                'user_id'
+            )
+        ) {
             $data['user_id'] = auth()->id();
         }
 
-        if (Schema::hasColumn('audit_logs', 'module')) {
+        if (
+            Schema::hasColumn(
+                'audit_logs',
+                'module'
+            )
+        ) {
             $data['module'] = 'Content Management';
         }
 
-        if (Schema::hasColumn('audit_logs', 'ip_address')) {
+        if (
+            Schema::hasColumn(
+                'audit_logs',
+                'ip_address'
+            )
+        ) {
             $data['ip_address'] = request()->ip();
         }
 
-        if (Schema::hasColumn('audit_logs', 'user_agent')) {
+        if (
+            Schema::hasColumn(
+                'audit_logs',
+                'user_agent'
+            )
+        ) {
             $data['user_agent'] = request()->userAgent();
         }
 
