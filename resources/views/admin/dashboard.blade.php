@@ -5,19 +5,41 @@
 |--------------------------------------------------------------------------
 | NS BEAUTY COMMENT: ADMIN DASHBOARD
 |--------------------------------------------------------------------------
-| Frontend updates:
-| 1. Recent Bookings moved directly below the dashboard header.
-| 2. Main cards use 24px border radius.
-| 3. Inner cards and navigation buttons use 14px border radius.
-| 4. Status badges retain their pill shape.
+| Nail Studio & Beauty
 |
-| All original statistics, date filters, tables, routes,
-| Chart.js functionality and data calculations are preserved.
+| Frontend Layout:
+| 1. Admin Dashboard Header
+| 2. Daily / Weekly / Monthly / Yearly Filters
+| 3. Previous / Next Navigation
+| 4. Selected Period Information
+| 5. Recent Bookings
+| 6. Dashboard Statistics
+| 7. Booking Status Statistics
+| 8. Revenue & Bookings Trend
+| 9. Popular Services
+| 10. Peak Business Hours
+| 11. Staff Performance
+|
+| Design Standards:
+| - Main cards: 24px border radius
+| - Inner cards: 14px border radius
+| - Navigation buttons: 14px border radius
+| - Status badges: 999px pill radius
+|
+| All original Laravel routes, variables, database information,
+| Chart.js functionality, and booking calculations are preserved.
 |--------------------------------------------------------------------------
 --}}
 
 @section('styles')
 <style>
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Page Header
+|--------------------------------------------------------------------------
+*/
+
 .page-header {
     margin-bottom: 22px;
 }
@@ -34,9 +56,12 @@
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Global Dashboard Radius
+| NS BEAUTY COMMENT: Period Toolbar
+|--------------------------------------------------------------------------
+| Period filters and navigation now appear before Recent Bookings.
 |--------------------------------------------------------------------------
 */
+
 .period-toolbar {
     display: flex;
     justify-content: space-between;
@@ -85,6 +110,12 @@
     font-size: 13px;
 }
 
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Dashboard Statistics
+|--------------------------------------------------------------------------
+*/
+
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -95,9 +126,11 @@
 /*
 |--------------------------------------------------------------------------
 | NS BEAUTY COMMENT: Main Dashboard Cards
+|--------------------------------------------------------------------------
 | Border radius: 24px
 |--------------------------------------------------------------------------
 */
+
 .stat-card,
 .chart-card,
 .table-card,
@@ -106,6 +139,7 @@
     backdrop-filter: blur(28px);
     border: 1px solid var(--border);
     border-radius: 24px;
+
     box-shadow:
         0 20px 60px rgba(47,33,24,.08),
         inset 0 1px 0 rgba(255,255,255,.7);
@@ -135,6 +169,12 @@
     line-height: 1.5;
 }
 
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Booking Status Statistics
+|--------------------------------------------------------------------------
+*/
+
 .status-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -145,9 +185,11 @@
 /*
 |--------------------------------------------------------------------------
 | NS BEAUTY COMMENT: Inner Status Cards
+|--------------------------------------------------------------------------
 | Border radius: 14px
 |--------------------------------------------------------------------------
 */
+
 .status-box {
     padding: 18px;
     border-radius: 14px;
@@ -166,6 +208,12 @@
     margin-top: 6px;
     font-weight: 900;
 }
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Analytics Layout
+|--------------------------------------------------------------------------
+*/
 
 .dashboard-grid {
     display: grid;
@@ -189,13 +237,22 @@
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Recent Bookings Card
-| Now positioned at the top of the dashboard.
+| NS BEAUTY COMMENT: Recent Bookings
+|--------------------------------------------------------------------------
+| Recent Bookings is positioned after the period filter controls
+| and before all dashboard statistics and analytics.
 |--------------------------------------------------------------------------
 */
+
 .recent-bookings-card {
     margin-bottom: 24px;
 }
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Dashboard Card Titles
+|--------------------------------------------------------------------------
+*/
 
 .card-title {
     display: flex;
@@ -214,6 +271,12 @@
     color: var(--muted);
     font-weight: 900;
 }
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Table Layout
+|--------------------------------------------------------------------------
+*/
 
 .table-wrap {
     overflow-x: auto;
@@ -244,10 +307,12 @@ td strong {
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Status and Booking Type Badges
-| Keep pill-shaped appearance.
+| NS BEAUTY COMMENT: Booking Type and Status Badges
+|--------------------------------------------------------------------------
+| Preserve existing colors and pill-shaped appearance.
 |--------------------------------------------------------------------------
 */
+
 .badge {
     display: inline-block;
     padding: 7px 11px;
@@ -289,6 +354,12 @@ td strong {
     color: #b84d4d;
 }
 
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Popular Services
+|--------------------------------------------------------------------------
+*/
+
 .service-row {
     display: flex;
     justify-content: space-between;
@@ -320,9 +391,11 @@ td strong {
 /*
 |--------------------------------------------------------------------------
 | NS BEAUTY COMMENT: Empty State
-| Inner radius: 14px
+|--------------------------------------------------------------------------
+| Border radius: 14px
 |--------------------------------------------------------------------------
 */
+
 .empty-box {
     padding: 28px;
     text-align: center;
@@ -331,6 +404,12 @@ td strong {
     border: 1px solid rgba(255,255,255,.6);
     border-radius: 14px;
 }
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Chart Containers
+|--------------------------------------------------------------------------
+*/
 
 .chart-box {
     position: relative;
@@ -348,9 +427,10 @@ canvas {
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Responsive Dashboard
+| NS BEAUTY COMMENT: Responsive Design
 |--------------------------------------------------------------------------
 */
+
 @media(max-width:1200px) {
     .stats-grid,
     .status-grid {
@@ -395,6 +475,7 @@ canvas {
         font-size: 28px;
     }
 }
+
 </style>
 @endsection
 
@@ -402,32 +483,166 @@ canvas {
 
 {{--
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Dashboard Header
+| NS BEAUTY COMMENT: 1. ADMIN DASHBOARD HEADER
 |--------------------------------------------------------------------------
 --}}
+
 <div class="page-header">
     <h1>Admin Dashboard</h1>
-    <p>Overview of revenue, bookings, services, peak hours, staff performance, and recent transactions.</p>
+
+    <p>
+        Overview of revenue, bookings, services,
+        peak hours, staff performance, and recent transactions.
+    </p>
 </div>
 
 {{--
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: RECENT BOOKINGS
+| NS BEAUTY COMMENT: 2. PERIOD FILTERS AND NAVIGATION
 |--------------------------------------------------------------------------
-| Moved from the bottom of the dashboard to the top.
 |
-| The booking table, relationships, statuses, booking types,
-| prices and date formatting are unchanged.
+| IMPORTANT UPDATE:
+| This section now appears directly below the dashboard header
+| and BEFORE the Recent Bookings table.
+|
+| Original functionality preserved:
+| - Daily
+| - Weekly
+| - Monthly
+| - Yearly
+| - Previous
+| - Next
 |--------------------------------------------------------------------------
 --}}
+
+<div class="period-toolbar">
+
+    <div class="period-tabs">
+
+        <a
+            href="{{ route('admin.dashboard', [
+                'period' => 'daily',
+                'anchor_date' => $anchorDate->toDateString()
+            ]) }}"
+            class="{{ $period === 'daily' ? 'active' : '' }}"
+        >
+            Daily
+        </a>
+
+        <a
+            href="{{ route('admin.dashboard', [
+                'period' => 'weekly',
+                'anchor_date' => $anchorDate->toDateString()
+            ]) }}"
+            class="{{ $period === 'weekly' ? 'active' : '' }}"
+        >
+            Weekly
+        </a>
+
+        <a
+            href="{{ route('admin.dashboard', [
+                'period' => 'monthly',
+                'anchor_date' => $anchorDate->toDateString()
+            ]) }}"
+            class="{{ $period === 'monthly' ? 'active' : '' }}"
+        >
+            Monthly
+        </a>
+
+        <a
+            href="{{ route('admin.dashboard', [
+                'period' => 'yearly',
+                'anchor_date' => $anchorDate->toDateString()
+            ]) }}"
+            class="{{ $period === 'yearly' ? 'active' : '' }}"
+        >
+            Yearly
+        </a>
+
+    </div>
+
+    <div class="period-navigation">
+
+        <a
+            href="{{ route('admin.dashboard', [
+                'period' => $period,
+                'anchor_date' => $previousAnchorDate
+            ]) }}"
+            class="nav-btn"
+        >
+            ← Previous
+        </a>
+
+        <a
+            href="{{ route('admin.dashboard', [
+                'period' => $period,
+                'anchor_date' => $nextAnchorDate
+            ]) }}"
+            class="nav-btn"
+        >
+            Next →
+        </a>
+
+    </div>
+
+</div>
+
+{{--
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: 3. SELECTED PERIOD INFORMATION
+|--------------------------------------------------------------------------
+| Displays the date range of the currently selected period.
+|--------------------------------------------------------------------------
+--}}
+
+<p class="period-note">
+
+    Showing data for:
+
+    <strong>{{ $periodLabel }}</strong>
+
+    —
+
+    {{ $startDate->format('M d, Y') }}
+
+    to
+
+    {{ $endDate->format('M d, Y') }}
+
+</p>
+
+{{--
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: 4. RECENT BOOKINGS
+|--------------------------------------------------------------------------
+|
+| POSITION UPDATE:
+| Recent Bookings now appears AFTER the Daily-to-Next controls
+| and BEFORE the dashboard statistics.
+|
+| Original functionality preserved:
+| - Booking ID
+| - Customer name
+| - Selected services
+| - Assigned staff
+| - Appointment date
+| - Booking type
+| - Booking status
+| - Total price
+|--------------------------------------------------------------------------
+--}}
+
 <section class="table-card recent-bookings-card">
+
     <div class="card-title">
         <h2>Recent Bookings</h2>
         <span>{{ $periodLabel }}</span>
     </div>
 
     <div class="table-wrap">
+
         <table>
+
             <thead>
                 <tr>
                     <th>Booking ID</th>
@@ -442,17 +657,25 @@ canvas {
             </thead>
 
             <tbody>
+
                 @forelse ($recentBookings as $booking)
+
                     @php
                         /*
                         |--------------------------------------------------------------------------
-                        | NS BEAUTY COMMENT: Recent Booking Display Data
+                        | NS BEAUTY COMMENT: Recent Booking Data
                         |--------------------------------------------------------------------------
-                        | Original logic preserved.
+                        | Original booking display logic preserved.
                         |--------------------------------------------------------------------------
                         */
-                        $statusKey = strtolower(str_replace(' ', '-', $booking->status));
-                        $statusLabel = ucwords(str_replace('-', ' ', $statusKey));
+
+                        $statusKey = strtolower(
+                            str_replace(' ', '-', $booking->status)
+                        );
+
+                        $statusLabel = ucwords(
+                            str_replace('-', ' ', $statusKey)
+                        );
 
                         $bookingType = $booking->booking_type === 'followup'
                             ? 'followup'
@@ -468,14 +691,21 @@ canvas {
                     @endphp
 
                     <tr>
+
                         <td>
                             <strong>
-                                #BK-{{ str_pad($booking->id, 4, '0', STR_PAD_LEFT) }}
+                                #BK-{{ str_pad(
+                                    $booking->id,
+                                    4,
+                                    '0',
+                                    STR_PAD_LEFT
+                                ) }}
                             </strong>
                         </td>
 
                         <td>
-                            {{ $booking->customer?->full_name ?? 'Customer record missing' }}
+                            {{ $booking->customer?->full_name
+                                ?? 'Customer record missing' }}
                         </td>
 
                         <td>
@@ -483,12 +713,15 @@ canvas {
                         </td>
 
                         <td>
-                            {{ $booking->staff?->full_name ?? 'Not assigned' }}
+                            {{ $booking->staff?->full_name
+                                ?? 'Not assigned' }}
                         </td>
 
                         <td>
                             {{ $booking->appointment_date
-                                ? \Carbon\Carbon::parse($booking->appointment_date)->format('M d, Y')
+                                ? \Carbon\Carbon::parse(
+                                    $booking->appointment_date
+                                )->format('M d, Y')
                                 : 'Not set' }}
                         </td>
 
@@ -505,124 +738,97 @@ canvas {
                         </td>
 
                         <td>
-                            RM {{ number_format($booking->total_price, 2) }}
+                            RM {{ number_format(
+                                $booking->total_price,
+                                2
+                            ) }}
                         </td>
+
                     </tr>
+
                 @empty
+
                     <tr>
                         <td colspan="8">
                             No recent bookings found for this period.
                         </td>
                     </tr>
+
                 @endforelse
+
             </tbody>
+
         </table>
+
     </div>
+
 </section>
 
 {{--
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Period Filters
+| NS BEAUTY COMMENT: 5. MAIN DASHBOARD STATISTICS
 |--------------------------------------------------------------------------
-| Original Daily, Weekly, Monthly and Yearly filters preserved.
-|--------------------------------------------------------------------------
---}}
-<div class="period-toolbar">
-    <div class="period-tabs">
-        <a
-            href="{{ route('admin.dashboard', ['period' => 'daily', 'anchor_date' => $anchorDate->toDateString()]) }}"
-            class="{{ $period === 'daily' ? 'active' : '' }}"
-        >
-            Daily
-        </a>
-
-        <a
-            href="{{ route('admin.dashboard', ['period' => 'weekly', 'anchor_date' => $anchorDate->toDateString()]) }}"
-            class="{{ $period === 'weekly' ? 'active' : '' }}"
-        >
-            Weekly
-        </a>
-
-        <a
-            href="{{ route('admin.dashboard', ['period' => 'monthly', 'anchor_date' => $anchorDate->toDateString()]) }}"
-            class="{{ $period === 'monthly' ? 'active' : '' }}"
-        >
-            Monthly
-        </a>
-
-        <a
-            href="{{ route('admin.dashboard', ['period' => 'yearly', 'anchor_date' => $anchorDate->toDateString()]) }}"
-            class="{{ $period === 'yearly' ? 'active' : '' }}"
-        >
-            Yearly
-        </a>
-    </div>
-
-    <div class="period-navigation">
-        <a
-            href="{{ route('admin.dashboard', ['period' => $period, 'anchor_date' => $previousAnchorDate]) }}"
-            class="nav-btn"
-        >
-            ← Previous
-        </a>
-
-        <a
-            href="{{ route('admin.dashboard', ['period' => $period, 'anchor_date' => $nextAnchorDate]) }}"
-            class="nav-btn"
-        >
-            Next →
-        </a>
-    </div>
-</div>
-
-<p class="period-note">
-    Showing data for:
-    <strong>{{ $periodLabel }}</strong>
-    —
-    {{ $startDate->format('M d, Y') }}
-    to
-    {{ $endDate->format('M d, Y') }}
-</p>
-
-{{--
-|--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Main Statistics
-|--------------------------------------------------------------------------
-| All statistical values and controller variables remain unchanged.
+| All original statistical values are preserved.
 |--------------------------------------------------------------------------
 --}}
+
 <div class="stats-grid">
+
     <div class="stat-card">
-        <h2>RM {{ number_format($stats['total_revenue'], 2) }}</h2>
+        <h2>
+            RM {{ number_format($stats['total_revenue'], 2) }}
+        </h2>
+
         <p>Total Revenue</p>
-        <small>Based on finished services only.</small>
+
+        <small>
+            Based on finished services only.
+        </small>
     </div>
 
     <div class="stat-card">
         <h2>{{ $stats['total_bookings'] }}</h2>
+
         <p>Total Bookings</p>
-        <small>All bookings in the selected period.</small>
+
+        <small>
+            All bookings in the selected period.
+        </small>
     </div>
 
     <div class="stat-card">
         <h2>{{ $stats['finished'] }}</h2>
+
         <p>Completed Services</p>
-        <small>{{ $stats['completion_rate'] }}% completion rate.</small>
+
+        <small>
+            {{ $stats['completion_rate'] }}% completion rate.
+        </small>
     </div>
 
     <div class="stat-card">
         <h2>{{ $stats['followup_bookings'] }}</h2>
+
         <p>Backjob / Follow-up</p>
-        <small>Linked to finished customer history.</small>
+
+        <small>
+            Linked to finished customer history.
+        </small>
     </div>
+
 </div>
 
 {{--
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Booking Status Statistics
+| NS BEAUTY COMMENT: 6. BOOKING STATUS STATISTICS
+|--------------------------------------------------------------------------
+| Original pending, ongoing, finished, cancelled and no-show
+| statistics are preserved.
 |--------------------------------------------------------------------------
 --}}
+
 <div class="status-grid">
+
     <div class="status-box">
         <h3>{{ $stats['pending'] }}</h3>
         <p>Pending</p>
@@ -647,88 +853,130 @@ canvas {
         <h3>{{ $stats['no_show'] }}</h3>
         <p>No Show</p>
     </div>
+
 </div>
 
 {{--
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Revenue Trend and Popular Services
+| NS BEAUTY COMMENT: 7. REVENUE TREND AND POPULAR SERVICES
 |--------------------------------------------------------------------------
-| Original charts and service calculations preserved.
+| All original chart variables and service data are preserved.
 |--------------------------------------------------------------------------
 --}}
+
 <div class="dashboard-grid">
+
     <section class="chart-card">
+
         <div class="card-title">
             <h2>Revenue & Bookings Trend</h2>
-            <span>Finished services only · {{ $periodLabel }}</span>
+
+            <span>
+                Finished services only · {{ $periodLabel }}
+            </span>
         </div>
 
         <div class="chart-box">
             <canvas id="trendChart"></canvas>
         </div>
+
     </section>
 
     <section class="list-card">
+
         <div class="card-title">
             <h2>Popular Services</h2>
             <span>{{ $periodLabel }}</span>
         </div>
 
         @forelse ($popularServices as $service)
+
             <div class="service-row">
+
                 <div>
-                    <h3>{{ $service->service_name }}</h3>
+                    <h3>
+                        {{ $service->service_name }}
+                    </h3>
+
                     <p>
-                        {{ $service->total_booked }} finished booking(s)
-                        · {{ $service->total_duration ?? 0 }} minutes
+                        {{ $service->total_booked }}
+                        finished booking(s)
+
+                        ·
+
+                        {{ $service->total_duration ?? 0 }}
+                        minutes
                     </p>
                 </div>
 
                 <strong>
-                    RM {{ number_format($service->total_revenue ?? 0, 2) }}
+                    RM {{ number_format(
+                        $service->total_revenue ?? 0,
+                        2
+                    ) }}
                 </strong>
+
             </div>
+
         @empty
+
             <div class="empty-box">
                 No service booking records for this period.
             </div>
+
         @endforelse
+
     </section>
+
 </div>
 
 {{--
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Peak Business Hours and Staff Performance
+| NS BEAUTY COMMENT: 8. PEAK HOURS AND STAFF PERFORMANCE
 |--------------------------------------------------------------------------
-| Chart and table data preserved.
+| Existing analytics and table information preserved.
 |--------------------------------------------------------------------------
 --}}
+
 <div class="dashboard-grid-equal">
+
     <section class="chart-card">
+
         <div class="card-title">
             <h2>Peak Business Hours</h2>
-            <span>Finished services only · {{ $periodLabel }}</span>
+
+            <span>
+                Finished services only · {{ $periodLabel }}
+            </span>
         </div>
 
         @if ($peakHours->sum('total') > 0)
+
             <div class="chart-box chart-box-tall">
                 <canvas id="peakHoursChart"></canvas>
             </div>
+
         @else
+
             <div class="empty-box">
                 No peak hour data for this period.
             </div>
+
         @endif
+
     </section>
 
     <section class="table-card">
+
         <div class="card-title">
             <h2>Staff Performance</h2>
             <span>{{ $periodLabel }}</span>
         </div>
 
         <div class="table-wrap">
+
             <table>
+
                 <thead>
                     <tr>
                         <th>Staff</th>
@@ -741,26 +989,58 @@ canvas {
                 </thead>
 
                 <tbody>
+
                     @forelse ($staffPerformance as $staff)
+
                         <tr>
-                            <td><strong>{{ $staff['name'] }}</strong></td>
-                            <td>{{ $staff['status'] }}</td>
-                            <td>{{ $staff['total_bookings'] }}</td>
-                            <td>{{ $staff['finished_bookings'] }}</td>
-                            <td>{{ $staff['ongoing_bookings'] }}</td>
-                            <td>RM {{ number_format($staff['revenue'], 2) }}</td>
+                            <td>
+                                <strong>
+                                    {{ $staff['name'] }}
+                                </strong>
+                            </td>
+
+                            <td>
+                                {{ $staff['status'] }}
+                            </td>
+
+                            <td>
+                                {{ $staff['total_bookings'] }}
+                            </td>
+
+                            <td>
+                                {{ $staff['finished_bookings'] }}
+                            </td>
+
+                            <td>
+                                {{ $staff['ongoing_bookings'] }}
+                            </td>
+
+                            <td>
+                                RM {{ number_format(
+                                    $staff['revenue'],
+                                    2
+                                ) }}
+                            </td>
                         </tr>
+
                     @empty
+
                         <tr>
                             <td colspan="6">
                                 No staff records found.
                             </td>
                         </tr>
+
                     @endforelse
+
                 </tbody>
+
             </table>
+
         </div>
+
     </section>
+
 </div>
 
 @endsection
@@ -770,31 +1050,71 @@ canvas {
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
+
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Dashboard Charts
+| NS BEAUTY COMMENT: DASHBOARD CHARTS
 |--------------------------------------------------------------------------
+|
 | Original Chart.js functionality preserved.
-| No chart data, statistics or calculations were modified.
+|
+| Charts:
+| 1. Revenue & Bookings Trend
+| 2. Peak Business Hours
+|
+| Moving the period toolbar and Recent Bookings does not
+| affect chart rendering or database calculations.
+|--------------------------------------------------------------------------
+*/
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Chart Data
 |--------------------------------------------------------------------------
 */
 
 const trendLabels = @json($chartLabels);
+
 const bookingCounts = @json($chartBookingCounts);
+
 const revenueData = @json($chartRevenue);
 
 const peakHours = @json($peakHours);
-const peakHourLabels = peakHours.map(item => item.hour_label);
-const peakHourCounts = peakHours.map(item => item.total);
+
+const peakHourLabels = peakHours.map(
+    item => item.hour_label
+);
+
+const peakHourCounts = peakHours.map(
+    item => item.total
+);
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Identify Highest Peak Hour
+|--------------------------------------------------------------------------
+*/
 
 const highestPeakValue = peakHourCounts.length > 0
     ? Math.max(...peakHourCounts)
     : 0;
 
-const highestPeakIndex = peakHourCounts.indexOf(highestPeakValue);
+const highestPeakIndex = peakHourCounts.indexOf(
+    highestPeakValue
+);
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Peak Hour Colors
+|--------------------------------------------------------------------------
+*/
 
 const peakBarColors = peakHourCounts.map((value, index) => {
-    if (highestPeakValue > 0 && index === highestPeakIndex) {
+
+    if (
+        highestPeakValue > 0 &&
+        index === highestPeakIndex
+    ) {
         return 'rgba(111, 66, 193, 0.90)';
     }
 
@@ -802,23 +1122,42 @@ const peakBarColors = peakHourCounts.map((value, index) => {
 });
 
 const peakBorderColors = peakHourCounts.map((value, index) => {
-    if (highestPeakValue > 0 && index === highestPeakIndex) {
+
+    if (
+        highestPeakValue > 0 &&
+        index === highestPeakIndex
+    ) {
         return 'rgba(111, 66, 193, 1)';
     }
 
     return 'rgba(54, 162, 235, 1)';
 });
 
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Peak Hour Highlight Plugin
+|--------------------------------------------------------------------------
+| Original custom Chart.js plugin preserved.
+|--------------------------------------------------------------------------
+*/
+
 const peakHourHighlightPlugin = {
+
     id: 'peakHourHighlightPlugin',
 
     afterDatasetsDraw(chart) {
-        if (highestPeakValue <= 0 || highestPeakIndex < 0) {
+
+        if (
+            highestPeakValue <= 0 ||
+            highestPeakIndex < 0
+        ) {
             return;
         }
 
         const ctx = chart.ctx;
+
         const meta = chart.getDatasetMeta(0);
+
         const bar = meta.data[highestPeakIndex];
 
         if (!bar) {
@@ -835,7 +1174,9 @@ const peakHourHighlightPlugin = {
         ctx.lineWidth = 2;
 
         const labelText = 'Peak Hour';
-        const countText = highestPeakValue + ' booking(s)';
+
+        const countText =
+            highestPeakValue + ' booking(s)';
 
         ctx.font = 'bold 12px Arial';
 
@@ -845,62 +1186,158 @@ const peakHourHighlightPlugin = {
         ) + 24;
 
         const labelHeight = 44;
+
         const labelX = x - labelWidth / 2;
+
         const labelY = y - 68;
 
-        roundRect(ctx, labelX, labelY, labelWidth, labelHeight, 10);
+        roundRect(
+            ctx,
+            labelX,
+            labelY,
+            labelWidth,
+            labelHeight,
+            10
+        );
+
         ctx.fill();
 
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
-        ctx.fillText(labelText, x, labelY + 17);
+
+        ctx.fillText(
+            labelText,
+            x,
+            labelY + 17
+        );
 
         ctx.font = '11px Arial';
-        ctx.fillText(countText, x, labelY + 33);
+
+        ctx.fillText(
+            countText,
+            x,
+            labelY + 33
+        );
 
         ctx.beginPath();
-        ctx.moveTo(x, labelY + labelHeight);
-        ctx.lineTo(x - 8, labelY + labelHeight + 12);
-        ctx.lineTo(x + 8, labelY + labelHeight + 12);
+
+        ctx.moveTo(
+            x,
+            labelY + labelHeight
+        );
+
+        ctx.lineTo(
+            x - 8,
+            labelY + labelHeight + 12
+        );
+
+        ctx.lineTo(
+            x + 8,
+            labelY + labelHeight + 12
+        );
+
         ctx.closePath();
 
         ctx.fillStyle = 'rgba(111, 66, 193, 0.95)';
+
         ctx.fill();
 
         ctx.restore();
     }
 };
 
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Canvas Rounded Rectangle
+|--------------------------------------------------------------------------
+| Required by the peak-hour chart highlight.
+|--------------------------------------------------------------------------
+*/
+
 function roundRect(ctx, x, y, width, height, radius) {
+
     ctx.beginPath();
-    ctx.moveTo(x + radius, y);
-    ctx.lineTo(x + width - radius, y);
-    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-    ctx.lineTo(x + width, y + height - radius);
-    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-    ctx.lineTo(x + radius, y + height);
-    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-    ctx.lineTo(x, y + radius);
-    ctx.quadraticCurveTo(x, y, x + radius, y);
+
+    ctx.moveTo(
+        x + radius,
+        y
+    );
+
+    ctx.lineTo(
+        x + width - radius,
+        y
+    );
+
+    ctx.quadraticCurveTo(
+        x + width,
+        y,
+        x + width,
+        y + radius
+    );
+
+    ctx.lineTo(
+        x + width,
+        y + height - radius
+    );
+
+    ctx.quadraticCurveTo(
+        x + width,
+        y + height,
+        x + width - radius,
+        y + height
+    );
+
+    ctx.lineTo(
+        x + radius,
+        y + height
+    );
+
+    ctx.quadraticCurveTo(
+        x,
+        y + height,
+        x,
+        y + height - radius
+    );
+
+    ctx.lineTo(
+        x,
+        y + radius
+    );
+
+    ctx.quadraticCurveTo(
+        x,
+        y,
+        x + radius,
+        y
+    );
+
     ctx.closePath();
 }
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Revenue and Bookings Trend
+| NS BEAUTY COMMENT: Revenue & Bookings Trend Chart
+|--------------------------------------------------------------------------
+| Original data and two-axis layout preserved.
 |--------------------------------------------------------------------------
 */
 
-const trendCanvas = document.getElementById('trendChart');
+const trendCanvas = document.getElementById(
+    'trendChart'
+);
 
 if (trendCanvas) {
+
     new Chart(trendCanvas, {
+
         type: 'line',
 
         data: {
+
             labels: trendLabels,
 
             datasets: [
+
                 {
                     label: 'Finished Bookings',
                     data: bookingCounts,
@@ -909,6 +1346,7 @@ if (trendCanvas) {
                     fill: false,
                     yAxisID: 'y'
                 },
+
                 {
                     label: 'Revenue RM',
                     data: revenueData,
@@ -917,11 +1355,14 @@ if (trendCanvas) {
                     fill: false,
                     yAxisID: 'y1'
                 }
+
             ]
         },
 
         options: {
+
             responsive: true,
+
             maintainAspectRatio: false,
 
             interaction: {
@@ -930,31 +1371,42 @@ if (trendCanvas) {
             },
 
             plugins: {
+
                 legend: {
                     position: 'bottom'
                 }
+
             },
 
             scales: {
+
                 y: {
+
                     beginAtZero: true,
+
                     position: 'left',
 
                     ticks: {
                         precision: 0
                     }
+
                 },
 
                 y1: {
+
                     beginAtZero: true,
+
                     position: 'right',
 
                     grid: {
                         drawOnChartArea: false
                     }
+
                 }
+
             }
         }
+
     });
 }
 
@@ -962,61 +1414,95 @@ if (trendCanvas) {
 |--------------------------------------------------------------------------
 | NS BEAUTY COMMENT: Peak Business Hours Chart
 |--------------------------------------------------------------------------
-| Includes the original peak-hour highlight tooltip.
+| Original bar chart and peak-hour highlight preserved.
 |--------------------------------------------------------------------------
 */
 
-const peakHoursCanvas = document.getElementById('peakHoursChart');
+const peakHoursCanvas = document.getElementById(
+    'peakHoursChart'
+);
 
-if (peakHoursCanvas && peakHourCounts.some(value => value > 0)) {
+if (
+    peakHoursCanvas &&
+    peakHourCounts.some(value => value > 0)
+) {
+
     new Chart(peakHoursCanvas, {
+
         type: 'bar',
 
         data: {
+
             labels: peakHourLabels,
 
             datasets: [
+
                 {
                     label: 'Finished Bookings',
+
                     data: peakHourCounts,
+
                     backgroundColor: peakBarColors,
+
                     borderColor: peakBorderColors,
+
                     borderWidth: 1,
+
                     borderRadius: 4,
+
                     barPercentage: 0.78,
+
                     categoryPercentage: 0.88
                 }
+
             ]
         },
 
-        plugins: [peakHourHighlightPlugin],
+        plugins: [
+            peakHourHighlightPlugin
+        ],
 
         options: {
+
             responsive: true,
+
             maintainAspectRatio: false,
 
             layout: {
+
                 padding: {
                     top: 75
                 }
+
             },
 
             plugins: {
+
                 legend: {
                     display: false
                 },
 
                 tooltip: {
+
                     callbacks: {
+
                         label: function(context) {
-                            return context.raw + ' finished booking(s)';
+
+                            return context.raw +
+                                ' finished booking(s)';
+
                         }
+
                     }
+
                 }
+
             },
 
             scales: {
+
                 x: {
+
                     grid: {
                         display: false
                     },
@@ -1025,19 +1511,26 @@ if (peakHoursCanvas && peakHourCounts.some(value => value > 0)) {
                         maxRotation: 45,
                         minRotation: 45
                     }
+
                 },
 
                 y: {
+
                     beginAtZero: true,
 
                     ticks: {
                         precision: 0
                     }
+
                 }
+
             }
+
         }
+
     });
 }
+
 </script>
 
 @endsection
