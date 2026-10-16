@@ -2,13 +2,24 @@
 @php
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Public Welcome Page
+| NS BEAUTY COMMENT: PUBLIC WELCOME PAGE
 |--------------------------------------------------------------------------
-| Displays the website information, available services, announcements,
-| social media contacts, and hero/studio images.
+| Business: NS & Beauty
 |
-| Hero and studio images remain connected to Laravel Cloud Object Storage.
-| Service images are intentionally not displayed.
+| Features preserved:
+| - Admin Content Management settings
+| - Laravel Cloud Object Storage images
+| - Hero slideshow
+| - Public announcements
+| - Database-driven services
+| - Service details popup
+| - Business information and contact links
+| - Login, registration and role-based dashboard navigation
+|
+| New:
+| - Universal round business logo
+| - Browser tab favicon
+| - Logo served through Laravel public/images directory
 |--------------------------------------------------------------------------
 */
 
@@ -18,9 +29,7 @@ use Illuminate\Support\Str;
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Read Settings
-|--------------------------------------------------------------------------
-| Supports the settings collection or array passed by HomeController.
+| NS BEAUTY COMMENT: BUSINESS SETTINGS
 |--------------------------------------------------------------------------
 */
 
@@ -28,7 +37,9 @@ $rawSettings = $settings ?? $businessSettings ?? [];
 
 $settingsArray = collect($rawSettings)
     ->mapWithKeys(function ($item, $key) {
+
         if (is_array($item) || is_object($item)) {
+
             $settingKey = data_get(
                 $item,
                 'setting_key',
@@ -47,10 +58,12 @@ $settingsArray = collect($rawSettings)
         }
 
         return [$key => $item];
+
     })
     ->toArray();
 
 $setting = function ($key, $default = '') use ($settingsArray) {
+
     $value = data_get($settingsArray, $key);
 
     return blank($value) ? $default : $value;
@@ -58,13 +71,14 @@ $setting = function ($key, $default = '') use ($settingsArray) {
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Laravel Cloud Image URLs
+| NS BEAUTY COMMENT: CLOUD CONTENT IMAGE HANDLING
 |--------------------------------------------------------------------------
-| Used ONLY for hero slideshow and studio images.
+| Keeps hero and studio images connected to existing storage.
 |--------------------------------------------------------------------------
 */
 
 $contentImageUrl = function ($path) {
+
     if (blank($path)) {
         return null;
     }
@@ -93,21 +107,28 @@ $contentImageUrl = function ($path) {
         return Storage::disk('content_images')->url($path);
     } catch (\Throwable $exception) {
         report($exception);
-
         return null;
     }
 };
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Business Information
+| NS BEAUTY COMMENT: PUBLIC LOGO
+|--------------------------------------------------------------------------
+| This image is stored in public/images.
+| It does not require database storage or Cloud Object Storage.
 |--------------------------------------------------------------------------
 */
 
-$businessName = $setting(
-    'business_name',
-    'Nail Studio & Beauty'
-);
+$logoUrl = asset('images/nsbeauty-logo.png');
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: BUSINESS INFORMATION
+|--------------------------------------------------------------------------
+*/
+
+$businessName = $setting('business_name', 'NS & Beauty');
 
 $businessTagline = $setting(
     'business_tagline',
@@ -129,10 +150,7 @@ $instagramUrl = $setting('instagram_url');
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: TikTok and WhatsApp
-|--------------------------------------------------------------------------
-| These fields will display when the Admin Content Management
-| values are provided through HomeController.
+| NS BEAUTY COMMENT: TIKTOK URL VALIDATION
 |--------------------------------------------------------------------------
 */
 
@@ -149,6 +167,12 @@ if (
     $tiktokUrl = trim($tiktokValue);
 }
 
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: WHATSAPP URL HANDLING
+|--------------------------------------------------------------------------
+*/
+
 $whatsappValue = $setting(
     'whatsapp_url',
     $setting('whatsapp_number')
@@ -157,6 +181,7 @@ $whatsappValue = $setting(
 $whatsappUrl = null;
 
 if (filled($whatsappValue)) {
+
     $whatsappValue = trim((string) $whatsappValue);
 
     if (
@@ -166,7 +191,9 @@ if (filled($whatsappValue)) {
         )
     ) {
         $whatsappUrl = $whatsappValue;
+
     } elseif (!preg_match('~^https?://~i', $whatsappValue)) {
+
         $number = preg_replace('/[^0-9]/', '', $whatsappValue);
 
         if (strlen($number) >= 8 && strlen($number) <= 15) {
@@ -177,10 +204,7 @@ if (filled($whatsappValue)) {
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Public Announcements
-|--------------------------------------------------------------------------
-| Active: Show the title and message
-| Inactive: Hide the announcement completely
+| NS BEAUTY COMMENT: ANNOUNCEMENTS
 |--------------------------------------------------------------------------
 */
 
@@ -204,13 +228,13 @@ $showAnnouncement = $announcementStatus === 'active'
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Website Text
+| NS BEAUTY COMMENT: WEBSITE CONTENT
 |--------------------------------------------------------------------------
 */
 
 $heroTitle = $setting(
     'landing_hero_title',
-    'Welcome to Nail Studio & Beauty'
+    'Welcome to NS & Beauty'
 );
 
 $heroDescription = $setting(
@@ -225,7 +249,7 @@ $heroEyebrow = $setting(
 
 $aboutTitle = $setting(
     'landing_about_title',
-    'About Nail Studio & Beauty'
+    'About NS & Beauty'
 );
 
 $aboutDescription = $setting(
@@ -250,21 +274,24 @@ $businessHours = $setting(
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Hero Slideshow
+| NS BEAUTY COMMENT: HERO SLIDESHOW
 |--------------------------------------------------------------------------
-| Preserve all five image paths from Admin Content Management.
+| Preserves up to five images from Content Management.
 |--------------------------------------------------------------------------
 */
 
 $heroSlides = collect();
 
 for ($i = 1; $i <= 5; $i++) {
+
     $path = $setting("hero_slide_{$i}_image");
 
     if (!blank($path)) {
+
         $url = $contentImageUrl($path);
 
         if ($url) {
+
             $heroSlides->push([
                 'image_path' => $path,
                 'image_url' => $url,
@@ -281,7 +308,7 @@ if ($heroSlides->isEmpty()) {
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Studio Image
+| NS BEAUTY COMMENT: STUDIO IMAGE
 |--------------------------------------------------------------------------
 */
 
@@ -293,16 +320,14 @@ $studioImage = $studioImagePath
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Available Services
-|--------------------------------------------------------------------------
-| Uses existing service records from HomeController.
-| Service images are never accessed or displayed.
+| NS BEAUTY COMMENT: AVAILABLE SERVICES
 |--------------------------------------------------------------------------
 */
 
 $landingServices = collect(
     $featuredServices ?? $services ?? []
 )->filter(function ($service) {
+
     $status = data_get($service, 'status');
 
     if ($status !== null) {
@@ -310,9 +335,11 @@ $landingServices = collect(
     }
 
     return (bool) data_get($service, 'is_active', true);
+
 })->values();
 
 $formatPrice = function ($service) {
+
     $priceLabel = data_get($service, 'price_label');
 
     if (!blank($priceLabel)) {
@@ -331,6 +358,7 @@ $formatPrice = function ($service) {
 };
 
 $formatDuration = function ($service) {
+
     $minutes = data_get(
         $service,
         'duration_minutes',
@@ -338,6 +366,7 @@ $formatDuration = function ($service) {
     );
 
     if (!is_numeric($minutes)) {
+
         return data_get(
             $service,
             'duration_label',
@@ -348,6 +377,7 @@ $formatDuration = function ($service) {
     $minutes = (int) $minutes;
 
     if ($minutes >= 60) {
+
         $hours = intdiv($minutes, 60);
         $remaining = $minutes % 60;
 
@@ -361,7 +391,7 @@ $formatDuration = function ($service) {
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Authentication Navigation
+| NS BEAUTY COMMENT: AUTHENTICATION NAVIGATION
 |--------------------------------------------------------------------------
 */
 
@@ -376,6 +406,7 @@ $registerUrl = Route::has('register')
 $dashboardUrl = null;
 
 if (auth()->check()) {
+
     $role = auth()->user()->role ?? 'customer';
 
     $dashboardUrl = match ($role) {
@@ -387,13 +418,14 @@ if (auth()->check()) {
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Statistics
+| NS BEAUTY COMMENT: STATISTICS
 |--------------------------------------------------------------------------
 */
 
 $statCards = collect($landingStats ?? []);
 
 if ($statCards->isEmpty()) {
+
     $statCards = collect([
         [
             'value' => '2026',
@@ -416,13 +448,14 @@ if ($statCards->isEmpty()) {
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: About Benefits
+| NS BEAUTY COMMENT: WHY CHOOSE US CARDS
 |--------------------------------------------------------------------------
 */
 
 $whyCards = collect($whyChooseCards ?? []);
 
 if ($whyCards->isEmpty()) {
+
     $whyCards = collect([
         [
             'icon' => '✨',
@@ -453,6 +486,7 @@ if ($whyCards->isEmpty()) {
 
 <head>
     <meta charset="UTF-8">
+
     <meta
         name="viewport"
         content="width=device-width, initial-scale=1.0"
@@ -460,15 +494,27 @@ if ($whyCards->isEmpty()) {
 
     <meta
         name="description"
-        content="Nail Studio & Beauty online booking and beauty services"
+        content="NS &amp; Beauty online booking and beauty services"
     >
 
     <title>{{ $businessName }} | Beauty Appointment System</title>
 
+    {{-- NS BEAUTY COMMENT: Public round logo as browser tab favicon --}}
+    <link
+        rel="icon"
+        type="image/png"
+        href="{{ $logoUrl }}"
+    >
+
+    <link
+        rel="apple-touch-icon"
+        href="{{ $logoUrl }}"
+    >
+
     <style>
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: General Website Theme
+        | NS BEAUTY COMMENT: GENERAL THEME
         |--------------------------------------------------------------------------
         */
 
@@ -499,6 +545,7 @@ if ($whyCards->isEmpty()) {
             min-height: 100vh;
             color: var(--brown-dark);
             overflow-x: hidden;
+
             background:
                 radial-gradient(
                     circle at 15% 18%,
@@ -541,7 +588,7 @@ if ($whyCards->isEmpty()) {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Navigation
+        | NS BEAUTY COMMENT: NAVIGATION BAR
         |--------------------------------------------------------------------------
         */
 
@@ -553,9 +600,11 @@ if ($whyCards->isEmpty()) {
             margin: 18px auto 0;
             padding: 14px 18px;
             border-radius: 22px;
+
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 15px;
         }
 
         .brand {
@@ -565,16 +614,43 @@ if ($whyCards->isEmpty()) {
             min-width: 0;
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: UNIVERSAL ROUND NS & BEAUTY LOGO
+        |--------------------------------------------------------------------------
+        |
+        | The logo image is stored at:
+        | public/images/nsbeauty-logo.png
+        |
+        | Laravel asset() generates the correct public URL.
+        |--------------------------------------------------------------------------
+        */
+
         .brand-mark {
             width: 38px;
             height: 38px;
-            border-radius: 12px;
-            display: grid;
-            place-items: center;
-            color: white;
-            font-weight: 900;
-            background:
-                linear-gradient(135deg,#8a7158,#5d3f2c);
+            min-width: 38px;
+            min-height: 38px;
+
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+
+            background: #f8f6f2;
+            border: 1px solid rgba(111,78,55,.14);
+            box-shadow: 0 5px 12px rgba(47,33,24,.08);
+        }
+
+        .brand-mark img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
         }
 
         .brand-name {
@@ -613,8 +689,7 @@ if ($whyCards->isEmpty()) {
         .btn-main {
             padding: 11px 18px;
             color: white !important;
-            background:
-                linear-gradient(135deg,#8a7158,#5d3f2c);
+            background: linear-gradient(135deg,#8a7158,#5d3f2c);
         }
 
         .btn:hover,
@@ -635,7 +710,7 @@ if ($whyCards->isEmpty()) {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Hero Layout
+        | NS BEAUTY COMMENT: HERO SECTION
         |--------------------------------------------------------------------------
         */
 
@@ -693,8 +768,7 @@ if ($whyCards->isEmpty()) {
 
         .btn-brown {
             color: white;
-            background:
-                linear-gradient(135deg,#8a7158,#5d3f2c);
+            background: linear-gradient(135deg,#8a7158,#5d3f2c);
         }
 
         .btn-light {
@@ -705,10 +779,7 @@ if ($whyCards->isEmpty()) {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Hero Slideshow
-        |--------------------------------------------------------------------------
-        | The previous floating text overlay has been removed.
-        | Images now display without obstruction.
+        | NS BEAUTY COMMENT: HERO SLIDESHOW
         |--------------------------------------------------------------------------
         */
 
@@ -718,8 +789,10 @@ if ($whyCards->isEmpty()) {
             overflow: hidden;
             position: relative;
             border: 1px solid rgba(255,255,255,.7);
+
             box-shadow:
                 0 28px 65px rgba(47,33,24,.15);
+
             background:
                 linear-gradient(
                     135deg,
@@ -734,10 +807,13 @@ if ($whyCards->isEmpty()) {
             height: 100%;
             min-height: 560px;
             object-fit: cover;
+
             position: absolute;
             inset: 0;
+
             opacity: 0;
             transform: scale(1.04);
+
             transition:
                 opacity .9s ease,
                 transform 1.8s ease;
@@ -749,7 +825,7 @@ if ($whyCards->isEmpty()) {
         }
 
         .image-placeholder::after {
-            content: "NS Beauty";
+            content: "NS & Beauty";
             position: absolute;
             inset: 0;
             display: grid;
@@ -762,9 +838,7 @@ if ($whyCards->isEmpty()) {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Public Announcement Design
-        |--------------------------------------------------------------------------
-        | Displayed BELOW the hero instead of covering its images.
+        | NS BEAUTY COMMENT: PUBLIC ANNOUNCEMENTS
         |--------------------------------------------------------------------------
         */
 
@@ -772,10 +846,12 @@ if ($whyCards->isEmpty()) {
             width: min(1180px,92%);
             margin: 0 auto 28px;
             padding: 24px 28px;
+
             background: rgba(255,253,249,.85);
             border: 1px solid rgba(111,78,55,.16);
             border-left: 4px solid var(--brown);
             border-radius: 18px;
+
             box-shadow:
                 0 12px 32px rgba(47,33,24,.06);
         }
@@ -812,7 +888,7 @@ if ($whyCards->isEmpty()) {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Statistics
+        | NS BEAUTY COMMENT: STATISTICS
         |--------------------------------------------------------------------------
         */
 
@@ -844,7 +920,7 @@ if ($whyCards->isEmpty()) {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: General Sections
+        | NS BEAUTY COMMENT: GENERAL SECTIONS
         |--------------------------------------------------------------------------
         */
 
@@ -872,7 +948,7 @@ if ($whyCards->isEmpty()) {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Text-Only Service Cards
+        | NS BEAUTY COMMENT: SERVICE CARDS
         |--------------------------------------------------------------------------
         */
 
@@ -885,24 +961,28 @@ if ($whyCards->isEmpty()) {
         .service-card {
             width: 100%;
             min-height: 230px;
+
             display: flex;
             flex-direction: column;
             text-align: left;
+
             border: 1px solid rgba(255,255,255,.72);
             background: rgba(255,255,255,.48);
             border-radius: 22px;
             padding: 26px;
+
             color: var(--brown-dark);
+
             box-shadow:
                 0 22px 48px rgba(47,33,24,.1);
+
             transition: .24s ease;
             cursor: pointer;
         }
 
         .service-card:hover {
             transform: translateY(-6px);
-            box-shadow:
-                0 30px 65px rgba(47,33,24,.15);
+            box-shadow: 0 30px 65px rgba(47,33,24,.15);
         }
 
         .service-card:focus-visible {
@@ -947,8 +1027,7 @@ if ($whyCards->isEmpty()) {
         .click-note {
             margin-top: auto;
             padding-top: 12px;
-            border-top:
-                1px solid rgba(111,78,55,.12);
+            border-top: 1px solid rgba(111,78,55,.12);
             color: #9a8778;
             font-size: 12px;
             font-weight: 700;
@@ -965,7 +1044,7 @@ if ($whyCards->isEmpty()) {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: About Section
+        | NS BEAUTY COMMENT: ABOUT SECTION
         |--------------------------------------------------------------------------
         */
 
@@ -1005,7 +1084,7 @@ if ($whyCards->isEmpty()) {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Studio Information
+        | NS BEAUTY COMMENT: VISIT AND CONTACT
         |--------------------------------------------------------------------------
         */
 
@@ -1028,8 +1107,7 @@ if ($whyCards->isEmpty()) {
 
         .info-box {
             padding: 18px 0;
-            border-bottom:
-                1px solid rgba(111,78,55,.12);
+            border-bottom: 1px solid rgba(111,78,55,.12);
         }
 
         .info-box h3 {
@@ -1051,8 +1129,7 @@ if ($whyCards->isEmpty()) {
             position: relative;
             border: 1px solid rgba(255,255,255,.72);
             box-shadow: var(--shadow);
-            background:
-                linear-gradient(135deg,#d9c2ac,#fff7ee);
+            background: linear-gradient(135deg,#d9c2ac,#fff7ee);
         }
 
         .studio-image img {
@@ -1085,7 +1162,7 @@ if ($whyCards->isEmpty()) {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Booking Call to Action
+        | NS BEAUTY COMMENT: BOOKING CALL TO ACTION
         |--------------------------------------------------------------------------
         */
 
@@ -1094,6 +1171,7 @@ if ($whyCards->isEmpty()) {
             margin: 0 auto 40px;
             padding: clamp(28px,5vw,48px);
             border-radius: 24px;
+
             display: grid;
             grid-template-columns: 1fr auto;
             gap: 22px;
@@ -1112,7 +1190,7 @@ if ($whyCards->isEmpty()) {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Footer
+        | NS BEAUTY COMMENT: FOOTER
         |--------------------------------------------------------------------------
         */
 
@@ -1143,9 +1221,7 @@ if ($whyCards->isEmpty()) {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Service Details Modal
-        |--------------------------------------------------------------------------
-        | Service images remain removed.
+        | NS BEAUTY COMMENT: SERVICE DETAILS POPUP
         |--------------------------------------------------------------------------
         */
 
@@ -1171,8 +1247,7 @@ if ($whyCards->isEmpty()) {
             overflow: auto;
             border-radius: 22px;
             background: rgba(255,253,249,.94);
-            box-shadow:
-                0 35px 90px rgba(47,33,24,.26);
+            box-shadow: 0 35px 90px rgba(47,33,24,.26);
         }
 
         .modal-content {
@@ -1213,8 +1288,7 @@ if ($whyCards->isEmpty()) {
             border: none;
             padding: 14px;
             border-radius: 14px;
-            background:
-                linear-gradient(135deg,#8a7158,#5d3f2c);
+            background: linear-gradient(135deg,#8a7158,#5d3f2c);
             color: white;
             font-weight: 900;
             cursor: pointer;
@@ -1222,11 +1296,12 @@ if ($whyCards->isEmpty()) {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Responsive Layout
+        | NS BEAUTY COMMENT: RESPONSIVE DESIGN
         |--------------------------------------------------------------------------
         */
 
         @media (max-width: 980px) {
+
             .hero,
             .visit,
             .cta {
@@ -1249,6 +1324,7 @@ if ($whyCards->isEmpty()) {
         }
 
         @media (max-width: 720px) {
+
             .top-nav {
                 border-radius: 18px;
                 padding: 12px;
@@ -1330,6 +1406,10 @@ if ($whyCards->isEmpty()) {
             .announcement-section {
                 padding: 20px;
             }
+
+            .brand-name {
+                font-size: 15px;
+            }
         }
     </style>
 </head>
@@ -1338,15 +1418,33 @@ if ($whyCards->isEmpty()) {
 
     {{--
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: Main Navigation
+    | NS BEAUTY COMMENT: MAIN NAVIGATION
     |--------------------------------------------------------------------------
     --}}
 
     <nav class="top-nav glass" aria-label="Main navigation">
 
         <a href="{{ url('/') }}" class="brand">
-            <span class="brand-mark">NS</span>
-            <span class="brand-name">{{ $businessName }}</span>
+
+            {{--
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: ROUND NS & BEAUTY LOGO
+            |--------------------------------------------------------------------------
+            | Image location: public/images/nsbeauty-logo.png
+            |--------------------------------------------------------------------------
+            --}}
+
+            <span class="brand-mark">
+                <img
+                    src="{{ $logoUrl }}"
+                    alt="NS & Beauty Logo"
+                    width="38"
+                    height="38"
+                >
+            </span>
+
+            <span class="brand-name">NS &amp; Beauty</span>
+
         </a>
 
         <button
@@ -1384,13 +1482,14 @@ if ($whyCards->isEmpty()) {
             @endauth
 
         </div>
+
     </nav>
 
     <main>
 
         {{--
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Hero Section
+        | NS BEAUTY COMMENT: HERO SECTION
         |--------------------------------------------------------------------------
         --}}
 
@@ -1441,17 +1540,16 @@ if ($whyCards->isEmpty()) {
 
             {{--
             |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT: Hero Slideshow
+            | NS BEAUTY COMMENT: HERO SLIDESHOW
             |--------------------------------------------------------------------------
-            | Floating text overlay has been removed.
-            | Only the uploaded hero images appear.
+            | Images remain sourced from Admin Content Management.
             |--------------------------------------------------------------------------
             --}}
 
             <div
                 class="slideshow {{ $heroSlides->isEmpty() ? 'image-placeholder' : '' }}"
                 id="heroSlideshow"
-                aria-label="Nail Studio & Beauty photos"
+                aria-label="NS & Beauty photos"
             >
 
                 @foreach ($heroSlides as $index => $slide)
@@ -1460,6 +1558,7 @@ if ($whyCards->isEmpty()) {
                         $slideUrl = data_get($slide, 'image_url');
 
                         if (!$slideUrl) {
+
                             $slideUrl = $contentImageUrl(
                                 data_get($slide, 'image_path')
                                     ?? data_get($slide, 'image')
@@ -1492,10 +1591,7 @@ if ($whyCards->isEmpty()) {
 
         {{--
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Public Announcements
-        |--------------------------------------------------------------------------
-        | Active announcements are displayed separately below the hero.
-        | Inactive announcements do not appear.
+        | NS BEAUTY COMMENT: ANNOUNCEMENTS
         |--------------------------------------------------------------------------
         --}}
 
@@ -1514,17 +1610,13 @@ if ($whyCards->isEmpty()) {
 
                 @if ($announcementTitle !== '')
 
-                    <h2>
-                        {{ $announcementTitle }}
-                    </h2>
+                    <h2>{{ $announcementTitle }}</h2>
 
                 @endif
 
                 @if ($announcementMessage !== '')
 
-                    <p>
-                        {{ $announcementMessage }}
-                    </p>
+                    <p>{{ $announcementMessage }}</p>
 
                 @endif
 
@@ -1534,7 +1626,7 @@ if ($whyCards->isEmpty()) {
 
         {{--
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Statistics
+        | NS BEAUTY COMMENT: STATISTICS
         |--------------------------------------------------------------------------
         --}}
 
@@ -1556,10 +1648,9 @@ if ($whyCards->isEmpty()) {
 
         {{--
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Services
+        | NS BEAUTY COMMENT: SERVICES
         |--------------------------------------------------------------------------
-        | Only database service details are displayed.
-        | Service images are completely removed.
+        | Services come from the database through HomeController.
         |--------------------------------------------------------------------------
         --}}
 
@@ -1605,6 +1696,7 @@ if ($whyCards->isEmpty()) {
                                 : $description;
 
                             $price = $formatPrice($service);
+
                             $duration = $formatDuration($service);
 
                             $category = data_get(
@@ -1678,7 +1770,7 @@ if ($whyCards->isEmpty()) {
 
         {{--
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: About Section
+        | NS BEAUTY COMMENT: ABOUT SECTION
         |--------------------------------------------------------------------------
         --}}
 
@@ -1716,7 +1808,7 @@ if ($whyCards->isEmpty()) {
 
         {{--
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Studio and Contact
+        | NS BEAUTY COMMENT: STUDIO INFORMATION
         |--------------------------------------------------------------------------
         --}}
 
@@ -1756,8 +1848,8 @@ if ($whyCards->isEmpty()) {
                     )
 
                         <p>
-                            Reach Nail Studio & Beauty
-                            through our available contact channels
+                            Reach NS &amp; Beauty through
+                            our available contact channels
                         </p>
 
                         <div class="contact-links">
@@ -1774,9 +1866,7 @@ if ($whyCards->isEmpty()) {
 
                             @if ($businessEmail)
 
-                                <a
-                                    href="mailto:{{ $businessEmail }}"
-                                >
+                                <a href="mailto:{{ $businessEmail }}">
                                     {{ $businessEmail }}
                                 </a>
 
@@ -1806,10 +1896,6 @@ if ($whyCards->isEmpty()) {
 
                             @endif
 
-                            {{--
-                            | NS BEAUTY COMMENT: TikTok Contact Link
-                            --}}
-
                             @if ($tiktokUrl)
 
                                 <a
@@ -1821,10 +1907,6 @@ if ($whyCards->isEmpty()) {
                                 </a>
 
                             @endif
-
-                            {{--
-                            | NS BEAUTY COMMENT: WhatsApp Contact Link
-                            --}}
 
                             @if ($whatsappUrl)
 
@@ -1854,9 +1936,9 @@ if ($whyCards->isEmpty()) {
 
             {{--
             |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT: Studio Image
+            | NS BEAUTY COMMENT: STUDIO PHOTO
             |--------------------------------------------------------------------------
-            | Preserves the image from Laravel Cloud Object Storage.
+            | Keeps Laravel Cloud Object Storage integration.
             |--------------------------------------------------------------------------
             --}}
 
@@ -1882,7 +1964,7 @@ if ($whyCards->isEmpty()) {
 
         {{--
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Booking Call to Action
+        | NS BEAUTY COMMENT: BOOKING CALL TO ACTION
         |--------------------------------------------------------------------------
         --}}
 
@@ -1927,7 +2009,7 @@ if ($whyCards->isEmpty()) {
 
     {{--
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: Footer
+    | NS BEAUTY COMMENT: FOOTER
     |--------------------------------------------------------------------------
     --}}
 
@@ -1950,9 +2032,7 @@ if ($whyCards->isEmpty()) {
 
     {{--
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: Service Details Popup
-    |--------------------------------------------------------------------------
-    | Text-only modal; no image placeholders.
+    | NS BEAUTY COMMENT: SERVICE DETAILS POPUP
     |--------------------------------------------------------------------------
     --}}
 
@@ -1998,7 +2078,7 @@ if ($whyCards->isEmpty()) {
     <script>
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Hero Slideshow
+        | NS BEAUTY COMMENT: HERO SLIDESHOW
         |--------------------------------------------------------------------------
         */
 
@@ -2009,22 +2089,26 @@ if ($whyCards->isEmpty()) {
         );
 
         if (slides.length > 1) {
+
             setInterval(() => {
+
                 slides[currentSlide].classList.remove("active");
 
                 currentSlide = (currentSlide + 1) % slides.length;
 
                 slides[currentSlide].classList.add("active");
+
             }, 5000);
         }
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Mobile Navigation
+        | NS BEAUTY COMMENT: MOBILE NAVIGATION
         |--------------------------------------------------------------------------
         */
 
         function toggleMenu() {
+
             const links = document.getElementById("navLinks");
             const button = document.getElementById("menuButton");
 
@@ -2040,11 +2124,12 @@ if ($whyCards->isEmpty()) {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Service Details Popup
+        | NS BEAUTY COMMENT: SERVICE POPUP
         |--------------------------------------------------------------------------
         */
 
         function openServiceModal(button) {
+
             const modal = document.getElementById("serviceModal");
 
             document.getElementById("modalTitle").textContent =
@@ -2068,17 +2153,19 @@ if ($whyCards->isEmpty()) {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Close Service Popup
+        | NS BEAUTY COMMENT: CLOSE SERVICE POPUP
         |--------------------------------------------------------------------------
         */
 
         function closeServiceModal(event) {
+
             if (event.target.id === "serviceModal") {
                 closeModalButton();
             }
         }
 
         function closeModalButton() {
+
             document.getElementById("serviceModal")
                 .classList.remove("show");
 
@@ -2087,11 +2174,12 @@ if ($whyCards->isEmpty()) {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Hero and Studio Image Error Handling
+        | NS BEAUTY COMMENT: IMAGE ERROR HANDLING
         |--------------------------------------------------------------------------
         */
 
         function handleImageError(image) {
+
             const wrapper = image.closest(
                 ".slideshow, .studio-image"
             );
@@ -2105,11 +2193,12 @@ if ($whyCards->isEmpty()) {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Escape Key
+        | NS BEAUTY COMMENT: ESCAPE KEY
         |--------------------------------------------------------------------------
         */
 
         document.addEventListener("keydown", function (event) {
+
             if (event.key === "Escape") {
                 closeModalButton();
             }
@@ -2117,12 +2206,14 @@ if ($whyCards->isEmpty()) {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Navigation Links
+        | NS BEAUTY COMMENT: NAVIGATION LINK HANDLING
         |--------------------------------------------------------------------------
         */
 
         document.querySelectorAll("#navLinks a").forEach((link) => {
+
             link.addEventListener("click", () => {
+
                 const links = document.getElementById("navLinks");
                 const button = document.getElementById("menuButton");
 

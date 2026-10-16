@@ -1,13 +1,17 @@
+
 @php
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT:
-    | Sidebar User and Notification Setup
+    | NS BEAUTY COMMENT: Sidebar User and Notification Setup
     |--------------------------------------------------------------------------
     | Purpose:
-    | - Detects logged-in user role.
-    | - Displays role-based menu.
-    | - Shows unread notification count.
+    | - Detect the logged-in user's role.
+    | - Display the correct role-based navigation.
+    | - Show the unread notification count.
+    | - Use the universal NS & Beauty circular logo.
+    |
+    | Logo:
+    | public/images/nsbeauty-logo.png
     |--------------------------------------------------------------------------
     */
 
@@ -16,40 +20,128 @@
     $roleName = $authUser?->role ?? strtolower($role ?? 'customer');
     $userDisplayName = $authUser?->name ?? ($userName ?? 'User');
 
-    $roleLabel = match($roleName) {
+    $roleLabel = match ($roleName) {
         'admin' => 'Admin',
         'staff' => 'Staff',
         default => 'Customer',
     };
 
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Unread Notification Count
+    |--------------------------------------------------------------------------
+    | Preserve the existing database-backed notification badge.
+    |--------------------------------------------------------------------------
+    */
+
     $unreadNotificationCount = 0;
 
     if ($authUser && class_exists(\App\Models\AppNotification::class)) {
-        $unreadNotificationCount = \App\Models\AppNotification::where('recipient_user_id', $authUser->id)
+        $unreadNotificationCount = \App\Models\AppNotification::where(
+            'recipient_user_id',
+            $authUser->id
+        )
             ->whereNull('read_at')
             ->count();
     }
 
-    $notificationRoute = match($roleName) {
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Role-Based Notification Route
+    |--------------------------------------------------------------------------
+    */
+
+    $notificationRoute = match ($roleName) {
         'admin' => route('admin.notifications'),
         'staff' => route('staff.notifications'),
         default => route('customer.notifications'),
     };
 @endphp
 
-{{-- 
+{{--
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT:
-| Sidebar Navigation
+| NS BEAUTY COMMENT: Shared Sidebar
 |--------------------------------------------------------------------------
-| Purpose:
-| - Shows role-based navigation for Admin, Staff, and Customer.
-| - Uses id="mobileSidebar" so the mobile menu button can open/fold it.
-| - Sidebar remains fixed on desktop and slides in only on mobile.
+|
+| Used by:
+| - Admin
+| - Staff
+| - Customer
+|
+| Existing sidebar ID is preserved for mobile navigation.
 |--------------------------------------------------------------------------
 --}}
+
 <aside class="sidebar" id="mobileSidebar">
-    <div class="logo">NS &amp; Beauty</div>
+
+    {{--
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Universal Circular NS & Beauty Logo
+    |--------------------------------------------------------------------------
+    |
+    | Uses the same logo as the Welcome page and shared layout.
+    |
+    | The logo is served from Laravel's public directory,
+    | so it also works on Laravel Cloud after deployment.
+    |--------------------------------------------------------------------------
+    --}}
+
+    <div
+        class="logo ns-sidebar-brand"
+        style="
+            display:flex;
+            align-items:center;
+            gap:12px;
+        "
+    >
+
+        <span
+            class="ns-brand-logo"
+            style="
+                width:42px;
+                height:42px;
+                min-width:42px;
+                min-height:42px;
+                border-radius:50%;
+                overflow:hidden;
+                display:inline-flex;
+                align-items:center;
+                justify-content:center;
+                flex-shrink:0;
+                background:#f8f6f2;
+                border:1px solid rgba(111,78,55,.12);
+            "
+        >
+
+            <img
+                src="{{ asset('images/nsbeauty-logo.png') }}"
+                alt="NS & Beauty Logo"
+                width="42"
+                height="42"
+                style="
+                    width:100%;
+                    height:100%;
+                    object-fit:cover;
+                    border-radius:50%;
+                    display:block;
+                "
+            >
+
+        </span>
+
+        <span class="ns-sidebar-brand-name">
+            NS &amp; Beauty
+        </span>
+
+    </div>
+
+    {{--
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Signed-In User Information
+    |--------------------------------------------------------------------------
+    | Existing name and role displays are preserved.
+    |--------------------------------------------------------------------------
+    --}}
 
     <div class="user-card">
         <small>SIGNED IN AS</small>
@@ -57,8 +149,23 @@
         <p>{{ $roleLabel }}</p>
     </div>
 
+    {{--
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Role-Based Navigation
+    |--------------------------------------------------------------------------
+    | All existing routes are preserved.
+    |--------------------------------------------------------------------------
+    --}}
+
     <nav class="menu">
-        @if($roleName === 'admin')
+
+        @if ($roleName === 'admin')
+
+            {{--
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Admin Navigation
+            |--------------------------------------------------------------------------
+            --}}
 
             <a
                 href="{{ route('admin.dashboard') }}"
@@ -114,8 +221,11 @@
                 onclick="closeMobileSidebar()"
             >
                 Notifications
+
                 @if ($unreadNotificationCount > 0)
-                    <span class="notification-badge">{{ $unreadNotificationCount }}</span>
+                    <span class="notification-badge">
+                        {{ $unreadNotificationCount }}
+                    </span>
                 @endif
             </a>
 
@@ -135,7 +245,13 @@
                 System Settings
             </a>
 
-        @elseif($roleName === 'staff')
+        @elseif ($roleName === 'staff')
+
+            {{--
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Staff Navigation
+            |--------------------------------------------------------------------------
+            --}}
 
             <a
                 href="{{ route('staff.dashboard') }}"
@@ -159,8 +275,11 @@
                 onclick="closeMobileSidebar()"
             >
                 Notifications
+
                 @if ($unreadNotificationCount > 0)
-                    <span class="notification-badge">{{ $unreadNotificationCount }}</span>
+                    <span class="notification-badge">
+                        {{ $unreadNotificationCount }}
+                    </span>
                 @endif
             </a>
 
@@ -173,6 +292,12 @@
             </a>
 
         @else
+
+            {{--
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Customer Navigation
+            |--------------------------------------------------------------------------
+            --}}
 
             <a
                 href="{{ route('customer.dashboard') }}"
@@ -204,8 +329,11 @@
                 onclick="closeMobileSidebar()"
             >
                 Notifications
+
                 @if ($unreadNotificationCount > 0)
-                    <span class="notification-badge">{{ $unreadNotificationCount }}</span>
+                    <span class="notification-badge">
+                        {{ $unreadNotificationCount }}
+                    </span>
                 @endif
             </a>
 
@@ -218,27 +346,32 @@
             </a>
 
         @endif
+
     </nav>
+
+    {{--
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Sign Out
+    |--------------------------------------------------------------------------
+    | Existing POST logout route and CSRF protection are preserved.
+    |--------------------------------------------------------------------------
+    --}}
 
     <form method="POST" action="{{ route('logout') }}">
         @csrf
 
-        {{-- 
-        |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT:
-        | Sign Out Button
-        |--------------------------------------------------------------------------
-        | Purpose:
-        | - Removed the logout emoji.
-        | - Keeps the button clean and professional for defense/demo.
-        |--------------------------------------------------------------------------
-        --}}
         <button
             type="submit"
             class="signout"
-            style="border:none;width:100%;text-align:left;cursor:pointer;"
+            style="
+                border:none;
+                width:100%;
+                text-align:left;
+                cursor:pointer;
+            "
         >
             Sign Out
         </button>
     </form>
+
 </aside>

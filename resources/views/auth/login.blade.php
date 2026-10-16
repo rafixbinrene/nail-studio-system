@@ -10,15 +10,42 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>Login | Nail Studio & Beauty</title>
+    <title>Login | NS &amp; Beauty</title>
+
+    {{--
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Universal Browser Favicon
+    |--------------------------------------------------------------------------
+    | Same logo used on Welcome, Login, Register and Dashboard.
+    | File location: public/images/nsbeauty-logo.png
+    |--------------------------------------------------------------------------
+    --}}
+
+    <link
+        rel="icon"
+        type="image/png"
+        href="{{ asset('images/nsbeauty-logo.png') }}"
+    >
+
+    <link
+        rel="apple-touch-icon"
+        href="{{ asset('images/nsbeauty-logo.png') }}"
+    >
 
     <style>
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Login Page Theme
+        | NS BEAUTY COMMENT: LOGIN PAGE THEME
         |--------------------------------------------------------------------------
-        | Maintains the original Muji-inspired design.
-        | Only the password visibility icon conflict is fixed.
+        |
+        | Updates:
+        | - Use the official circular NS & Beauty logo.
+        | - Display NS & Beauty as the business name.
+        | - Keep the original Muji brown and cream theme.
+        | - Preserve the single password visibility toggle.
+        | - Preserve the responsive login card.
+        |
+        | No backend authentication changes are made.
         |--------------------------------------------------------------------------
         */
 
@@ -45,11 +72,19 @@
             --radius-small: 12px;
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Page Background
+        |--------------------------------------------------------------------------
+        */
+
         body {
             min-height: 100vh;
+
             display: flex;
             justify-content: center;
             align-items: center;
+
             padding: 24px 16px;
 
             background:
@@ -75,16 +110,18 @@
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Login Card
+        | NS BEAUTY COMMENT: Main Login Card
         |--------------------------------------------------------------------------
         */
 
         .card {
             width: 100%;
             max-width: 500px;
+
             padding: 40px;
 
             background: var(--glass);
+
             backdrop-filter: blur(28px);
             -webkit-backdrop-filter: blur(28px);
 
@@ -98,7 +135,11 @@
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Business Branding
+        | NS BEAUTY COMMENT: Universal NS & Beauty Branding
+        |--------------------------------------------------------------------------
+        |
+        | Replaces the previous square NS text badge.
+        | The logo is displayed as a perfect circle.
         |--------------------------------------------------------------------------
         */
 
@@ -106,35 +147,84 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 10px;
+
+            gap: 11px;
+            margin-bottom: 20px;
 
             text-align: center;
             font-size: 15px;
             font-weight: 900;
+
             color: var(--brown-dark);
-            margin-bottom: 20px;
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Circular Logo Container
+        |--------------------------------------------------------------------------
+        */
 
         .logo-mark {
-            width: 38px;
-            height: 38px;
-            border-radius: var(--radius-small);
+            width: 42px;
+            height: 42px;
 
-            display: grid;
-            place-items: center;
+            min-width: 42px;
+            min-height: 42px;
 
-            color: white;
-            font-size: 13px;
-            font-weight: 900;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
 
-            background:
-                linear-gradient(135deg,#8a7158,#5d3f2c);
+            flex-shrink: 0;
+
+            border-radius: 50%;
+            overflow: hidden;
+
+            background: #f8f6f2;
+
+            border: 1px solid rgba(111,78,55,.14);
+
+            box-shadow:
+                0 5px 12px rgba(47,33,24,.08);
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Circular Logo Image
+        |--------------------------------------------------------------------------
+        | object-fit preserves the logo appearance inside the circle.
+        |--------------------------------------------------------------------------
+        */
+
+        .logo-mark img {
+            display: block;
+
+            width: 100%;
+            height: 100%;
+
+            object-fit: cover;
+
+            border-radius: 50%;
+        }
+
+        .logo-name {
+            color: var(--brown-dark);
+            font-size: 15px;
+            font-weight: 900;
+            line-height: 1.3;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Page Heading
+        |--------------------------------------------------------------------------
+        */
 
         h1 {
             text-align: center;
             margin-bottom: 12px;
-            font-size: clamp(28px, 4vw, 34px);
+
+            font-size: clamp(28px,4vw,34px);
             letter-spacing: -.7px;
             line-height: 1.2;
 
@@ -148,13 +238,17 @@
 
             -webkit-background-clip: text;
             background-clip: text;
+
             -webkit-text-fill-color: transparent;
         }
 
         .subtitle {
             text-align: center;
+
             color: var(--muted);
+
             margin-bottom: 28px;
+
             font-size: 14px;
             line-height: 1.7;
         }
@@ -171,9 +265,12 @@
 
         .form-label {
             display: block;
+
             margin-bottom: 9px;
+
             font-size: 13px;
             font-weight: 800;
+
             color: var(--brown-dark);
         }
 
@@ -186,6 +283,7 @@
         .form-input {
             width: 100%;
             min-height: 50px;
+
             padding: 14px 16px;
 
             border-radius: var(--radius-input);
@@ -196,6 +294,7 @@
 
             font-size: 14px;
             font-weight: 500;
+
             outline: none;
 
             transition:
@@ -212,8 +311,15 @@
 
         .form-input:focus {
             border-color: var(--brown);
+
             background: rgba(255,255,255,.88);
-            box-shadow: 0 0 0 3px rgba(111,78,55,.10);
+
+            box-shadow:
+                0 0 0 3px rgba(111,78,55,.10);
+        }
+
+        .form-input.is-invalid {
+            border-color: rgba(150,45,35,.55);
         }
 
         /*
@@ -221,13 +327,8 @@
         | NS BEAUTY COMMENT: Fix Duplicate Password Eye Icon
         |--------------------------------------------------------------------------
         |
-        | Microsoft Edge may show its own password reveal icon.
-        |
-        | The following CSS hides the browser's built-in icon,
-        | leaving only the NS Beauty custom toggle button.
-        |
-        | Password input behavior and backend processing
-        | are not modified.
+        | Microsoft Edge may display its native eye icon.
+        | Hide that icon and retain the existing custom toggle.
         |--------------------------------------------------------------------------
         */
 
@@ -240,12 +341,13 @@
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Custom Password Visibility
+        | NS BEAUTY COMMENT: Password Visibility Wrapper
         |--------------------------------------------------------------------------
         */
 
         .password-wrapper {
             position: relative;
+
             display: flex;
             align-items: center;
         }
@@ -254,10 +356,18 @@
             padding-right: 60px;
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Single Password Toggle Button
+        |--------------------------------------------------------------------------
+        */
+
         .password-toggle {
             position: absolute;
+
             right: 8px;
             top: 50%;
+
             transform: translateY(-50%);
 
             width: 40px;
@@ -271,6 +381,7 @@
             border-radius: var(--radius-small);
 
             background: transparent;
+
             color: var(--muted);
 
             cursor: pointer;
@@ -294,19 +405,20 @@
         .password-toggle svg {
             width: 20px;
             height: 20px;
+
             fill: none;
             stroke: currentColor;
+
             stroke-width: 1.8;
             stroke-linecap: round;
             stroke-linejoin: round;
+
             pointer-events: none;
         }
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Show Only One Custom SVG Icon
-        |--------------------------------------------------------------------------
-        | The hidden attribute ensures the inactive icon is invisible.
+        | NS BEAUTY COMMENT: Show Only One Eye Icon
         |--------------------------------------------------------------------------
         */
 
@@ -322,34 +434,39 @@
 
         .alert {
             padding: 14px 16px;
+
             border-radius: var(--radius-input);
+
             margin-bottom: 20px;
+
             font-size: 13px;
             line-height: 1.6;
         }
 
         .alert-error {
             background: rgba(150,45,35,.10);
+
             color: #7a241d;
+
             border: 1px solid rgba(150,45,35,.18);
         }
 
         .alert-success {
             background: rgba(50,130,85,.10);
+
             color: #285c3f;
+
             border: 1px solid rgba(50,130,85,.18);
         }
 
         .error-text {
             margin-top: 7px;
+
             font-size: 12px;
             line-height: 1.5;
+
             color: #8a2f24;
             font-weight: 700;
-        }
-
-        .form-input.is-invalid {
-            border-color: rgba(150,45,35,.55);
         }
 
         /*
@@ -362,11 +479,15 @@
             font-size: 13px;
             color: var(--muted);
             line-height: 1.7;
+
             margin-bottom: 22px;
 
             background: rgba(255,255,255,.44);
+
             border: 1px solid rgba(255,255,255,.70);
+
             border-radius: var(--radius-input);
+
             padding: 14px 16px;
         }
 
@@ -384,6 +505,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+
             gap: 14px;
             margin-bottom: 24px;
         }
@@ -391,9 +513,11 @@
         .remember {
             display: inline-flex;
             align-items: center;
+
             gap: 9px;
 
             color: var(--muted);
+
             font-size: 13px;
             font-weight: 600;
 
@@ -403,16 +527,21 @@
         .remember input {
             width: 16px;
             height: 16px;
+
             margin: 0;
+
             accent-color: var(--brown);
             cursor: pointer;
         }
 
         .forgot {
             color: var(--brown);
+
             text-decoration: none;
+
             font-size: 13px;
             font-weight: 800;
+
             white-space: nowrap;
         }
 
@@ -424,7 +553,7 @@
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Submit Button
+        | NS BEAUTY COMMENT: Login Submit Button
         |--------------------------------------------------------------------------
         */
 
@@ -432,21 +561,28 @@
             display: inline-flex;
             justify-content: center;
             align-items: center;
+
             gap: 9px;
 
             width: 100%;
             min-height: 50px;
+
             padding: 14px 20px;
 
             border: none;
             border-radius: var(--radius-button);
 
             color: white;
+
             font-size: 14px;
             font-weight: 850;
 
             background:
-                linear-gradient(135deg,#8a7158,#5d3f2c);
+                linear-gradient(
+                    135deg,
+                    #8a7158,
+                    #5d3f2c
+                );
 
             cursor: pointer;
 
@@ -457,7 +593,9 @@
 
         .submit-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 24px rgba(47,33,24,.15);
+
+            box-shadow:
+                0 10px 24px rgba(47,33,24,.15);
         }
 
         .submit-btn:focus-visible {
@@ -473,8 +611,11 @@
 
         .footer {
             margin-top: 26px;
+
             text-align: center;
+
             color: var(--muted);
+
             font-size: 13px;
             line-height: 1.6;
         }
@@ -487,10 +628,14 @@
 
         .back {
             display: block;
+
             text-align: center;
+
             margin-top: 20px;
+
             color: var(--muted);
             text-decoration: none;
+
             font-size: 13px;
             font-weight: 700;
         }
@@ -498,21 +643,25 @@
         .security-note {
             margin-top: 22px;
             padding-top: 18px;
+
             border-top: 1px solid rgba(111,78,55,.10);
 
             text-align: center;
+
             color: var(--muted);
+
             font-size: 12px;
             line-height: 1.6;
         }
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Mobile Responsiveness
+        | NS BEAUTY COMMENT: Responsive Design
         |--------------------------------------------------------------------------
         */
 
         @media (max-width: 520px) {
+
             body {
                 padding: 16px;
             }
@@ -531,9 +680,18 @@
             .subtitle {
                 margin-bottom: 24px;
             }
+
+            .logo-mark {
+                width: 38px;
+                height: 38px;
+
+                min-width: 38px;
+                min-height: 38px;
+            }
         }
 
         @media (prefers-reduced-motion: reduce) {
+
             *,
             *::before,
             *::after {
@@ -541,7 +699,9 @@
                 transition: none !important;
             }
         }
+
     </style>
+
 </head>
 
 <body>
@@ -550,19 +710,43 @@
 
         {{--
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: NS Beauty Branding
+        | NS BEAUTY COMMENT: Universal Round Business Logo
+        |--------------------------------------------------------------------------
+        |
+        | Uses the same image as the Welcome page, shared layout,
+        | and Admin / Staff / Customer sidebar.
         |--------------------------------------------------------------------------
         --}}
 
         <div class="logo">
-            <span class="logo-mark" aria-hidden="true">NS</span>
-            <span>NS &amp; Beauty</span>
+
+            <span class="logo-mark">
+
+                <img
+                    src="{{ asset('images/nsbeauty-logo.png') }}"
+                    alt="NS & Beauty Logo"
+                    width="42"
+                    height="42"
+                >
+
+            </span>
+
+            <span class="logo-name">
+                NS &amp; Beauty
+            </span>
+
         </div>
+
+        {{--
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Login Header
+        |--------------------------------------------------------------------------
+        --}}
 
         <h1>Welcome Back</h1>
 
         <p class="subtitle">
-            Sign in to continue to your NS Beauty account
+            Sign in to continue to your NS &amp; Beauty account
         </p>
 
         {{--
@@ -572,37 +756,60 @@
         --}}
 
         @if (session('status'))
-            <div class="alert alert-success" role="status">
+
+            <div
+                class="alert alert-success"
+                role="status"
+            >
                 {{ session('status') }}
             </div>
+
         @endif
 
         @if ($errors->any())
-            <div class="alert alert-error" role="alert">
+
+            <div
+                class="alert alert-error"
+                role="alert"
+            >
                 Please check your details and try again
             </div>
+
         @endif
 
         {{--
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Login Form
+        | NS BEAUTY COMMENT: Existing Login Form
         |--------------------------------------------------------------------------
         |
         | Preserved:
-        | - login.submit route
-        | - CSRF protection
-        | - Email and password fields
-        | - Remember Me
+        | - POST login.submit
+        | - CSRF token
+        | - Email and password field names
         | - Email OTP authentication
+        | - Remember Me
+        | - Forgot Password
         |--------------------------------------------------------------------------
         --}}
 
-        <form method="POST" action="{{ route('login.submit') }}">
+        <form
+            method="POST"
+            action="{{ route('login.submit') }}"
+        >
             @csrf
+
+            {{--
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Email Address
+            |--------------------------------------------------------------------------
+            --}}
 
             <div class="form-group">
 
-                <label class="form-label" for="email">
+                <label
+                    class="form-label"
+                    for="email"
+                >
                     Email Address
                 </label>
 
@@ -620,16 +827,30 @@
                 >
 
                 @error('email')
-                    <div class="error-text" role="alert">
+
+                    <div
+                        class="error-text"
+                        role="alert"
+                    >
                         {{ $message }}
                     </div>
+
                 @enderror
 
             </div>
 
+            {{--
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Password Input
+            |--------------------------------------------------------------------------
+            --}}
+
             <div class="form-group">
 
-                <label class="form-label" for="password">
+                <label
+                    class="form-label"
+                    for="password"
+                >
                     Password
                 </label>
 
@@ -648,13 +869,11 @@
 
                     {{--
                     |--------------------------------------------------------------------------
-                    | NS BEAUTY COMMENT: Single Password Visibility Button
+                    | NS BEAUTY COMMENT: Single Password Eye Toggle
                     |--------------------------------------------------------------------------
                     |
-                    | The browser-native Edge reveal button is hidden by CSS.
-                    | Only this custom NS Beauty eye icon is shown.
-                    |
-                    | The button cannot submit the login form.
+                    | Native Edge reveal control is hidden with CSS.
+                    | Only the NS Beauty custom icon appears.
                     |--------------------------------------------------------------------------
                     --}}
 
@@ -670,7 +889,7 @@
                     >
 
                         {{--
-                        | NS BEAUTY COMMENT: Password Hidden Icon
+                        | NS BEAUTY COMMENT: Show Password Eye Icon
                         --}}
 
                         <svg
@@ -681,11 +900,16 @@
                             <path
                                 d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"
                             />
-                            <circle cx="12" cy="12" r="3" />
+
+                            <circle
+                                cx="12"
+                                cy="12"
+                                r="3"
+                            />
                         </svg>
 
                         {{--
-                        | NS BEAUTY COMMENT: Password Visible Icon
+                        | NS BEAUTY COMMENT: Hide Password Eye Icon
                         --}}
 
                         <svg
@@ -697,11 +921,18 @@
                             <path
                                 d="M10.6 5.2A10.5 10.5 0 0 1 12 5c6.5 0 10 7 10 7a15.5 15.5 0 0 1-3.2 4.1"
                             />
+
                             <path
                                 d="M6.1 6.1A15 15 0 0 0 2 12s3.5 7 10 7a10 10 0 0 0 5.3-1.5"
                             />
-                            <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
-                            <path d="M3 3l18 18" />
+
+                            <path
+                                d="M9.9 9.9a3 3 0 0 0 4.2 4.2"
+                            />
+
+                            <path
+                                d="M3 3l18 18"
+                            />
                         </svg>
 
                     </button>
@@ -709,9 +940,14 @@
                 </div>
 
                 @error('password')
-                    <div class="error-text" role="alert">
+
+                    <div
+                        class="error-text"
+                        role="alert"
+                    >
                         {{ $message }}
                     </div>
+
                 @enderror
 
             </div>
@@ -720,27 +956,43 @@
             |--------------------------------------------------------------------------
             | NS BEAUTY COMMENT: Email OTP Information
             |--------------------------------------------------------------------------
+            | Existing authentication flow remains unchanged.
+            |--------------------------------------------------------------------------
             --}}
 
             <div class="security-box">
-                <strong>Email verification</strong>
+
+                <strong>
+                    Email verification
+                </strong>
+
                 <span>
                     — After entering the correct email and password,
                     we'll send a one-time verification code
                     to your registered email address
                 </span>
+
             </div>
+
+            {{--
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Remember Me and Forgot Password
+            |--------------------------------------------------------------------------
+            --}}
 
             <div class="login-options">
 
                 <label class="remember">
+
                     <input
                         type="checkbox"
                         name="remember"
                         value="1"
                         {{ old('remember') ? 'checked' : '' }}
                     >
+
                     Remember me
+
                 </label>
 
                 <a
@@ -752,7 +1004,18 @@
 
             </div>
 
-            <button type="submit" class="submit-btn">
+            {{--
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Login Submission
+            |--------------------------------------------------------------------------
+            | Sends the existing form to login.submit.
+            |--------------------------------------------------------------------------
+            --}}
+
+            <button
+                type="submit"
+                class="submit-btn"
+            >
                 Send Email OTP
             </button>
 
@@ -760,18 +1023,38 @@
 
         {{--
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Account Registration and Home Navigation
+        | NS BEAUTY COMMENT: Registration Link
         |--------------------------------------------------------------------------
         --}}
 
         <div class="footer">
+
             Don't have an account?
-            <a href="{{ route('register') }}">Create Account</a>
+
+            <a href="{{ route('register') }}">
+                Create Account
+            </a>
+
         </div>
 
-        <a href="{{ route('home') }}" class="back">
+        {{--
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Back to Welcome Page
+        |--------------------------------------------------------------------------
+        --}}
+
+        <a
+            href="{{ route('home') }}"
+            class="back"
+        >
             ← Back to Home
         </a>
+
+        {{--
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Security Note
+        |--------------------------------------------------------------------------
+        --}}
 
         <div class="security-note">
             Email OTP verification is required before accessing your account
@@ -787,22 +1070,32 @@
         |
         | Frontend only.
         |
-        | - Password starts hidden.
-        | - Clicking the eye reveals the password.
-        | - Clicking again hides the password.
-        | - Only one eye icon is displayed at a time.
-        | - The entered value remains unchanged.
-        | - OTP and backend authentication remain unchanged.
+        | Preserved:
+        | - Hidden password by default
+        | - Click to show password
+        | - Click again to hide password
+        | - Only one SVG displayed at a time
+        | - Email OTP authentication remains unchanged
         |--------------------------------------------------------------------------
         */
 
         function togglePasswordVisibility() {
 
-            const passwordInput = document.getElementById("password");
-            const toggleButton = document.getElementById("passwordToggle");
+            const passwordInput = document.getElementById(
+                "password"
+            );
 
-            const eyeIcon = document.getElementById("eyeIcon");
-            const eyeOffIcon = document.getElementById("eyeOffIcon");
+            const toggleButton = document.getElementById(
+                "passwordToggle"
+            );
+
+            const eyeIcon = document.getElementById(
+                "eyeIcon"
+            );
+
+            const eyeOffIcon = document.getElementById(
+                "eyeOffIcon"
+            );
 
             if (
                 !passwordInput ||
@@ -813,15 +1106,17 @@
                 return;
             }
 
-            const isHidden = passwordInput.type === "password";
-
             /*
             |--------------------------------------------------------------------------
             | NS BEAUTY COMMENT: Toggle Password Input Type
             |--------------------------------------------------------------------------
             */
 
-            passwordInput.type = isHidden ? "text" : "password";
+            const isHidden = passwordInput.type === "password";
+
+            passwordInput.type = isHidden
+                ? "text"
+                : "password";
 
             /*
             |--------------------------------------------------------------------------
@@ -830,11 +1125,12 @@
             */
 
             eyeIcon.hidden = isHidden;
+
             eyeOffIcon.hidden = !isHidden;
 
             /*
             |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT: Accessibility State
+            | NS BEAUTY COMMENT: Accessibility States
             |--------------------------------------------------------------------------
             */
 
@@ -851,6 +1147,7 @@
             toggleButton.title = isHidden
                 ? "Hide password"
                 : "Show password";
+
         }
     </script>
 
