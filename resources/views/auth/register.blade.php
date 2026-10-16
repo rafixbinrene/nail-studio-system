@@ -14,15 +14,23 @@
     <style>
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Registration Page Theme
+        | NS BEAUTY COMMENT: REGISTRATION PAGE
         |--------------------------------------------------------------------------
-        | Frontend-only changes
+        | Nail Studio & Beauty
         |
-        | - Matches the Login Page design
-        | - Uniform corner radius
-        | - Muted placeholder text
-        | - Password visibility controls
-        | - Existing Laravel registration functionality remains unchanged
+        | Changes:
+        | 1. Fix duplicated password eye icons.
+        | 2. Add Terms and Conditions.
+        | 3. Add Privacy Notice.
+        | 4. Require agreement before requesting registration OTP.
+        |
+        | Preserved:
+        | - Existing register.store route
+        | - CSRF protection
+        | - Name, phone, address and email fields
+        | - Password and password confirmation
+        | - Email OTP registration
+        | - Existing validation error handling
         |--------------------------------------------------------------------------
         */
 
@@ -40,16 +48,8 @@
             --cream: #f8f6f2;
             --muted: #7d6d60;
             --placeholder: #aa9e93;
-            --glass: rgba(255, 255, 255, .54);
-            --border: rgba(255, 255, 255, .70);
-
-            /*
-            |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT: Uniform Radius
-            |--------------------------------------------------------------------------
-            | Uses the same radius values as the updated Login Page
-            |--------------------------------------------------------------------------
-            */
+            --glass: rgba(255,255,255,.54);
+            --border: rgba(255,255,255,.70);
 
             --radius-card: 24px;
             --radius-input: 14px;
@@ -67,12 +67,12 @@
             background:
                 radial-gradient(
                     circle at 15% 18%,
-                    rgba(255, 255, 255, .78),
+                    rgba(255,255,255,.78),
                     transparent 28%
                 ),
                 radial-gradient(
                     circle at 88% 12%,
-                    rgba(234, 216, 196, .88),
+                    rgba(234,216,196,.88),
                     transparent 30%
                 ),
                 linear-gradient(
@@ -87,7 +87,7 @@
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Registration Card
+        | NS BEAUTY COMMENT: MAIN REGISTRATION CARD
         |--------------------------------------------------------------------------
         */
 
@@ -97,6 +97,7 @@
             padding: 40px;
 
             background: var(--glass);
+
             backdrop-filter: blur(28px);
             -webkit-backdrop-filter: blur(28px);
 
@@ -104,13 +105,13 @@
             border-radius: var(--radius-card);
 
             box-shadow:
-                0 20px 50px rgba(47, 33, 24, .12),
-                inset 0 1px 0 rgba(255, 255, 255, .7);
+                0 20px 50px rgba(47,33,24,.12),
+                inset 0 1px 0 rgba(255,255,255,.7);
         }
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Business Branding
+        | NS BEAUTY COMMENT: BRANDING
         |--------------------------------------------------------------------------
         */
 
@@ -120,16 +121,18 @@
             align-items: center;
             gap: 10px;
 
+            margin-bottom: 20px;
+
             text-align: center;
             font-size: 15px;
             font-weight: 900;
             color: var(--brown-dark);
-            margin-bottom: 20px;
         }
 
         .logo-mark {
             width: 38px;
             height: 38px;
+
             border-radius: var(--radius-small);
 
             display: grid;
@@ -140,12 +143,13 @@
             font-weight: 900;
 
             background:
-                linear-gradient(135deg, #8a7158, #5d3f2c);
+                linear-gradient(135deg,#8a7158,#5d3f2c);
         }
 
         h1 {
             text-align: center;
             margin-bottom: 12px;
+
             font-size: clamp(28px, 4vw, 34px);
             letter-spacing: -.7px;
             line-height: 1.2;
@@ -173,7 +177,7 @@
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Form Layout
+        | NS BEAUTY COMMENT: FORM FIELDS
         |--------------------------------------------------------------------------
         */
 
@@ -184,19 +188,11 @@
         .form-label {
             display: block;
             margin-bottom: 9px;
+
             font-size: 13px;
             font-weight: 800;
             color: var(--brown-dark);
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Input Fields
-        |--------------------------------------------------------------------------
-        | User-entered text remains dark
-        | Placeholder examples remain faded
-        |--------------------------------------------------------------------------
-        */
 
         .form-input {
             width: 100%;
@@ -204,9 +200,9 @@
             padding: 14px 16px;
 
             border-radius: var(--radius-input);
-            border: 1px solid rgba(111, 78, 55, .16);
+            border: 1px solid rgba(111,78,55,.16);
 
-            background: rgba(255, 255, 255, .68);
+            background: rgba(255,255,255,.68);
             color: var(--brown-dark);
 
             font-size: 14px;
@@ -227,20 +223,39 @@
 
         .form-input:focus {
             border-color: var(--brown);
-            background: rgba(255, 255, 255, .88);
-            box-shadow: 0 0 0 3px rgba(111, 78, 55, .10);
+            background: rgba(255,255,255,.88);
+            box-shadow: 0 0 0 3px rgba(111,78,55,.10);
         }
 
         .form-input.is-invalid {
-            border-color: rgba(150, 45, 35, .55);
+            border-color: rgba(150,45,35,.55);
         }
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Password Visibility
+        | NS BEAUTY COMMENT: PASSWORD VISIBILITY FIX
         |--------------------------------------------------------------------------
-        | Both password fields have independent visibility controls
-        | No changes to password values or backend registration
+        |
+        | Microsoft Edge can display its native password eye
+        | alongside the custom NS Beauty visibility button.
+        |
+        | Hide the browser-native password reveal icon.
+        |--------------------------------------------------------------------------
+        */
+
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-ms-clear {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: CUSTOM PASSWORD TOGGLES
+        |--------------------------------------------------------------------------
+        |
+        | Each password field has one independent toggle.
         |--------------------------------------------------------------------------
         */
 
@@ -251,13 +266,14 @@
         }
 
         .password-wrapper .form-input {
-            padding-right: 54px;
+            padding-right: 60px;
         }
 
         .password-toggle {
             position: absolute;
             right: 8px;
             top: 50%;
+
             transform: translateY(-50%);
 
             width: 40px;
@@ -274,6 +290,7 @@
             color: var(--muted);
 
             cursor: pointer;
+            z-index: 2;
 
             transition:
                 background .2s ease,
@@ -281,7 +298,7 @@
         }
 
         .password-toggle:hover {
-            background: rgba(111, 78, 55, .08);
+            background: rgba(111,78,55,.08);
             color: var(--brown);
         }
 
@@ -305,7 +322,17 @@
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Validation and Session Alerts
+        | NS BEAUTY COMMENT: HIDE INACTIVE CUSTOM SVG
+        |--------------------------------------------------------------------------
+        */
+
+        .password-toggle svg[hidden] {
+            display: none !important;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: VALIDATION MESSAGES
         |--------------------------------------------------------------------------
         */
 
@@ -318,15 +345,15 @@
         }
 
         .alert-error {
-            background: rgba(150, 45, 35, .10);
+            background: rgba(150,45,35,.10);
             color: #7a241d;
-            border: 1px solid rgba(150, 45, 35, .18);
+            border: 1px solid rgba(150,45,35,.18);
         }
 
         .alert-success {
-            background: rgba(50, 130, 85, .10);
+            background: rgba(50,130,85,.10);
             color: #285c3f;
-            border: 1px solid rgba(50, 130, 85, .18);
+            border: 1px solid rgba(50,130,85,.18);
         }
 
         .error-text {
@@ -339,7 +366,7 @@
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Email OTP Information
+        | NS BEAUTY COMMENT: EMAIL OTP INFORMATION
         |--------------------------------------------------------------------------
         */
 
@@ -349,8 +376,8 @@
             line-height: 1.7;
             margin-bottom: 22px;
 
-            background: rgba(255, 255, 255, .44);
-            border: 1px solid rgba(255, 255, 255, .70);
+            background: rgba(255,255,255,.44);
+            border: 1px solid rgba(255,255,255,.70);
             border-radius: var(--radius-input);
 
             padding: 14px 16px;
@@ -362,7 +389,132 @@
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Registration Button
+        | NS BEAUTY COMMENT: TERMS AND PRIVACY AGREEMENT
+        |--------------------------------------------------------------------------
+        |
+        | The agreement is shown before the registration button.
+        | The checkbox starts unchecked.
+        |
+        | NOTE:
+        | The text below is a preliminary policy summary.
+        | Complete, approved English and Bahasa Malaysia legal
+        | notices should be published before public deployment.
+        |--------------------------------------------------------------------------
+        */
+
+        .agreement-section {
+            margin: 6px 0 20px;
+            padding: 18px;
+
+            background: rgba(255,255,255,.46);
+            border: 1px solid rgba(111,78,55,.14);
+            border-radius: var(--radius-input);
+        }
+
+        .agreement-heading {
+            color: var(--brown-dark);
+            font-size: 14px;
+            font-weight: 850;
+            margin-bottom: 8px;
+        }
+
+        .agreement-description {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.7;
+            margin-bottom: 14px;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: EXPANDABLE POLICY SECTIONS
+        |--------------------------------------------------------------------------
+        */
+
+        .policy-details {
+            margin-bottom: 10px;
+            border: 1px solid rgba(111,78,55,.14);
+            border-radius: 14px;
+            background: rgba(255,255,255,.58);
+            overflow: hidden;
+        }
+
+        .policy-details summary {
+            padding: 13px 14px;
+            color: var(--brown);
+            font-size: 12px;
+            font-weight: 850;
+            cursor: pointer;
+        }
+
+        .policy-details summary:hover {
+            background: rgba(111,78,55,.06);
+        }
+
+        .policy-content {
+            padding: 4px 15px 15px;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.8;
+        }
+
+        .policy-content p {
+            margin-bottom: 11px;
+        }
+
+        .policy-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .policy-content strong {
+            color: var(--brown-dark);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: MANDATORY CHECKBOX
+        |--------------------------------------------------------------------------
+        */
+
+        .agreement-label {
+            display: flex;
+            align-items: flex-start;
+            gap: 11px;
+
+            margin-top: 16px;
+
+            color: var(--brown-dark);
+            font-size: 12px;
+            line-height: 1.7;
+
+            cursor: pointer;
+        }
+
+        .agreement-checkbox {
+            flex-shrink: 0;
+
+            width: 17px;
+            height: 17px;
+            margin-top: 2px;
+
+            accent-color: var(--brown);
+            cursor: pointer;
+        }
+
+        .agreement-label strong {
+            color: var(--brown);
+        }
+
+        .agreement-footnote {
+            margin-top: 10px;
+            color: var(--muted);
+            font-size: 11px;
+            line-height: 1.6;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: REGISTRATION BUTTON
         |--------------------------------------------------------------------------
         */
 
@@ -384,28 +536,42 @@
             font-weight: 850;
 
             background:
-                linear-gradient(135deg, #8a7158, #5d3f2c);
+                linear-gradient(135deg,#8a7158,#5d3f2c);
 
             cursor: pointer;
 
             transition:
                 transform .2s ease,
-                box-shadow .2s ease;
+                box-shadow .2s ease,
+                opacity .2s ease;
         }
 
-        .submit-btn:hover {
+        .submit-btn:not(:disabled):hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 24px rgba(47, 33, 24, .15);
+            box-shadow: 0 10px 24px rgba(47,33,24,.15);
         }
 
         .submit-btn:focus-visible {
-            outline: 3px solid rgba(111, 78, 55, .4);
+            outline: 3px solid rgba(111,78,55,.4);
             outline-offset: 3px;
         }
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Footer Navigation
+        | NS BEAUTY COMMENT: DISABLED REGISTRATION BUTTON
+        |--------------------------------------------------------------------------
+        */
+
+        .submit-btn:disabled {
+            opacity: .48;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: FOOTER LINKS
         |--------------------------------------------------------------------------
         */
 
@@ -441,7 +607,7 @@
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Responsive Design
+        | NS BEAUTY COMMENT: RESPONSIVE DESIGN
         |--------------------------------------------------------------------------
         */
 
@@ -457,6 +623,10 @@
 
             .subtitle {
                 margin-bottom: 24px;
+            }
+
+            .agreement-section {
+                padding: 15px;
             }
         }
 
@@ -477,13 +647,18 @@
 
         {{--
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Business Branding
+        | NS BEAUTY COMMENT: BUSINESS BRANDING
         |--------------------------------------------------------------------------
         --}}
 
         <div class="logo">
-            <span class="logo-mark" aria-hidden="true">NS</span>
-            <span>Nail Studio &amp; Beauty</span>
+            <span class="logo-mark" aria-hidden="true">
+                NS
+            </span>
+
+            <span>
+                Nail Studio &amp; Beauty
+            </span>
         </div>
 
         <h1>Create Account</h1>
@@ -494,7 +669,7 @@
 
         {{--
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Existing Session Messages
+        | NS BEAUTY COMMENT: SESSION MESSAGES
         |--------------------------------------------------------------------------
         --}}
 
@@ -506,31 +681,37 @@
 
         @if ($errors->any())
             <div class="alert alert-error" role="alert">
-                Please check your details and try again
+                Please check your details and try again.
             </div>
         @endif
 
         {{--
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Existing Registration Form
+        | NS BEAUTY COMMENT: REGISTRATION FORM
         |--------------------------------------------------------------------------
-        | IMPORTANT: Backend integration remains unchanged
         |
-        | POST route('register.store')
-        | CSRF protection
-        | Original form field names
-        | Existing server-side validation
-        | Existing Email OTP registration workflow
+        | Preserved:
+        | - POST register.store
+        | - CSRF
+        | - Existing registration fields
+        | - Existing email OTP workflow
         |--------------------------------------------------------------------------
         --}}
 
-        <form method="POST" action="{{ route('register.store') }}">
+        <form
+            id="registrationForm"
+            method="POST"
+            action="{{ route('register.store') }}"
+        >
             @csrf
 
-            <!-- NS BEAUTY COMMENT: Customer Full Name -->
+            {{--
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: FULL NAME
+            |--------------------------------------------------------------------------
+            --}}
 
             <div class="form-group">
-
                 <label class="form-label" for="name">
                     Full Name
                 </label>
@@ -552,13 +733,15 @@
                         {{ $message }}
                     </div>
                 @enderror
-
             </div>
 
-            <!-- NS BEAUTY COMMENT: Customer Phone Number -->
+            {{--
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: PHONE NUMBER
+            |--------------------------------------------------------------------------
+            --}}
 
             <div class="form-group">
-
                 <label class="form-label" for="phone_number">
                     Phone Number
                 </label>
@@ -580,13 +763,15 @@
                         {{ $message }}
                     </div>
                 @enderror
-
             </div>
 
-            <!-- NS BEAUTY COMMENT: Customer Address -->
+            {{--
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: ADDRESS
+            |--------------------------------------------------------------------------
+            --}}
 
             <div class="form-group">
-
                 <label class="form-label" for="address">
                     Address
                 </label>
@@ -607,13 +792,15 @@
                         {{ $message }}
                     </div>
                 @enderror
-
             </div>
 
-            <!-- NS BEAUTY COMMENT: Customer Email Address -->
+            {{--
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: EMAIL ADDRESS
+            |--------------------------------------------------------------------------
+            --}}
 
             <div class="form-group">
-
                 <label class="form-label" for="email">
                     Email Address
                 </label>
@@ -635,29 +822,30 @@
                         {{ $message }}
                     </div>
                 @enderror
-
             </div>
 
             {{--
             |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT: Email OTP Notice
-            |--------------------------------------------------------------------------
-            | Text only — existing OTP handling remains unchanged
+            | NS BEAUTY COMMENT: EMAIL OTP INFORMATION
             |--------------------------------------------------------------------------
             --}}
 
             <div class="note">
                 <strong>Email verification</strong>
+
                 <span>
                     — A one-time verification code will be sent
-                    to your email address after account creation
+                    to your email address during registration.
                 </span>
             </div>
 
-            <!-- NS BEAUTY COMMENT: Customer Password -->
+            {{--
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: PASSWORD
+            |--------------------------------------------------------------------------
+            --}}
 
             <div class="form-group">
-
                 <label class="form-label" for="password">
                     Password
                 </label>
@@ -675,6 +863,11 @@
                         @error('password') aria-invalid="true" @enderror
                     >
 
+                    {{--
+                    | NS BEAUTY COMMENT: Password Visibility Button
+                    | Exactly one custom icon is displayed at a time.
+                    --}}
+
                     <button
                         type="button"
                         class="password-toggle"
@@ -684,6 +877,7 @@
                         aria-controls="password"
                         title="Show password"
                     >
+
                         <svg
                             class="eye-icon"
                             viewBox="0 0 24 24"
@@ -699,7 +893,7 @@
                             class="eye-off-icon"
                             viewBox="0 0 24 24"
                             aria-hidden="true"
-                            style="display:none;"
+                            hidden
                         >
                             <path
                                 d="M10.6 5.2A10.5 10.5 0 0 1 12 5c6.5 0 10 7 10 7a15.5 15.5 0 0 1-3.2 4.1"
@@ -710,6 +904,7 @@
                             <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
                             <path d="M3 3l18 18" />
                         </svg>
+
                     </button>
 
                 </div>
@@ -719,14 +914,20 @@
                         {{ $message }}
                     </div>
                 @enderror
-
             </div>
 
-            <!-- NS BEAUTY COMMENT: Confirm Customer Password -->
+            {{--
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: CONFIRM PASSWORD
+            |--------------------------------------------------------------------------
+            --}}
 
             <div class="form-group">
 
-                <label class="form-label" for="password_confirmation">
+                <label
+                    class="form-label"
+                    for="password_confirmation"
+                >
                     Confirm Password
                 </label>
 
@@ -751,6 +952,7 @@
                         aria-controls="password_confirmation"
                         title="Show confirm password"
                     >
+
                         <svg
                             class="eye-icon"
                             viewBox="0 0 24 24"
@@ -766,7 +968,7 @@
                             class="eye-off-icon"
                             viewBox="0 0 24 24"
                             aria-hidden="true"
-                            style="display:none;"
+                            hidden
                         >
                             <path
                                 d="M10.6 5.2A10.5 10.5 0 0 1 12 5c6.5 0 10 7 10 7a15.5 15.5 0 0 1-3.2 4.1"
@@ -777,22 +979,289 @@
                             <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
                             <path d="M3 3l18 18" />
                         </svg>
+
                     </button>
 
                 </div>
-
             </div>
 
             {{--
             |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT: Registration Submission
+            | NS BEAUTY COMMENT: TERMS AND PRIVACY ACKNOWLEDGMENT
             |--------------------------------------------------------------------------
-            | The button submits the same fields to the same Laravel route
-            | Account creation and Email OTP remain backend-controlled
+            |
+            | The following sections are preliminary summaries.
+            |
+            | Before public deployment:
+            | - Approve and publish complete Terms and Conditions.
+            | - Approve Privacy Notices in English and Bahasa Malaysia.
+            | - Verify the actual practices, retention periods,
+            |   contact details and service providers.
+            |
+            | A frontend checkbox alone does not prove compliance.
             |--------------------------------------------------------------------------
             --}}
 
-            <button type="submit" class="submit-btn">
+            <section
+                class="agreement-section"
+                aria-labelledby="agreementHeading"
+            >
+
+                <h2
+                    class="agreement-heading"
+                    id="agreementHeading"
+                >
+                    Terms, Conditions &amp; Privacy
+                </h2>
+
+                <p class="agreement-description">
+                    Please review the following information
+                    before creating your Nail Studio &amp; Beauty account.
+                </p>
+
+                {{--
+                |--------------------------------------------------------------------------
+                | NS BEAUTY COMMENT: TERMS AND CONDITIONS SUMMARY
+                |--------------------------------------------------------------------------
+                --}}
+
+                <details class="policy-details">
+
+                    <summary>
+                        Terms and Conditions
+                    </summary>
+
+                    <div class="policy-content">
+
+                        <p>
+                            <strong>1. Account Registration</strong>
+                            Customers must provide accurate registration
+                            information and maintain the confidentiality
+                            of their account credentials.
+                        </p>
+
+                        <p>
+                            <strong>2. Account Security</strong>
+                            Email verification may be required before
+                            account access. Customers should not
+                            share their passwords or verification codes.
+                        </p>
+
+                        <p>
+                            <strong>3. Appointment Booking</strong>
+                            Bookings are subject to available schedules,
+                            service durations, staff availability,
+                            and the booking policies enforced
+                            by the system.
+                        </p>
+
+                        <p>
+                            <strong>4. Cancellations and Rescheduling</strong>
+                            Appointment changes are subject to the
+                            policies displayed during booking and
+                            the actions available in the customer's
+                            account.
+                        </p>
+
+                        <p>
+                            <strong>5. Payments</strong>
+                            Payments are handled directly by the
+                            business according to its current
+                            payment arrangements. Online payment
+                            processing is not provided through
+                            this registration form.
+                        </p>
+
+                        <p>
+                            <strong>6. Responsible Use</strong>
+                            Customers must not misuse the platform,
+                            attempt unauthorized access, or submit
+                            fraudulent bookings.
+                        </p>
+
+                        <p>
+                            <strong>7. Service Updates</strong>
+                            Appointment availability may change
+                            due to staff absence, emergency closures,
+                            or other operational circumstances.
+                        </p>
+
+                        <p>
+                            <strong>8. Contact and Questions</strong>
+                            Customers may contact Nail Studio &amp; Beauty
+                            through its published official business
+                            contact channels for questions concerning
+                            bookings or accounts.
+                        </p>
+
+                    </div>
+
+                </details>
+
+                {{--
+                |--------------------------------------------------------------------------
+                | NS BEAUTY COMMENT: PRIVACY NOTICE SUMMARY
+                |--------------------------------------------------------------------------
+                |
+                | This describes the general processing purposes.
+                | It is not a substitute for a complete PDPA notice.
+                |--------------------------------------------------------------------------
+                --}}
+
+                <details class="policy-details">
+
+                    <summary>
+                        Privacy Notice / Notis Privasi
+                    </summary>
+
+                    <div class="policy-content">
+
+                        <p>
+                            <strong>1. Personal Information</strong>
+                            Nail Studio &amp; Beauty collects the
+                            personal information submitted during
+                            registration, including your name,
+                            phone number, email address, and
+                            any address you provide.
+                        </p>
+
+                        <p>
+                            <strong>2. Purpose of Processing</strong>
+                            Information is used to manage accounts,
+                            authenticate users, verify email addresses,
+                            process appointments, contact customers,
+                            and provide booking notifications.
+                        </p>
+
+                        <p>
+                            <strong>3. Booking Records</strong>
+                            Appointment information, selected services,
+                            booking status, and related activity may be
+                            stored to support business operations.
+                        </p>
+
+                        <p>
+                            <strong>4. Security</strong>
+                            Access controls and other technical
+                            safeguards are used to help protect
+                            customer information. No online system
+                            can guarantee absolute security.
+                        </p>
+
+                        <p>
+                            <strong>5. Authorized Access</strong>
+                            Customer information may be accessed by
+                            authorized personnel where necessary
+                            to provide services and manage bookings.
+                        </p>
+
+                        <p>
+                            <strong>6. Service Providers</strong>
+                            Hosting and email service providers
+                            may process information required to
+                            operate the website and deliver
+                            verification or notification messages.
+                        </p>
+
+                        <p>
+                            <strong>7. Data Requests</strong>
+                            Customers may contact the business
+                            regarding access, correction, and
+                            other applicable personal-data rights
+                            under Malaysian law.
+                        </p>
+
+                        <p>
+                            <strong>8. Malaysian Law</strong>
+                            Personal data processing is subject
+                            to applicable Malaysian legislation,
+                            including the Personal Data Protection
+                            Act 2010 and relevant amendments,
+                            where applicable.
+                        </p>
+
+                        <p>
+                            <strong>Important:</strong>
+                            A complete published Privacy Notice
+                            must additionally explain applicable
+                            disclosures, retention practices,
+                            contact details, and data-subject rights
+                            in sufficient detail.
+                        </p>
+
+                    </div>
+
+                </details>
+
+                {{--
+                |--------------------------------------------------------------------------
+                | NS BEAUTY COMMENT: MANDATORY REGISTRATION AGREEMENT
+                |--------------------------------------------------------------------------
+                |
+                | Must be checked before the submit button is enabled.
+                | Name submitted to Laravel: terms_accepted
+                |--------------------------------------------------------------------------
+                --}}
+
+                <label
+                    for="terms_accepted"
+                    class="agreement-label"
+                >
+
+                    <input
+                        type="checkbox"
+                        class="agreement-checkbox"
+                        id="terms_accepted"
+                        name="terms_accepted"
+                        value="1"
+                        required
+                        aria-required="true"
+                    >
+
+                    <span>
+                        I have read and agree to the
+                        <strong>Terms and Conditions</strong>
+                        and acknowledge the
+                        <strong>Privacy Notice</strong>
+                        of Nail Studio &amp; Beauty.
+                    </span>
+
+                </label>
+
+                @error('terms_accepted')
+                    <div
+                        class="error-text"
+                        role="alert"
+                    >
+                        {{ $message }}
+                    </div>
+                @enderror
+
+                <p class="agreement-footnote">
+                    This agreement relates to account registration
+                    and necessary service communications.
+                    It does not grant consent to receive
+                    optional promotional marketing messages.
+                </p>
+
+            </section>
+
+            {{--
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: REGISTRATION SUBMISSION
+            |--------------------------------------------------------------------------
+            |
+            | Disabled until the mandatory checkbox is selected.
+            | The existing Laravel route and email OTP flow remain.
+            |--------------------------------------------------------------------------
+            --}}
+
+            <button
+                type="submit"
+                class="submit-btn"
+                id="registrationSubmitButton"
+                disabled
+            >
                 Create Account &amp; Send Email OTP
             </button>
 
@@ -800,16 +1269,21 @@
 
         {{--
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Account and Home Navigation
+        | NS BEAUTY COMMENT: FOOTER NAVIGATION
         |--------------------------------------------------------------------------
         --}}
 
         <div class="footer">
             Already have an account?
-            <a href="{{ route('login') }}">Sign In</a>
+            <a href="{{ route('login') }}">
+                Sign In
+            </a>
         </div>
 
-        <a href="{{ route('home') }}" class="back">
+        <a
+            href="{{ route('home') }}"
+            class="back"
+        >
             ← Back to Home
         </a>
 
@@ -818,53 +1292,196 @@
     <script>
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Independent Password Visibility Toggles
+        | NS BEAUTY COMMENT: PASSWORD VISIBILITY
         |--------------------------------------------------------------------------
-        | Frontend-only JavaScript
         |
-        | Each eye button controls only its associated password field
-        | Existing submitted field names and values remain unchanged
+        | Each custom eye button controls one password input.
+        | Edge's native eye icon is hidden by CSS.
         |--------------------------------------------------------------------------
         */
 
-        document.querySelectorAll(".password-toggle").forEach(function (button) {
+        document.querySelectorAll(
+            ".password-toggle"
+        ).forEach(function (button) {
 
             button.addEventListener("click", function () {
 
-                const inputId = button.getAttribute("data-password-target");
-                const input = document.getElementById(inputId);
+                const inputId = button.getAttribute(
+                    "data-password-target"
+                );
+
+                const input = document.getElementById(
+                    inputId
+                );
 
                 if (!input) {
                     return;
                 }
 
-                const eyeIcon = button.querySelector(".eye-icon");
-                const eyeOffIcon = button.querySelector(".eye-off-icon");
+                const eyeIcon = button.querySelector(
+                    ".eye-icon"
+                );
 
-                const isHidden = input.type === "password";
+                const eyeOffIcon = button.querySelector(
+                    ".eye-off-icon"
+                );
 
-                input.type = isHidden ? "text" : "password";
+                const wasHidden = input.type === "password";
+
+                /*
+                |--------------------------------------------------------------------------
+                | NS BEAUTY COMMENT: Change Password Visibility
+                |--------------------------------------------------------------------------
+                */
+
+                input.type = wasHidden ? "text" : "password";
+
+                /*
+                |--------------------------------------------------------------------------
+                | NS BEAUTY COMMENT: Display One Eye Icon
+                |--------------------------------------------------------------------------
+                */
 
                 if (eyeIcon) {
-                    eyeIcon.style.display = isHidden ? "none" : "block";
+                    eyeIcon.hidden = wasHidden;
                 }
 
                 if (eyeOffIcon) {
-                    eyeOffIcon.style.display = isHidden ? "block" : "none";
+                    eyeOffIcon.hidden = !wasHidden;
                 }
 
-                const isConfirmation = inputId === "password_confirmation";
+                /*
+                |--------------------------------------------------------------------------
+                | NS BEAUTY COMMENT: Accessibility Labels
+                |--------------------------------------------------------------------------
+                */
 
-                const label = isHidden
-                    ? (isConfirmation ? "Hide confirm password" : "Hide password")
-                    : (isConfirmation ? "Show confirm password" : "Show password");
+                const isConfirmation =
+                    inputId === "password_confirmation";
 
-                button.setAttribute("aria-label", label);
-                button.setAttribute("aria-pressed", isHidden ? "true" : "false");
+                const label = wasHidden
+                    ? (
+                        isConfirmation
+                            ? "Hide confirm password"
+                            : "Hide password"
+                    )
+                    : (
+                        isConfirmation
+                            ? "Show confirm password"
+                            : "Show password"
+                    );
+
+                button.setAttribute(
+                    "aria-label",
+                    label
+                );
+
+                button.setAttribute(
+                    "aria-pressed",
+                    wasHidden ? "true" : "false"
+                );
+
                 button.title = label;
+
             });
 
         });
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: MANDATORY AGREEMENT VALIDATION
+        |--------------------------------------------------------------------------
+        |
+        | Frontend behavior:
+        | - Checkbox starts unchecked.
+        | - Registration button starts disabled.
+        | - Checking enables the button.
+        | - Unchecking disables it.
+        |
+        | Server-side validation is also required.
+        |--------------------------------------------------------------------------
+        */
+
+        const agreementCheckbox = document.getElementById(
+            "terms_accepted"
+        );
+
+        const submitButton = document.getElementById(
+            "registrationSubmitButton"
+        );
+
+        const registrationForm = document.getElementById(
+            "registrationForm"
+        );
+
+        function updateAgreementState() {
+
+            if (
+                !agreementCheckbox ||
+                !submitButton
+            ) {
+                return;
+            }
+
+            submitButton.disabled =
+                !agreementCheckbox.checked;
+        }
+
+        if (
+            agreementCheckbox &&
+            submitButton
+        ) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Unchecked by Default
+            |--------------------------------------------------------------------------
+            | Never preselect legal acceptance.
+            |--------------------------------------------------------------------------
+            */
+
+            agreementCheckbox.checked = false;
+
+            updateAgreementState();
+
+            agreementCheckbox.addEventListener(
+                "change",
+                updateAgreementState
+            );
+
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Submission Check
+        |--------------------------------------------------------------------------
+        | Prevent submission if agreement is missing.
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            registrationForm &&
+            agreementCheckbox
+        ) {
+
+            registrationForm.addEventListener(
+                "submit",
+                function (event) {
+
+                    if (!agreementCheckbox.checked) {
+
+                        event.preventDefault();
+
+                        agreementCheckbox.reportValidity();
+
+                        agreementCheckbox.focus();
+
+                    }
+
+                }
+            );
+
+        }
     </script>
 
 </body>

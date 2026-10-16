@@ -4,6 +4,7 @@
 
 <head>
     <meta charset="UTF-8">
+
     <meta
         name="viewport"
         content="width=device-width, initial-scale=1.0"
@@ -16,13 +17,8 @@
         |--------------------------------------------------------------------------
         | NS BEAUTY COMMENT: Login Page Theme
         |--------------------------------------------------------------------------
-        | Frontend-only improvements
-        |
-        | Design:
-        | - Consistent with the public Welcome Page
-        | - Muji-inspired brown, cream, and glass appearance
-        | - Uniform corner radius
-        | - Accessible input fields and password visibility toggle
+        | Maintains the original Muji-inspired design.
+        | Only the password visibility icon conflict is fixed.
         |--------------------------------------------------------------------------
         */
 
@@ -42,14 +38,6 @@
             --placeholder: #aa9e93;
             --glass: rgba(255,255,255,.54);
             --border: rgba(255,255,255,.70);
-
-            /*
-            |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT: Uniform Border Radius
-            |--------------------------------------------------------------------------
-            | Matches the updated Welcome Page styling
-            |--------------------------------------------------------------------------
-            */
 
             --radius-card: 24px;
             --radius-input: 14px;
@@ -193,9 +181,6 @@
         |--------------------------------------------------------------------------
         | NS BEAUTY COMMENT: Input Appearance
         |--------------------------------------------------------------------------
-        | Input text stays dark
-        | Placeholder examples are lighter to avoid confusion
-        |--------------------------------------------------------------------------
         */
 
         .form-input {
@@ -233,10 +218,29 @@
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Password Visibility
+        | NS BEAUTY COMMENT: Fix Duplicate Password Eye Icon
         |--------------------------------------------------------------------------
-        | The eye button changes only the input type
-        | It does not change the entered password or backend processing
+        |
+        | Microsoft Edge may show its own password reveal icon.
+        |
+        | The following CSS hides the browser's built-in icon,
+        | leaving only the NS Beauty custom toggle button.
+        |
+        | Password input behavior and backend processing
+        | are not modified.
+        |--------------------------------------------------------------------------
+        */
+
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-ms-clear {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Custom Password Visibility
         |--------------------------------------------------------------------------
         */
 
@@ -247,7 +251,7 @@
         }
 
         .password-wrapper .form-input {
-            padding-right: 54px;
+            padding-right: 60px;
         }
 
         .password-toggle {
@@ -270,6 +274,7 @@
             color: var(--muted);
 
             cursor: pointer;
+            z-index: 2;
 
             transition:
                 background .2s ease,
@@ -295,6 +300,18 @@
             stroke-linecap: round;
             stroke-linejoin: round;
             pointer-events: none;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Show Only One Custom SVG Icon
+        |--------------------------------------------------------------------------
+        | The hidden attribute ensures the inactive icon is invisible.
+        |--------------------------------------------------------------------------
+        */
+
+        .password-toggle svg[hidden] {
+            display: none !important;
         }
 
         /*
@@ -432,6 +449,7 @@
                 linear-gradient(135deg,#8a7158,#5d3f2c);
 
             cursor: pointer;
+
             transition:
                 transform .2s ease,
                 box-shadow .2s ease;
@@ -551,8 +569,6 @@
         |--------------------------------------------------------------------------
         | NS BEAUTY COMMENT: Existing Session Messages
         |--------------------------------------------------------------------------
-        | Backend messages remain unchanged
-        |--------------------------------------------------------------------------
         --}}
 
         @if (session('status'))
@@ -571,13 +587,13 @@
         |--------------------------------------------------------------------------
         | NS BEAUTY COMMENT: Login Form
         |--------------------------------------------------------------------------
-        | These backend connections are unchanged:
         |
-        | POST route('login.submit')
-        | CSRF protection
-        | email and password field names
-        | Remember Me
-        | Email OTP authentication flow
+        | Preserved:
+        | - login.submit route
+        | - CSRF protection
+        | - Email and password fields
+        | - Remember Me
+        | - Email OTP authentication
         |--------------------------------------------------------------------------
         --}}
 
@@ -632,10 +648,13 @@
 
                     {{--
                     |--------------------------------------------------------------------------
-                    | NS BEAUTY COMMENT: Show and Hide Password
+                    | NS BEAUTY COMMENT: Single Password Visibility Button
                     |--------------------------------------------------------------------------
-                    | Uses inline SVG icons to avoid external dependencies
-                    | The toggle button cannot submit the login form
+                    |
+                    | The browser-native Edge reveal button is hidden by CSS.
+                    | Only this custom NS Beauty eye icon is shown.
+                    |
+                    | The button cannot submit the login form.
                     |--------------------------------------------------------------------------
                     --}}
 
@@ -650,6 +669,10 @@
                         title="Show password"
                     >
 
+                        {{--
+                        | NS BEAUTY COMMENT: Password Hidden Icon
+                        --}}
+
                         <svg
                             id="eyeIcon"
                             viewBox="0 0 24 24"
@@ -661,11 +684,15 @@
                             <circle cx="12" cy="12" r="3" />
                         </svg>
 
+                        {{--
+                        | NS BEAUTY COMMENT: Password Visible Icon
+                        --}}
+
                         <svg
                             id="eyeOffIcon"
                             viewBox="0 0 24 24"
                             aria-hidden="true"
-                            style="display:none;"
+                            hidden
                         >
                             <path
                                 d="M10.6 5.2A10.5 10.5 0 0 1 12 5c6.5 0 10 7 10 7a15.5 15.5 0 0 1-3.2 4.1"
@@ -692,9 +719,6 @@
             {{--
             |--------------------------------------------------------------------------
             | NS BEAUTY COMMENT: Email OTP Information
-            |--------------------------------------------------------------------------
-            | Frontend text only — OTP delivery and verification remain
-            | controlled by the existing authentication backend
             |--------------------------------------------------------------------------
             --}}
 
@@ -760,17 +784,20 @@
         |--------------------------------------------------------------------------
         | NS BEAUTY COMMENT: Password Visibility Toggle
         |--------------------------------------------------------------------------
-        | Frontend only
         |
-        | - Hidden by default
-        | - Clicking the eye shows the entered password
-        | - Clicking again hides it
-        | - Does not alter the input name or submitted value
-        | - Does not bypass Email OTP or authentication
+        | Frontend only.
+        |
+        | - Password starts hidden.
+        | - Clicking the eye reveals the password.
+        | - Clicking again hides the password.
+        | - Only one eye icon is displayed at a time.
+        | - The entered value remains unchanged.
+        | - OTP and backend authentication remain unchanged.
         |--------------------------------------------------------------------------
         */
 
         function togglePasswordVisibility() {
+
             const passwordInput = document.getElementById("password");
             const toggleButton = document.getElementById("passwordToggle");
 
@@ -788,10 +815,28 @@
 
             const isHidden = passwordInput.type === "password";
 
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Toggle Password Input Type
+            |--------------------------------------------------------------------------
+            */
+
             passwordInput.type = isHidden ? "text" : "password";
 
-            eyeIcon.style.display = isHidden ? "none" : "block";
-            eyeOffIcon.style.display = isHidden ? "block" : "none";
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Display Exactly One Eye Icon
+            |--------------------------------------------------------------------------
+            */
+
+            eyeIcon.hidden = isHidden;
+            eyeOffIcon.hidden = !isHidden;
+
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Accessibility State
+            |--------------------------------------------------------------------------
+            */
 
             toggleButton.setAttribute(
                 "aria-label",
