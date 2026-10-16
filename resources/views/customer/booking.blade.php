@@ -5,51 +5,41 @@
 |--------------------------------------------------------------------------
 | NS BEAUTY COMMENT: CUSTOMER BOOKING PAGE
 |--------------------------------------------------------------------------
-| System: Nail Studio & Beauty
+| Nail Studio & Beauty
 |
-| Features:
-| 1. Regular and follow-up appointments
-| 2. Maximum three services per booking
-| 3. Qualified beautician selection
-| 4. Seven-day booking calendar
-| 5. Sunday studio closure
-| 6. Real-time appointment availability
-| 7. Staff day-off detection
-| 8. Booking confirmation
-| 9. Existing customer booking limits
-| 10. Booking success popup
+| Four-step customer booking:
+| 1. Select regular or follow-up services
+| 2. Select a qualified beautician
+| 3. Select a date and available time
+| 4. Confirm appointment
 |
-| Important:
-| The Laravel BookingController is responsible for final
-| server-side validation, overlapping booking protection,
-| staff skills, customer eligibility and Sunday closure
+| Studio rules:
+| - Seven-day window, including today
+| - Sunday closed
+| - Active emergency closures block ALL covered dates
+| - Maximum three services
+| - Staff day-offs and existing bookings affect availability
+| - First-time customers: one active booking
+| - After a finished booking: two active bookings
+|
+| The Laravel controller performs the final security checks.
 |--------------------------------------------------------------------------
 --}}
 
 @section('styles')
-
 <style>
-/*
-|--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: MAIN DESIGN VARIABLES
-|--------------------------------------------------------------------------
-*/
+/* NS BEAUTY COMMENT: Muji-inspired theme */
 
 .ns-booking {
     --ns-brown: #6f4e37;
     --ns-brown-light: #8a7158;
     --ns-dark: #2f2118;
     --ns-muted: #7d6d60;
-    --ns-border: rgba(111, 78, 55, 0.14);
-    --ns-card: rgba(255, 255, 255, 0.58);
-    --ns-gradient: linear-gradient(
-        135deg,
-        #8a7158,
-        #5d3f2c
-    );
+    --ns-border: rgba(111,78,55,.14);
+    --ns-card: rgba(255,255,255,.58);
+    --ns-gradient: linear-gradient(135deg,#8a7158,#5d3f2c);
     --ns-radius-large: 24px;
     --ns-radius-small: 14px;
-
     width: 100%;
     min-width: 0;
     color: var(--ns-dark);
@@ -71,12 +61,6 @@
     -webkit-tap-highlight-color: transparent;
 }
 
-/*
-|--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: PAGE HEADER
-|--------------------------------------------------------------------------
-*/
-
 .ns-booking .booking-header {
     text-align: center;
     margin-bottom: 28px;
@@ -95,11 +79,7 @@
     margin: 0;
 }
 
-/*
-|--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: MAIN CONTAINERS
-|--------------------------------------------------------------------------
-*/
+/* NS BEAUTY COMMENT: Main containers */
 
 .ns-booking .booking-rules,
 .ns-booking .booking-panel,
@@ -147,18 +127,12 @@
     font-size: 13px;
 }
 
-/*
-|--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: ERROR ALERT
-|--------------------------------------------------------------------------
-*/
-
 .ns-booking .booking-error {
     padding: 14px 18px;
     margin-bottom: 20px;
     border-radius: var(--ns-radius-small);
-    border: 1px solid rgba(184, 77, 77, 0.22);
-    background: rgba(184, 77, 77, 0.10);
+    border: 1px solid rgba(184,77,77,.22);
+    background: rgba(184,77,77,.10);
     color: #963b35;
     font-size: 13px;
     line-height: 1.6;
@@ -168,15 +142,11 @@
     display: none;
 }
 
-/*
-|--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: FOUR-STEP INDICATOR
-|--------------------------------------------------------------------------
-*/
+/* NS BEAUTY COMMENT: Step indicator */
 
 .ns-booking .booking-steps {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(4,minmax(0,1fr));
     max-width: 850px;
     gap: 12px;
     margin: 0 auto 28px;
@@ -200,7 +170,7 @@
     display: grid;
     place-items: center;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.7);
+    background: rgba(255,255,255,.7);
     border: 1px solid var(--ns-border);
     font-size: 13px;
     font-weight: 800;
@@ -209,25 +179,21 @@
 .ns-booking .booking-step.active .step-circle,
 .ns-booking .booking-step.done .step-circle {
     background: var(--ns-gradient);
-    color: #fff;
+    color: white;
 }
 
-/*
-|--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: BOOKING PANELS
-|--------------------------------------------------------------------------
-*/
+/* NS BEAUTY COMMENT: Booking panels */
 
 .ns-booking .booking-panel {
     display: none;
     min-width: 0;
     padding: 32px;
-    background: var(--glass, rgba(255, 255, 255, 0.58));
+    background: var(--glass,rgba(255,255,255,.58));
     backdrop-filter: blur(28px);
     -webkit-backdrop-filter: blur(28px);
-    border: 1px solid var(--border, rgba(255, 255, 255, 0.72));
+    border: 1px solid var(--border,rgba(255,255,255,.72));
     border-radius: var(--ns-radius-large);
-    box-shadow: 0 20px 55px rgba(47, 33, 24, 0.08);
+    box-shadow: 0 20px 55px rgba(47,33,24,.08);
 }
 
 .ns-booking .booking-panel.active {
@@ -251,15 +217,9 @@
     line-height: 1.7;
 }
 
-/*
-|--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: BOOKING TYPE
-|--------------------------------------------------------------------------
-*/
-
 .ns-booking .booking-type-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2,minmax(0,1fr));
     gap: 14px;
     margin-bottom: 28px;
 }
@@ -272,7 +232,7 @@
 .ns-booking .summary-card,
 .ns-booking .details-card {
     min-width: 0;
-    background: rgba(255, 255, 255, 0.48);
+    background: rgba(255,255,255,.48);
     border: 1px solid var(--ns-border);
     border-radius: var(--ns-radius-small);
 }
@@ -303,20 +263,16 @@
 .ns-booking .type-card.active,
 .ns-booking .service-card.selected,
 .ns-booking .staff-card.selected {
-    background: rgba(255, 255, 255, 0.86);
+    background: rgba(255,255,255,.86);
     border-color: var(--ns-brown);
     box-shadow: inset 0 0 0 1px var(--ns-brown);
 }
 
-/*
-|--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: SERVICE SELECTION
-|--------------------------------------------------------------------------
-*/
+/* NS BEAUTY COMMENT: Service selection */
 
 .ns-booking .services-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(3,minmax(0,1fr));
     gap: 16px;
 }
 
@@ -354,18 +310,14 @@
 .ns-booking .service-badges span {
     display: inline-flex;
     padding: 7px 10px;
-    background: rgba(255, 255, 255, 0.78);
+    background: rgba(255,255,255,.78);
     border-radius: var(--ns-radius-small);
     color: var(--ns-brown);
     font-size: 11px;
     font-weight: 800;
 }
 
-/*
-|--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: FOLLOW-UP HISTORY
-|--------------------------------------------------------------------------
-*/
+/* NS BEAUTY COMMENT: Follow-up history */
 
 .ns-booking .followup-container {
     display: none;
@@ -411,7 +363,7 @@
     padding: 14px;
     border: 1px solid var(--ns-border);
     border-radius: var(--ns-radius-small);
-    background: rgba(255, 255, 255, 0.58);
+    background: rgba(255,255,255,.58);
     cursor: pointer;
 }
 
@@ -431,15 +383,11 @@
     line-height: 1.5;
 }
 
-/*
-|--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: BEAUTICIAN CARDS
-|--------------------------------------------------------------------------
-*/
+/* NS BEAUTY COMMENT: Staff */
 
 .ns-booking .staff-list {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2,minmax(0,1fr));
     gap: 14px;
 }
 
@@ -455,7 +403,7 @@
 }
 
 .ns-booking .staff-card:disabled {
-    opacity: 0.42;
+    opacity: .42;
     cursor: not-allowed;
 }
 
@@ -466,7 +414,7 @@
     height: 48px;
     min-width: 48px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.8);
+    background: rgba(255,255,255,.8);
     font-size: 22px;
 }
 
@@ -475,15 +423,11 @@
     color: var(--ns-muted);
 }
 
-/*
-|--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: DATE AND TIME
-|--------------------------------------------------------------------------
-*/
+/* NS BEAUTY COMMENT: Date and time */
 
 .ns-booking .calendar-time {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2,minmax(0,1fr));
     gap: 22px;
 }
 
@@ -494,7 +438,7 @@
 .ns-booking .calendar-grid,
 .ns-booking .time-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2,minmax(0,1fr));
     gap: 10px;
     margin-top: 16px;
 }
@@ -507,7 +451,7 @@
     padding: 12px 8px;
     border: 1px solid var(--ns-border);
     border-radius: var(--ns-radius-small);
-    background: rgba(255, 255, 255, 0.68);
+    background: rgba(255,255,255,.68);
     color: var(--ns-dark);
     cursor: pointer;
     font-size: 12px;
@@ -539,21 +483,23 @@
 
 .ns-booking .calendar-day:disabled,
 .ns-booking .time-btn:disabled {
-    background: rgba(130, 130, 130, 0.14);
+    background: rgba(130,130,130,.14);
     color: #99928c;
-    border-color: rgba(130, 130, 130, 0.12);
-    opacity: 0.78;
+    border-color: rgba(130,130,130,.12);
+    opacity: .78;
     cursor: not-allowed;
 }
 
-.ns-booking .calendar-day.closed {
-    background: rgba(166, 95, 81, 0.12);
+.ns-booking .calendar-day.closed,
+.ns-booking .calendar-day.closed:disabled {
+    background: rgba(166,95,81,.12);
     color: #a45c52;
-    border-color: rgba(166, 95, 81, 0.20);
+    border-color: rgba(166,95,81,.20);
+    opacity: 1;
 }
 
 .ns-booking .time-btn.closed {
-    background: rgba(166, 95, 81, 0.10);
+    background: rgba(166,95,81,.10);
     color: #a45c52;
 }
 
@@ -573,15 +519,11 @@
     color: #55745a;
 }
 
-/*
-|--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: CONFIRMATION
-|--------------------------------------------------------------------------
-*/
+/* NS BEAUTY COMMENT: Confirmation */
 
 .ns-booking .confirmation-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2,minmax(0,1fr));
     gap: 20px;
 }
 
@@ -596,7 +538,7 @@
     gap: 15px;
     padding: 10px 0;
     font-size: 13px;
-    border-bottom: 1px solid rgba(111, 78, 55, 0.08);
+    border-bottom: 1px solid rgba(111,78,55,.08);
 }
 
 .ns-booking .summary-row strong {
@@ -630,7 +572,7 @@
     margin-bottom: 16px;
     border: 1px solid var(--ns-border);
     border-radius: var(--ns-radius-small);
-    background: rgba(255, 255, 255, 0.72);
+    background: rgba(255,255,255,.72);
     color: var(--ns-dark);
     font-size: 14px;
     outline: none;
@@ -638,11 +580,11 @@
 
 .ns-booking .form-input:focus {
     border-color: var(--ns-brown);
-    box-shadow: 0 0 0 3px rgba(111, 78, 55, 0.10);
+    box-shadow: 0 0 0 3px rgba(111,78,55,.10);
 }
 
 .ns-booking .form-input[readonly] {
-    background: rgba(220, 215, 209, 0.25);
+    background: rgba(220,215,209,.25);
     color: var(--ns-muted);
 }
 
@@ -651,11 +593,7 @@
     resize: vertical;
 }
 
-/*
-|--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: BUTTONS
-|--------------------------------------------------------------------------
-*/
+/* NS BEAUTY COMMENT: Navigation buttons */
 
 .ns-booking .nav-buttons {
     display: flex;
@@ -688,32 +626,26 @@
 }
 
 .ns-booking .booking-btn-secondary {
-    background: rgba(255, 255, 255, 0.65);
+    background: rgba(255,255,255,.65);
     color: var(--ns-brown);
     border: 1px solid var(--ns-border);
 }
 
 .ns-booking .booking-btn:disabled {
-    opacity: 0.45;
+    opacity: .45;
     cursor: not-allowed;
 }
 
 .ns-booking button:focus-visible,
 .ns-booking a:focus-visible {
-    outline: 3px solid rgba(111, 78, 55, 0.40);
+    outline: 3px solid rgba(111,78,55,.40);
     outline-offset: 3px;
 }
 
-/*
-|--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: EMPTY STATE
-|--------------------------------------------------------------------------
-*/
-
 .ns-booking .empty-box {
-    grid-column: 1 / -1;
+    grid-column: 1/-1;
     padding: 24px;
-    background: rgba(255, 255, 255, 0.46);
+    background: rgba(255,255,255,.46);
     border-radius: var(--ns-radius-small);
     color: var(--ns-muted);
     font-size: 13px;
@@ -721,11 +653,7 @@
     text-align: center;
 }
 
-/*
-|--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: BOOKING SUCCESS POPUP
-|--------------------------------------------------------------------------
-*/
+/* NS BEAUTY COMMENT: Booking success popup */
 
 .ns-booking .success-overlay {
     position: fixed;
@@ -735,7 +663,7 @@
     justify-content: center;
     align-items: center;
     padding: 20px;
-    background: rgba(47, 33, 24, 0.35);
+    background: rgba(47,33,24,.35);
     backdrop-filter: blur(9px);
 }
 
@@ -746,9 +674,9 @@
     overflow-y: auto;
     padding: 32px;
     border-radius: var(--ns-radius-large);
-    background: rgba(255, 255, 255, 0.96);
+    background: rgba(255,255,255,.96);
     text-align: center;
-    box-shadow: 0 25px 65px rgba(47, 33, 24, 0.20);
+    box-shadow: 0 25px 65px rgba(47,33,24,.20);
 }
 
 .ns-booking .success-icon {
@@ -759,7 +687,7 @@
     margin: 0 auto 16px;
     border-radius: 50%;
     background: var(--ns-gradient);
-    color: white;
+    color: #fff;
     font-size: 30px;
 }
 
@@ -778,15 +706,11 @@
     margin-top: 22px;
 }
 
-/*
-|--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: RESPONSIVENESS
-|--------------------------------------------------------------------------
-*/
+/* NS BEAUTY COMMENT: Responsive layouts */
 
-@media (max-width: 900px) {
+@media (max-width:900px) {
     .ns-booking .services-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(2,minmax(0,1fr));
     }
 
     .ns-booking .calendar-time,
@@ -795,7 +719,7 @@
     }
 }
 
-@media (max-width: 600px) {
+@media (max-width:600px) {
     .ns-booking .booking-header h1 {
         font-size: 28px;
     }
@@ -854,7 +778,7 @@
     }
 }
 
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion:reduce) {
     .ns-booking *,
     .ns-booking *::before,
     .ns-booking *::after {
@@ -862,7 +786,6 @@
     }
 }
 </style>
-
 @endsection
 
 @section('content')
@@ -870,7 +793,7 @@
 @php
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: CUSTOMER DEFAULTS
+    | NS BEAUTY COMMENT: Customer Default Values
     |--------------------------------------------------------------------------
     */
 
@@ -891,7 +814,7 @@
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: STAFF SKILLS FOR FRONTEND ELIGIBILITY
+    | NS BEAUTY COMMENT: Staff Service Qualifications
     |--------------------------------------------------------------------------
     */
 
@@ -907,7 +830,7 @@
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: UPCOMING STAFF DAY-OFF DATA
+    | NS BEAUTY COMMENT: Staff Day-Off Data
     |--------------------------------------------------------------------------
     */
 
@@ -919,33 +842,61 @@
             )->format('Y-m-d'),
             'end_date' => \Carbon\Carbon::parse(
                 $dayOff->end_date
-            )->format('Y-m-d')
+            )->format('Y-m-d'),
         ];
     })->values()->all();
+
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Studio-Wide Emergency Closures
+    |--------------------------------------------------------------------------
+    | Closure records are provided by BookingController::create().
+    |
+    | The starting date and ending date are BOTH included.
+    | Example: 2026-10-17 to 2026-10-19 blocks 17, 18 and 19.
+    |--------------------------------------------------------------------------
+    */
+
+    $studioClosureRanges = collect($studioClosures ?? [])
+        ->filter(function ($closure) {
+            return strtolower((string) $closure->status) === 'active';
+        })
+        ->map(function ($closure) {
+            return [
+                'start' => \Carbon\Carbon::parse(
+                    $closure->start_date
+                )->format('Y-m-d'),
+
+                'end' => \Carbon\Carbon::parse(
+                    $closure->end_date
+                )->format('Y-m-d'),
+
+                'title' => (string) $closure->title,
+                'reason' => (string) $closure->reason,
+            ];
+        })
+        ->values()
+        ->all();
 @endphp
 
 <div class="ns-booking">
 
-    {{-- NS BEAUTY COMMENT: PAGE HEADER --}}
+    {{-- NS BEAUTY COMMENT: Page Header --}}
 
     <header class="booking-header">
         <h1>Book Appointment</h1>
         <p>Schedule your next visit in four simple steps</p>
     </header>
 
-    {{--
-    |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: BOOKING RULES
-    |--------------------------------------------------------------------------
-    --}}
+    {{-- NS BEAUTY COMMENT: Booking Rules --}}
 
     <div class="booking-rules">
-
         <h2>Booking Rules</h2>
 
         <ul>
             <li>
-                Maximum of <strong>3 services</strong> per booking
+                Maximum of <strong>3 services</strong>
+                per booking
             </li>
 
             <li>
@@ -954,7 +905,8 @@
             </li>
 
             <li>
-                After the first completed booking, customers can have up to
+                After the first completed booking,
+                customers can have up to
                 <strong>2 active bookings</strong>
             </li>
 
@@ -965,7 +917,7 @@
 
             <li>
                 <strong>Closed every Sunday</strong>
-                — Sunday appointments cannot be selected
+                and on dates declared as studio-wide closures
             </li>
 
             <li>
@@ -995,10 +947,9 @@
                 {{ $customerCompletedBookings >= 1 ? 2 : 1 }}
             </strong>
         </div>
-
     </div>
 
-    {{-- NS BEAUTY COMMENT: SERVER VALIDATION ERRORS --}}
+    {{-- NS BEAUTY COMMENT: Laravel Validation Errors --}}
 
     @if ($errors->any())
         <div class="booking-error" role="alert">
@@ -1013,14 +964,9 @@
         aria-live="assertive"
     ></div>
 
-    {{--
-    |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: FOUR BOOKING STEPS
-    |--------------------------------------------------------------------------
-    --}}
+    {{-- NS BEAUTY COMMENT: Four-Step Indicator --}}
 
     <div class="booking-steps">
-
         <div class="booking-step active" id="stepIndicator1">
             <div class="step-circle">1</div>
             <span>Services</span>
@@ -1040,14 +986,9 @@
             <div class="step-circle">4</div>
             <span>Confirm</span>
         </div>
-
     </div>
 
-    {{--
-    |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: MAIN LARAVEL BOOKING FORM
-    |--------------------------------------------------------------------------
-    --}}
+    {{-- NS BEAUTY COMMENT: Main Booking Form --}}
 
     <form
         id="bookingForm"
@@ -1056,7 +997,7 @@
     >
         @csrf
 
-        {{-- NS BEAUTY COMMENT: BACKEND INPUT FIELDS --}}
+        {{-- NS BEAUTY COMMENT: Backend Fields --}}
 
         <input
             type="hidden"
@@ -1143,12 +1084,14 @@
                     onclick="setBookingType('followup', this)"
                 >
                     <h3>Backjob / Follow-up</h3>
-                    <p>Select services from a previously finished booking</p>
+                    <p>
+                        Select services from a previously finished booking
+                    </p>
                 </button>
 
             </div>
 
-            {{-- NS BEAUTY COMMENT: REGULAR SERVICES --}}
+            {{-- NS BEAUTY COMMENT: Regular Services --}}
 
             <div id="regularServicesBox">
 
@@ -1174,11 +1117,11 @@
                                 {{ (int) $service->duration }}
                             )"
                         >
-
                             <h4>{{ $service->service_name }}</h4>
 
                             <p>
-                                {{ $service->description ?: 'No description available' }}
+                                {{ $service->description
+                                    ?: 'No description available' }}
                             </p>
 
                             <div class="service-badges">
@@ -1187,10 +1130,12 @@
                                 </span>
 
                                 <span>
-                                    RM {{ number_format((float) $service->price, 2) }}
+                                    RM {{ number_format(
+                                        (float) $service->price,
+                                        2
+                                    ) }}
                                 </span>
                             </div>
-
                         </button>
 
                     @empty
@@ -1202,14 +1147,9 @@
                     @endforelse
 
                 </div>
-
             </div>
 
-            {{--
-            |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT: FOLLOW-UP SERVICE HISTORY
-            |--------------------------------------------------------------------------
-            --}}
+            {{-- NS BEAUTY COMMENT: Follow-Up History --}}
 
             <div class="followup-container" id="followupBox">
 
@@ -1242,7 +1182,12 @@
                         >
 
                             <h4>
-                                Booking #BK-{{ str_pad($history->id, 4, '0', STR_PAD_LEFT) }}
+                                Booking #BK-{{ str_pad(
+                                    $history->id,
+                                    4,
+                                    '0',
+                                    STR_PAD_LEFT
+                                ) }}
                             </h4>
 
                             <p>
@@ -1257,7 +1202,9 @@
 
                             <p>
                                 <strong>Services:</strong>
-                                {{ $history->services->pluck('service_name')->join(', ') }}
+                                {{ $history->services
+                                    ->pluck('service_name')
+                                    ->join(', ') }}
                             </p>
 
                             <div class="follow-service-list">
@@ -1294,39 +1241,37 @@
                                             </strong>
 
                                             <small>
-                                                {{ $duration }} minutes · RM 0.00
+                                                {{ $duration }} minutes
+                                                · RM 0.00
                                             </small>
                                         </span>
-
                                     </label>
 
                                 @empty
 
                                     <div class="empty-box">
-                                        No recorded services for this appointment
+                                        No recorded services
+                                        for this appointment
                                     </div>
 
                                 @endforelse
 
                             </div>
-
                         </div>
 
                     @empty
 
                         <div class="empty-box">
-                            You do not have any finished bookings yet
-                            Complete a regular booking before requesting a follow-up
+                            You do not have any finished bookings yet.
+                            Complete a regular booking before
+                            requesting a follow-up.
                         </div>
 
                     @endforelse
 
                 </div>
 
-                <label
-                    class="form-label"
-                    for="followUpReason"
-                >
+                <label class="form-label" for="followUpReason">
                     Backjob / Follow-up Reason
                 </label>
 
@@ -1341,7 +1286,6 @@
             </div>
 
             <div class="nav-buttons first-step">
-
                 <button
                     type="button"
                     class="booking-btn booking-btn-primary"
@@ -1349,9 +1293,7 @@
                 >
                     Continue →
                 </button>
-
             </div>
-
         </section>
 
         {{--
@@ -1383,7 +1325,6 @@
                             @js($staff->full_name)
                         )"
                     >
-
                         <span class="staff-avatar" aria-hidden="true">
                             👤
                         </span>
@@ -1397,7 +1338,6 @@
                                 Status: {{ $staff->status }}
                             </small>
                         </span>
-
                     </button>
 
                 @empty
@@ -1429,7 +1369,6 @@
                 </button>
 
             </div>
-
         </section>
 
         {{--
@@ -1443,15 +1382,15 @@
             <h2>Date &amp; Time</h2>
 
             <p class="section-desc">
-                Choose a date within the next seven days
+                Choose a date within the next seven days.
                 The studio is closed every Sunday
-                All appointment times are in Malaysia Time
+                and on declared emergency closure dates.
+                All appointment times are in Malaysia Time.
             </p>
 
             <div class="calendar-time">
 
                 <div class="calendar-card">
-
                     <h3>Available Dates</h3>
 
                     <p class="timezone-note">
@@ -1462,11 +1401,9 @@
                         class="calendar-grid"
                         id="dateGrid"
                     ></div>
-
                 </div>
 
                 <div class="calendar-card">
-
                     <h3>Select Time</h3>
 
                     <p class="timezone-note">
@@ -1488,7 +1425,6 @@
                     >
                         Select a date to check appointment availability
                     </p>
-
                 </div>
 
             </div>
@@ -1514,7 +1450,6 @@
                 </button>
 
             </div>
-
         </section>
 
         {{--
@@ -1644,7 +1579,6 @@
                     >
 
                 </div>
-
             </div>
 
             <div class="nav-buttons">
@@ -1666,16 +1600,11 @@
                 </button>
 
             </div>
-
         </section>
 
     </form>
 
-    {{--
-    |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: SUCCESS POPUP
-    |--------------------------------------------------------------------------
-    --}}
+    {{-- NS BEAUTY COMMENT: Success Popup --}}
 
     @if (session('booking_success'))
 
@@ -1688,9 +1617,7 @@
                 aria-labelledby="successTitle"
             >
 
-                <div class="success-icon">
-                    ✓
-                </div>
+                <div class="success-icon">✓</div>
 
                 <h2 id="successTitle">
                     Booking Recorded
@@ -1704,13 +1631,12 @@
                 </p>
 
                 @if (session('booking_id'))
-
                     <p>
                         <strong>
-                            Booking ID: #{{ session('booking_id') }}
+                            Booking ID:
+                            #{{ session('booking_id') }}
                         </strong>
                     </p>
-
                 @endif
 
                 <div class="success-actions">
@@ -1730,9 +1656,7 @@
                     </a>
 
                 </div>
-
             </div>
-
         </div>
 
     @endif
@@ -1746,7 +1670,7 @@
 <script>
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: CUSTOMER BOOKING STATE
+| NS BEAUTY COMMENT: BOOKING STATE
 |--------------------------------------------------------------------------
 */
 
@@ -1778,11 +1702,29 @@ let bookingSubmissionStarted = false;
 |--------------------------------------------------------------------------
 */
 
-const customerCompletedBookings = {{ (int) $customerCompletedBookings }};
-const customerActiveBookings = {{ (int) $customerActiveBookings }};
+const customerCompletedBookings =
+    {{ (int) $customerCompletedBookings }};
 
-const staffSkills = @json($staffSkills);
-const staffDaysOff = @json($staffDaysOff);
+const customerActiveBookings =
+    {{ (int) $customerActiveBookings }};
+
+const staffSkills = @js($staffSkills);
+
+const staffDaysOff = @js($staffDaysOff);
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: ACTIVE STUDIO CLOSURES
+|--------------------------------------------------------------------------
+| Example:
+| start = "2026-10-17"
+| end   = "2026-10-19"
+|
+| Both dates and every day between them are CLOSED.
+|--------------------------------------------------------------------------
+*/
+
+const studioClosureRanges = @js($studioClosureRanges);
 
 const availabilityEndpoint = @js(
     route('customer.booking.availability')
@@ -1819,9 +1761,7 @@ function bookingElement(id) {
 function showAlert(message) {
     const box = bookingElement("alertBox");
 
-    if (!box) {
-        return;
-    }
+    if (!box) return;
 
     box.textContent = message;
     box.style.display = "block";
@@ -1837,6 +1777,7 @@ function hideAlert() {
 
     if (box) {
         box.style.display = "none";
+        box.textContent = "";
     }
 }
 
@@ -1847,9 +1788,9 @@ function getBookingLimit() {
 function checkActiveBookingLimit() {
     if (customerActiveBookings >= getBookingLimit()) {
         showAlert(
-            "You have reached your active booking limit — appointments awaiting rescheduling are included"
+            "You have reached your active booking limit — " +
+            "appointments awaiting rescheduling are included"
         );
-
         return false;
     }
 
@@ -1882,8 +1823,10 @@ function malaysiaParts(date = new Date()) {
     });
 
     return {
-        date: `${values.year}-${values.month}-${values.day}`,
-        time: `${values.hour}:${values.minute}`
+        date:
+            `${values.year}-${values.month}-${values.day}`,
+        time:
+            `${values.hour}:${values.minute}`
     };
 }
 
@@ -1897,7 +1840,12 @@ function addCalendarDays(dateString, days) {
         .map(Number);
 
     return new Date(
-        Date.UTC(year, month - 1, day + days, 12)
+        Date.UTC(
+            year,
+            month - 1,
+            day + days,
+            12
+        )
     ).toISOString().slice(0, 10);
 }
 
@@ -1916,10 +1864,7 @@ function isDateWithinBookingWindow(dateString) {
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: SUNDAY STUDIO CLOSURE
-|--------------------------------------------------------------------------
-| Sunday is identified from the selected calendar date
-| using UTC at noon to avoid browser timezone shifts
+| NS BEAUTY COMMENT: SUNDAY CLOSURE
 |--------------------------------------------------------------------------
 */
 
@@ -1939,6 +1884,68 @@ function isSundayClosed(dateString) {
     return date.getUTCDay() === 0;
 }
 
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: STUDIO EMERGENCY CLOSURE
+|--------------------------------------------------------------------------
+| Inclusive date range:
+|
+| closure.start <= dateString <= closure.end
+|
+| Example October 17–19:
+| Oct 17 CLOSED
+| Oct 18 CLOSED
+| Oct 19 CLOSED
+|--------------------------------------------------------------------------
+*/
+
+function getStudioClosure(dateString) {
+    if (!dateString) {
+        return null;
+    }
+
+    return studioClosureRanges.find(closure => {
+        return (
+            dateString >= closure.start &&
+            dateString <= closure.end
+        );
+    }) || null;
+}
+
+function isStudioClosed(dateString) {
+    return (
+        isSundayClosed(dateString) ||
+        getStudioClosure(dateString) !== null
+    );
+}
+
+function studioClosureMessage(dateString) {
+    if (isSundayClosed(dateString)) {
+        return "Nail Studio & Beauty is closed every Sunday";
+    }
+
+    const closure = getStudioClosure(dateString);
+
+    if (closure) {
+        return (
+            "The studio is temporarily closed — " +
+            (
+                closure.reason ||
+                closure.title ||
+                "Emergency closure"
+            )
+        );
+    }
+
+    return "";
+}
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: OTHER DATE HELPERS
+|--------------------------------------------------------------------------
+*/
+
 function isPastOrStarted(dateString, timeString) {
     const now = malaysiaParts();
 
@@ -1952,6 +1959,8 @@ function isPastOrStarted(dateString, timeString) {
 }
 
 function displayTime(timeString) {
+    if (!timeString) return "Not selected";
+
     const [hour, minute] = timeString
         .split(":")
         .map(Number);
@@ -1959,7 +1968,11 @@ function displayTime(timeString) {
     const period = hour >= 12 ? "PM" : "AM";
     const twelveHour = hour % 12 || 12;
 
-    return `${twelveHour}:${String(minute).padStart(2, "0")} ${period}`;
+    return (
+        `${twelveHour}:` +
+        `${String(minute).padStart(2, "0")} ` +
+        period
+    );
 }
 
 function displayDate(dateString) {
@@ -1986,28 +1999,31 @@ function displayDate(dateString) {
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: BOOKING STEP NAVIGATION
+| NS BEAUTY COMMENT: STEP NAVIGATION
 |--------------------------------------------------------------------------
 */
 
 function showStep(step) {
     currentStep = step;
 
-    document.querySelectorAll(".ns-booking .booking-panel")
+    document
+        .querySelectorAll(".ns-booking .booking-panel")
         .forEach(panel => {
             panel.classList.remove("active");
         });
 
     const panel = bookingElement("step" + step);
 
-    if (!panel) {
-        return;
-    }
+    if (!panel) return;
 
     panel.classList.add("active");
 
     for (let i = 1; i <= 4; i++) {
-        const indicator = bookingElement("stepIndicator" + i);
+        const indicator = bookingElement(
+            "stepIndicator" + i
+        );
+
+        if (!indicator) continue;
 
         indicator.classList.remove("active", "done");
 
@@ -2047,7 +2063,7 @@ async function nextStep() {
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: STEP 1 VALIDATION
+    | NS BEAUTY COMMENT: Step 1 Validation
     |--------------------------------------------------------------------------
     */
 
@@ -2067,15 +2083,11 @@ async function nextStep() {
             showAlert(
                 "Select services from one finished appointment"
             );
-
             return;
         }
 
         if (getTotalDuration() <= 0) {
-            showAlert(
-                "The selected services have an invalid duration"
-            );
-
+            showAlert("Invalid service duration");
             return;
         }
 
@@ -2084,7 +2096,7 @@ async function nextStep() {
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: STEP 2 VALIDATION
+    | NS BEAUTY COMMENT: Step 2 Validation
     |--------------------------------------------------------------------------
     */
 
@@ -2099,7 +2111,7 @@ async function nextStep() {
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: STEP 3 VALIDATION
+    | NS BEAUTY COMMENT: Step 3 Validation
     |--------------------------------------------------------------------------
     */
 
@@ -2111,15 +2123,13 @@ async function nextStep() {
             showAlert(
                 "Select a date within the seven-day booking window"
             );
-
             return;
         }
 
-        if (isSundayClosed(selectedDate)) {
+        if (isStudioClosed(selectedDate)) {
             showAlert(
-                "Nail Studio & Beauty is closed every Sunday"
+                studioClosureMessage(selectedDate)
             );
-
             return;
         }
 
@@ -2129,18 +2139,18 @@ async function nextStep() {
         }
 
         const chosenTime = selectedTime;
-
         const verified = await refreshAvailability(true);
 
-        if (!verified || !isSlotAvailable(chosenTime)) {
+        if (
+            !verified ||
+            !isSlotAvailable(chosenTime) ||
+            selectedTime !== chosenTime
+        ) {
             showAlert(
                 "The selected appointment time is no longer available"
             );
-
             return;
         }
-
-        selectVerifiedTime(chosenTime);
     }
 
     if (currentStep < 4) {
@@ -2270,9 +2280,7 @@ function selectRegularService(
     price,
     duration
 ) {
-    if (selectedBookingType !== "regular") {
-        return;
-    }
+    if (selectedBookingType !== "regular") return;
 
     const index = selectedServices.findIndex(
         service => service.id === Number(id)
@@ -2282,11 +2290,7 @@ function selectRegularService(
         selectedServices.splice(index, 1);
 
         card.classList.remove("selected");
-
-        card.setAttribute(
-            "aria-pressed",
-            "false"
-        );
+        card.setAttribute("aria-pressed", "false");
     } else {
         if (selectedServices.length >= 3) {
             showAlert("Maximum of 3 services per booking");
@@ -2301,11 +2305,7 @@ function selectRegularService(
         });
 
         card.classList.add("selected");
-
-        card.setAttribute(
-            "aria-pressed",
-            "true"
-        );
+        card.setAttribute("aria-pressed", "true");
     }
 
     selectionChanged();
@@ -2334,12 +2334,6 @@ function selectFollowUpService(
     appointmentId = Number(appointmentId);
     serviceId = Number(serviceId);
 
-    /*
-    |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: USE SERVICES FROM ONE HISTORY ONLY
-    |--------------------------------------------------------------------------
-    */
-
     const changingHistory =
         selectedFollowUpId !== "" &&
         Number(selectedFollowUpId) !== appointmentId;
@@ -2362,7 +2356,6 @@ function selectFollowUpService(
             showAlert(
                 "Maximum of 3 follow-up services per booking"
             );
-
             return;
         }
 
@@ -2404,12 +2397,6 @@ function selectFollowUpService(
 
     selectionChanged();
 
-    /*
-    |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: PREFER ORIGINAL BEAUTICIAN
-    |--------------------------------------------------------------------------
-    */
-
     if (input.checked && selectedFollowUpId) {
         selectOriginalStaff(
             originalStaffId,
@@ -2420,7 +2407,7 @@ function selectFollowUpService(
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: STAFF ELIGIBILITY
+| NS BEAUTY COMMENT: STAFF QUALIFICATIONS
 |--------------------------------------------------------------------------
 */
 
@@ -2472,7 +2459,6 @@ function selectBeautician(card, id, name) {
         showAlert(
             "This beautician is not qualified for all selected services"
         );
-
         return;
     }
 
@@ -2513,47 +2499,55 @@ function selectOriginalStaff(staffId, staffName) {
 }
 
 function isStaffOnDayOff(staffId, dateString) {
-    return staffDaysOff.some(dayOff =>
+    return staffDaysOff.some(dayOff => (
         Number(dayOff.staff_id) === Number(staffId) &&
         dateString >= dayOff.start_date &&
         dateString <= dayOff.end_date
-    );
+    ));
 }
 
 /*
 |--------------------------------------------------------------------------
 | NS BEAUTY COMMENT: GENERATE SEVEN-DAY CALENDAR
 |--------------------------------------------------------------------------
-| Sundays are visible but disabled
+| Every date inside an active emergency closure is disabled.
 |--------------------------------------------------------------------------
 */
 
 function generateNext7Days() {
     const grid = bookingElement("dateGrid");
 
+    if (!grid) return;
+
     grid.innerHTML = "";
 
     getBookingDates().forEach(dateString => {
         const sundayClosed = isSundayClosed(dateString);
+
+        const emergencyClosure =
+            getStudioClosure(dateString);
+
+        const studioClosed =
+            isStudioClosed(dateString);
 
         const button = document.createElement("button");
 
         button.type = "button";
         button.className = "calendar-day";
 
-        if (sundayClosed) {
+        if (studioClosed) {
             button.classList.add("closed");
         }
 
-        button.disabled = sundayClosed;
+        button.disabled = studioClosed;
 
-        button.title = sundayClosed
-            ? "Studio closed every Sunday"
+        button.title = studioClosed
+            ? studioClosureMessage(dateString)
             : "Choose appointment date";
 
         button.classList.toggle(
             "selected",
-            !sundayClosed &&
+            !studioClosed &&
             selectedDate === dateString
         );
 
@@ -2563,14 +2557,18 @@ function generateNext7Days() {
 
         const statusLabel = document.createElement("small");
 
-        statusLabel.textContent = sundayClosed
-            ? "Closed"
-            : "Select";
+        if (sundayClosed) {
+            statusLabel.textContent = "Sunday Closed";
+        } else if (emergencyClosure) {
+            statusLabel.textContent = "Emergency Closed";
+        } else {
+            statusLabel.textContent = "Select";
+        }
 
         button.appendChild(dateLabel);
         button.appendChild(statusLabel);
 
-        if (!sundayClosed) {
+        if (!studioClosed) {
             button.addEventListener("click", () => {
                 selectDate(button, dateString);
             });
@@ -2581,7 +2579,7 @@ function generateNext7Days() {
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: CLEAR EXPIRED OR CLOSED SELECTIONS
+    | NS BEAUTY COMMENT: Clear Invalidated Selections
     |--------------------------------------------------------------------------
     */
 
@@ -2589,31 +2587,34 @@ function generateNext7Days() {
         selectedDate &&
         (
             !isDateWithinBookingWindow(selectedDate) ||
-            isSundayClosed(selectedDate)
+            isStudioClosed(selectedDate)
         )
     ) {
         selectedDate = "";
-
         bookingElement("dateInput").value = "";
 
         invalidateAvailability();
     }
 }
 
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: SELECT DATE
+|--------------------------------------------------------------------------
+*/
+
 function selectDate(button, dateString) {
+    hideAlert();
+
     if (!isDateWithinBookingWindow(dateString)) {
         showAlert(
             "The selected date is outside the seven-day booking window"
         );
-
         return;
     }
 
-    if (isSundayClosed(dateString)) {
-        showAlert(
-            "Nail Studio & Beauty is closed every Sunday"
-        );
-
+    if (isStudioClosed(dateString)) {
+        showAlert(studioClosureMessage(dateString));
         return;
     }
 
@@ -2639,8 +2640,7 @@ function selectDate(button, dateString) {
 */
 
 function getAvailabilityFingerprint() {
-    const staffId =
-        bookingElement("staffInput").value;
+    const staffId = bookingElement("staffInput").value;
 
     const serviceIds = selectedServices
         .map(service => Number(service.id))
@@ -2659,11 +2659,15 @@ function getAvailabilityFingerprint() {
 function getAvailabilityParams() {
     return {
         appointment_date: selectedDate,
+
         staff_id: bookingElement("staffInput").value,
+
         booking_type: selectedBookingType,
+
         selected_service_ids: selectedServices
             .map(service => service.id)
             .join(","),
+
         follow_up_appointment_id:
             selectedBookingType === "followup"
                 ? selectedFollowUpId
@@ -2673,9 +2677,19 @@ function getAvailabilityParams() {
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: INVALIDATE OLD AVAILABILITY
+| NS BEAUTY COMMENT: CLEAR PREVIOUS AVAILABILITY
 |--------------------------------------------------------------------------
 */
+
+function clearSelectedTime() {
+    selectedTime = "";
+
+    const input = bookingElement("timeInput");
+
+    if (input) {
+        input.value = "";
+    }
+}
 
 function invalidateAvailability() {
     availabilityRequestVersion++;
@@ -2694,19 +2708,9 @@ function invalidateAvailability() {
     renderTimeSlots();
 }
 
-function clearSelectedTime() {
-    selectedTime = "";
-
-    const input = bookingElement("timeInput");
-
-    if (input) {
-        input.value = "";
-    }
-}
-
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: CHECK VERIFIED SLOT AVAILABILITY
+| NS BEAUTY COMMENT: CHECK VERIFIED SLOT
 |--------------------------------------------------------------------------
 */
 
@@ -2722,7 +2726,7 @@ function isSlotAvailable(time) {
 
     if (
         !isDateWithinBookingWindow(selectedDate) ||
-        isSundayClosed(selectedDate)
+        isStudioClosed(selectedDate)
     ) {
         return false;
     }
@@ -2731,19 +2735,16 @@ function isSlotAvailable(time) {
         return false;
     }
 
-    return availabilitySlots.some(slot =>
+    return availabilitySlots.some(slot => (
         slot.time === time &&
         slot.available === true &&
         slot.status === "available"
-    );
+    ));
 }
 
 /*
 |--------------------------------------------------------------------------
 | NS BEAUTY COMMENT: RENDER APPOINTMENT TIME SLOTS
-|--------------------------------------------------------------------------
-| Accepted status values:
-| available, booked, past, day_off, closed
 |--------------------------------------------------------------------------
 */
 
@@ -2752,9 +2753,7 @@ function renderTimeSlots() {
     const note = bookingElement("availabilityNote");
     const continueButton = bookingElement("dateContinueBtn");
 
-    if (!grid || !note) {
-        return;
-    }
+    if (!grid || !note) return;
 
     grid.innerHTML = "";
 
@@ -2771,13 +2770,11 @@ function renderTimeSlots() {
         return;
     }
 
-    const staffId =
-        bookingElement("staffInput").value;
+    const staffId = bookingElement("staffInput").value;
 
-    const sundayClosed = isSundayClosed(selectedDate);
+    const studioClosed = isStudioClosed(selectedDate);
 
-    const onDayOff =
-        staffId &&
+    const onDayOff = staffId &&
         isStaffOnDayOff(staffId, selectedDate);
 
     bookingTimes.forEach(time => {
@@ -2786,9 +2783,7 @@ function renderTimeSlots() {
         );
 
         const button = document.createElement("button");
-
         const label = document.createElement("span");
-
         const statusLabel = document.createElement("small");
 
         button.type = "button";
@@ -2799,10 +2794,12 @@ function renderTimeSlots() {
         let status = "loading";
         let statusText = "Checking";
 
-        if (sundayClosed) {
+        if (studioClosed) {
             status = "closed";
             statusText = "Studio closed";
-        } else if (isPastOrStarted(selectedDate, time)) {
+        } else if (
+            isPastOrStarted(selectedDate, time)
+        ) {
             status = "past";
             statusText = "Past";
         } else if (onDayOff) {
@@ -2819,31 +2816,16 @@ function renderTimeSlots() {
         ) {
             status = slot.status;
 
-            switch (status) {
-                case "available":
-                    statusText = "Available";
-                    break;
+            const labels = {
+                available: "Available",
+                booked: "Fully booked",
+                past: "Past",
+                day_off: "Staff day off",
+                closed: "Studio closed"
+            };
 
-                case "booked":
-                    statusText = "Fully booked";
-                    break;
-
-                case "past":
-                    statusText = "Past";
-                    break;
-
-                case "day_off":
-                    statusText = "Staff day off";
-                    break;
-
-                case "closed":
-                    statusText = "Studio closed";
-                    break;
-
-                default:
-                    status = "error";
-                    statusText = "Unavailable";
-            }
+            statusText =
+                labels[status] || "Unavailable";
         } else {
             status = "error";
             statusText = "Unavailable";
@@ -2880,18 +2862,16 @@ function renderTimeSlots() {
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: SHOW APPROPRIATE AVAILABILITY MESSAGE
+    | NS BEAUTY COMMENT: Availability Feedback
     |--------------------------------------------------------------------------
     */
 
-    if (sundayClosed) {
+    if (studioClosed) {
         note.className = "availability-note error";
-
         note.textContent =
-            "The studio is closed every Sunday — please select Monday to Saturday";
+            studioClosureMessage(selectedDate);
     } else if (availabilityLoading) {
         note.className = "availability-note";
-
         note.textContent =
             "Checking live appointment availability";
     } else if (
@@ -2921,7 +2901,7 @@ function renderTimeSlots() {
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: SELECT VERIFIED APPOINTMENT TIME
+| NS BEAUTY COMMENT: SELECT VERIFIED TIME
 |--------------------------------------------------------------------------
 */
 
@@ -2929,7 +2909,6 @@ function selectVerifiedTime(time) {
     if (!isSlotAvailable(time)) {
         clearSelectedTime();
         renderTimeSlots();
-
         return false;
     }
 
@@ -2944,27 +2923,19 @@ function selectVerifiedTime(time) {
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: FETCH LIVE AVAILABILITY
-|--------------------------------------------------------------------------
-| Handles:
-| - Authentication cookies
-| - Real-time database response
-| - Stale requests
-| - Cancelled requests
-| - Invalid or incomplete slot data
+| NS BEAUTY COMMENT: LIVE AVAILABILITY REQUEST
 |--------------------------------------------------------------------------
 */
 
 async function refreshAvailability(preserveSelection = false) {
-    const staffId =
-        bookingElement("staffInput").value;
+    const staffId = bookingElement("staffInput").value;
 
     if (
         !selectedDate ||
         !staffId ||
         selectedServices.length === 0 ||
         !isDateWithinBookingWindow(selectedDate) ||
-        isSundayClosed(selectedDate)
+        isStudioClosed(selectedDate)
     ) {
         invalidateAvailability();
         return false;
@@ -2975,8 +2946,7 @@ async function refreshAvailability(preserveSelection = false) {
 
     availabilityRequestVersion++;
 
-    const requestVersion =
-        availabilityRequestVersion;
+    const requestVersion = availabilityRequestVersion;
 
     if (availabilityAbortController) {
         availabilityAbortController.abort();
@@ -3028,7 +2998,7 @@ async function refreshAvailability(preserveSelection = false) {
                 errorMessage =
                     errorData.message || errorMessage;
             } catch (error) {
-                // NS BEAUTY COMMENT: Keep generic error message
+                // NS BEAUTY COMMENT: Keep generic error message.
             }
 
             throw new Error(errorMessage);
@@ -3038,7 +3008,7 @@ async function refreshAvailability(preserveSelection = false) {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: DISCARD OUTDATED RESPONSES
+        | NS BEAUTY COMMENT: Ignore Stale Responses
         |--------------------------------------------------------------------------
         */
 
@@ -3064,7 +3034,37 @@ async function refreshAvailability(preserveSelection = false) {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: VALIDATE SLOT STATUSES
+        | NS BEAUTY COMMENT: Server Closure Check
+        |--------------------------------------------------------------------------
+        */
+
+        if (data.studio_closed === true) {
+            availabilityLoading = false;
+            availabilityVerified = false;
+            availabilitySlots = [];
+            availabilityFingerprint = "";
+
+            clearSelectedTime();
+            renderTimeSlots();
+
+            const note = bookingElement("availabilityNote");
+
+            if (note) {
+                note.className = "availability-note error";
+
+                note.textContent =
+                    data.closure_reason
+                        ? "Studio temporarily closed — " +
+                            data.closure_reason
+                        : "The studio is closed on this date";
+            }
+
+            return false;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Validate Slot Statuses
         |--------------------------------------------------------------------------
         */
 
@@ -3076,19 +3076,17 @@ async function refreshAvailability(preserveSelection = false) {
             "closed"
         ];
 
-        const normalizedSlots = data.slots.filter(slot => {
-            return (
-                slot &&
-                bookingTimes.includes(slot.time) &&
-                validStatuses.includes(slot.status) &&
-                typeof slot.available === "boolean" &&
-                (
-                    slot.status === "available"
-                        ? slot.available === true
-                        : slot.available === false
-                )
-            );
-        });
+        const normalizedSlots = data.slots.filter(slot => (
+            slot &&
+            bookingTimes.includes(slot.time) &&
+            validStatuses.includes(slot.status) &&
+            typeof slot.available === "boolean" &&
+            (
+                slot.status === "available"
+                    ? slot.available === true
+                    : slot.available === false
+            )
+        ));
 
         const uniqueTimes = new Set(
             normalizedSlots.map(slot => slot.time)
@@ -3108,12 +3106,6 @@ async function refreshAvailability(preserveSelection = false) {
         availabilityLoading = false;
         availabilityVerified = true;
 
-        /*
-        |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: RESTORE PREVIOUS TIME IF STILL AVAILABLE
-        |--------------------------------------------------------------------------
-        */
-
         if (previousTime) {
             if (isSlotAvailable(previousTime)) {
                 selectedTime = previousTime;
@@ -3128,6 +3120,7 @@ async function refreshAvailability(preserveSelection = false) {
         renderTimeSlots();
 
         return true;
+
     } catch (error) {
         if (
             requestVersion !== availabilityRequestVersion ||
@@ -3145,8 +3138,7 @@ async function refreshAvailability(preserveSelection = false) {
         clearSelectedTime();
         renderTimeSlots();
 
-        const note =
-            bookingElement("availabilityNote");
+        const note = bookingElement("availabilityNote");
 
         if (note) {
             note.className = "availability-note error";
@@ -3158,6 +3150,7 @@ async function refreshAvailability(preserveSelection = false) {
         }
 
         return false;
+
     } finally {
         if (
             requestVersion === availabilityRequestVersion
@@ -3242,21 +3235,13 @@ function validateBookingSelections() {
         showAlert(
             "Select one finished appointment for the follow-up"
         );
-
         return false;
     }
 
-    const staffId =
-        bookingElement("staffInput").value;
+    const staffId = bookingElement("staffInput").value;
 
-    if (
-        !staffId ||
-        !isStaffEligible(staffId)
-    ) {
-        showAlert(
-            "Please select an eligible beautician"
-        );
-
+    if (!staffId || !isStaffEligible(staffId)) {
+        showAlert("Please select an eligible beautician");
         return false;
     }
 
@@ -3268,17 +3253,8 @@ function validateBookingSelections() {
         return false;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: BLOCK SUNDAY CONFIRMATION
-    |--------------------------------------------------------------------------
-    */
-
-    if (isSundayClosed(selectedDate)) {
-        showAlert(
-            "The studio is closed every Sunday — choose Monday to Saturday"
-        );
-
+    if (isStudioClosed(selectedDate)) {
+        showAlert(studioClosureMessage(selectedDate));
         return false;
     }
 
@@ -3289,7 +3265,6 @@ function validateBookingSelections() {
         showAlert(
             "Select an available future appointment time"
         );
-
         return false;
     }
 
@@ -3297,7 +3272,6 @@ function validateBookingSelections() {
         showAlert(
             "The selected beautician is on day off"
         );
-
         return false;
     }
 
@@ -3306,10 +3280,7 @@ function validateBookingSelections() {
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: FINAL FORM SUBMISSION
-|--------------------------------------------------------------------------
-| Check live availability immediately before submitting
-| Laravel independently validates the booking again
+| NS BEAUTY COMMENT: FINAL BOOKING SUBMISSION
 |--------------------------------------------------------------------------
 */
 
@@ -3334,16 +3305,14 @@ async function handleBookingSubmit(event) {
 
     const chosenTime = selectedTime;
 
-    const button =
-        bookingElement("confirmBookingBtn");
+    const button = bookingElement("confirmBookingBtn");
 
     bookingSubmissionStarted = true;
 
     button.disabled = true;
     button.textContent = "Checking Availability";
 
-    const verified =
-        await refreshAvailability(true);
+    const verified = await refreshAvailability(true);
 
     if (
         !verified ||
@@ -3356,20 +3325,28 @@ async function handleBookingSubmit(event) {
         button.disabled = false;
         button.textContent = "Confirm Booking";
 
-        showAlert(
-            "The selected time is no longer available — please choose another time"
-        );
-
         showStep(3);
+
+        showAlert(
+            "The selected schedule is no longer available — " +
+            "please choose another date or time"
+        );
 
         return;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: SUBMIT NORMAL LARAVEL FORM
-    |--------------------------------------------------------------------------
-    */
+    if (isStudioClosed(selectedDate)) {
+        bookingSubmissionStarted = false;
+
+        button.disabled = false;
+        button.textContent = "Confirm Booking";
+
+        showStep(3);
+
+        showAlert(studioClosureMessage(selectedDate));
+
+        return;
+    }
 
     button.textContent = "Submitting Booking";
 
@@ -3378,7 +3355,7 @@ async function handleBookingSubmit(event) {
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: INITIALIZE BOOKING PAGE
+| NS BEAUTY COMMENT: INITIALIZE CUSTOMER BOOKING
 |--------------------------------------------------------------------------
 */
 
@@ -3408,14 +3385,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: PERIODIC AVAILABILITY REFRESH
+    | NS BEAUTY COMMENT: Periodic Availability Refresh
     |--------------------------------------------------------------------------
     */
 
     setInterval(function () {
         if (
             currentStep !== 3 ||
-            !selectedDate
+            !selectedDate ||
+            bookingSubmissionStarted
         ) {
             return;
         }
@@ -3434,7 +3412,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }, 30000);
 });
-
 </script>
 
 @endsection

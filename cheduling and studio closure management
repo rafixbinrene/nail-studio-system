@@ -1,0 +1,15 @@
+ .../Admin/BookingManagementController.php          | 1354 [32m++++++++[m[31m-[m
+ .../Admin/StaffManagementController.php            | 1201 [32m++++++[m[31m--[m
+ .../Controllers/Customer/BookingController.php     | 1693 [32m+++++++[m[31m----[m
+ .../Customer/BookingDetailsController.php          |  965 [32m+++++[m[31m-[m
+ app/Models/Appointment.php                         |  321 [32m+[m[31m-[m
+ app/Models/StudioClosure.php                       |  203 [32m++[m
+ app/Services/NotificationService.php               |  212 [32m+[m[31m-[m
+ ...mergency_rescheduling_to_appointments_table.php |   91 [32m+[m
+ ...6_10_15_130001_create_studio_closures_table.php |  150 [32m+[m
+ resources/views/admin/bookings.blade.php           | 3171 [32m++++++++++++++++[m[31m----[m
+ resources/views/admin/staff.blade.php              | 2301 [32m+++++++++[m[31m-----[m
+ resources/views/customer/booking-details.blade.php | 3012 [32m++++++++++++++++[m[31m---[m
+ resources/views/customer/booking.blade.php         | 1807 [32m++++++[m[31m-----[m
+ routes/web.php                                     |  395 [32m++[m[31m-[m
+ 14 files changed, 13262 insertions(+), 3614 deletions(-)

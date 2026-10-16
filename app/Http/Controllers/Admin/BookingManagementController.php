@@ -11,7 +11,9 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,32 +21,32 @@ use Illuminate\Validation\ValidationException;
 |--------------------------------------------------------------------------
 | Nail Studio & Beauty
 |
-| Existing features preserved:
-| - View regular and follow-up appointments
-| - Filter bookings by status, type, date and keyword
-| - View customer feedback and related bookings
-| - Cancel bookings with admin password verification
-| - Request individual emergency rescheduling
-| - Preserve original appointment information
-| - Send customer notifications
-| - Record booking changes in Audit Logs
+| Preserved features:
+| - Regular and follow-up appointment listing
+| - Status, booking type, date and keyword filtering
+| - Customer and staff details
+| - Feedback relationships
+| - Booking statistics
+| - Cancellation with administrator password verification
+| - Individual emergency rescheduling
+| - Studio-wide emergency closure declaration
+| - Date-range studio closures
+| - Overlapping closure prevention
+| - Affected appointment rescheduling
+| - Closure lifting
+| - Audit logging
 |
-| New integrated studio closure features:
-| - Display closures inside Booking Management
-| - Declare single-day or date-range closures
-| - Require admin password confirmation
-| - Reject overlapping active closure records
-| - Flag affected future bookings for rescheduling
-| - Preserve original appointment information
-| - Notify affected customers after database commit
-| - Lift active closures with admin password
-| - Preserve historical closure records
-| - Record closure actions in Audit Logs
+| Notification improvements:
+| - Preserve website notifications
+| - Attempt customer email notifications
+| - Read NotificationService delivery results
+| - Record successful and failed email attempts
+| - Record unresolved customer accounts
+| - Keep successful booking changes when email fails
 |
-| Important:
-| Studio closure checks must also be added to
-| the customer BookingController before the closure
-| feature is considered operational
+| Note:
+| This controller does not manage the email transport.
+| SMTP configuration is handled by Laravel.
 |--------------------------------------------------------------------------
 */
 
@@ -92,7 +94,7 @@ class BookingManagementController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Status Filter
+        | NS BEAUTY COMMENT: Booking Filters
         |--------------------------------------------------------------------------
         */
 
@@ -106,12 +108,6 @@ class BookingManagementController extends Controller
             );
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Booking Type Filter
-        |--------------------------------------------------------------------------
-        */
-
         if (
             $request->filled('booking_type') &&
             $request->booking_type !== 'all'
@@ -122,12 +118,6 @@ class BookingManagementController extends Controller
             );
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Appointment Date Filter
-        |--------------------------------------------------------------------------
-        */
-
         if ($request->filled('date')) {
             $query->whereDate(
                 'appointment_date',
@@ -137,7 +127,7 @@ class BookingManagementController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Search Bookings
+        | NS BEAUTY COMMENT: Search Booking Records
         |--------------------------------------------------------------------------
         */
 
@@ -147,6 +137,7 @@ class BookingManagementController extends Controller
             );
 
             $query->where(function ($q) use ($search) {
+
                 if (ctype_digit($search)) {
                     $q->orWhere(
                         'id',
@@ -224,6 +215,7 @@ class BookingManagementController extends Controller
                 ->orWhereHas(
                     'feedback',
                     function ($feedbackQuery) use ($search) {
+
                         $feedbackQuery->where(
                             'comment',
                             'like',
@@ -243,7 +235,7 @@ class BookingManagementController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Paginated Appointments
+        | NS BEAUTY COMMENT: Paginated Appointment List
         |--------------------------------------------------------------------------
         */
 
@@ -305,9 +297,7 @@ class BookingManagementController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Integrated Studio Closure Statistics
-        |--------------------------------------------------------------------------
-        | Used by the Studio Closures popup inside Booking Management
+        | NS BEAUTY COMMENT: Studio Closure Statistics
         |--------------------------------------------------------------------------
         */
 
@@ -336,16 +326,25 @@ class BookingManagementController extends Controller
                 StudioClosure::STATUS_LIFTED
             )->count(),
 
-            'currently_closed' => StudioClosure::isClosedOn(
-                $today
-            ),
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Current Closure Check
+            |--------------------------------------------------------------------------
+            | Uses the existing active/affectingDate scopes.
+            |--------------------------------------------------------------------------
+            */
+
+            'currently_closed' => StudioClosure::query()
+                ->active()
+                ->affectingDate($today)
+                ->exists(),
 
             'total' => StudioClosure::count(),
         ];
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Return Existing and New Page Data
+        | NS BEAUTY COMMENT: Return Booking Management View
         |--------------------------------------------------------------------------
         */
 
@@ -371,10 +370,7 @@ class BookingManagementController extends Controller
     |--------------------------------------------------------------------------
     | NS BEAUTY COMMENT: Cancel Appointment
     |--------------------------------------------------------------------------
-    | - Admin password is required
-    | - Closed bookings cannot be cancelled again
-    | - Cancellation is recorded in Audit Logs
-    | - Customer receives a notification
+    | Administrator password and cancellation reason are required.
     |--------------------------------------------------------------------------
     */
 
@@ -387,6 +383,7 @@ class BookingManagementController extends Controller
                 'required',
                 'string',
             ],
+
             'cancellation_reason' => [
                 'required',
                 'string',
@@ -405,7 +402,7 @@ class BookingManagementController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Lock and Cancel Appointment
+        | NS BEAUTY COMMENT: Transactional Booking Cancellation
         |--------------------------------------------------------------------------
         */
 
@@ -415,6 +412,7 @@ class BookingManagementController extends Controller
             $request,
             $admin
         ) {
+
             $lockedBooking = Appointment::whereKey(
                 $booking->id
             )
@@ -455,6 +453,12 @@ class BookingManagementController extends Controller
                 'status_updated_at' => $now,
             ]);
 
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Cancellation Audit Log
+            |--------------------------------------------------------------------------
+            */
+
             $this->createAuditLog(
                 $request,
                 $admin->id,
@@ -464,11 +468,12 @@ class BookingManagementController extends Controller
                 ' — reason: ' .
                 $validated['cancellation_reason']
             );
+
         }, 3);
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Notify Customer After Cancellation
+        | NS BEAUTY COMMENT: Notify Customer After Commit
         |--------------------------------------------------------------------------
         */
 
@@ -496,8 +501,6 @@ class BookingManagementController extends Controller
     |--------------------------------------------------------------------------
     | NS BEAUTY COMMENT: Individual Emergency Rescheduling
     |--------------------------------------------------------------------------
-    | Existing functionality is preserved
-    |--------------------------------------------------------------------------
     */
 
     public function requestRescheduling(
@@ -509,6 +512,7 @@ class BookingManagementController extends Controller
                 'required',
                 'string',
             ],
+
             'rescheduling_reason' => [
                 'required',
                 'string',
@@ -527,7 +531,7 @@ class BookingManagementController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Preserve Original Appointment Details
+        | NS BEAUTY COMMENT: Preserve Existing Rescheduling Rules
         |--------------------------------------------------------------------------
         */
 
@@ -537,6 +541,7 @@ class BookingManagementController extends Controller
             $request,
             $admin
         ) {
+
             $lockedBooking = Appointment::whereKey(
                 $booking->id
             )
@@ -581,9 +586,7 @@ class BookingManagementController extends Controller
             );
 
             if (
-                $appointmentStart->lessThanOrEqualTo(
-                    $now
-                )
+                $appointmentStart->lessThanOrEqualTo($now)
             ) {
                 throw ValidationException::withMessages([
                     'booking' =>
@@ -598,6 +601,12 @@ class BookingManagementController extends Controller
                 $now
             );
 
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Rescheduling Audit Log
+            |--------------------------------------------------------------------------
+            */
+
             $this->createAuditLog(
                 $request,
                 $admin->id,
@@ -607,11 +616,12 @@ class BookingManagementController extends Controller
                 ' — reason: ' .
                 $validated['rescheduling_reason']
             );
+
         }, 3);
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Customer Notification
+        | NS BEAUTY COMMENT: Customer Rescheduling Notification
         |--------------------------------------------------------------------------
         */
 
@@ -640,8 +650,12 @@ class BookingManagementController extends Controller
     |--------------------------------------------------------------------------
     | NS BEAUTY COMMENT: Declare Studio-Wide Emergency Closure
     |--------------------------------------------------------------------------
-    | This action will be triggered by the Studio Closures
-    | popup inside the existing Booking Management page
+    |
+    | A closure can cover one or multiple consecutive dates.
+    |
+    | Affected upcoming bookings are marked for rescheduling.
+    |
+    | Customer notifications are attempted after commit.
     |--------------------------------------------------------------------------
     */
 
@@ -650,7 +664,7 @@ class BookingManagementController extends Controller
     ) {
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Validate Closure Details
+        | NS BEAUTY COMMENT: Validate Closure Request
         |--------------------------------------------------------------------------
         */
 
@@ -698,7 +712,7 @@ class BookingManagementController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Confirm Administrator Identity
+        | NS BEAUTY COMMENT: Verify Administrator
         |--------------------------------------------------------------------------
         */
 
@@ -713,7 +727,7 @@ class BookingManagementController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Validate Date Range
+        | NS BEAUTY COMMENT: Validate Closure Duration
         |--------------------------------------------------------------------------
         */
 
@@ -746,9 +760,6 @@ class BookingManagementController extends Controller
         |--------------------------------------------------------------------------
         | NS BEAUTY COMMENT: Atomic Closure Declaration
         |--------------------------------------------------------------------------
-        | Lock administrator row to serialize this admin's requests
-        | Lock affected appointments before updating their statuses
-        |--------------------------------------------------------------------------
         */
 
         $outcome = DB::transaction(function () use (
@@ -756,9 +767,10 @@ class BookingManagementController extends Controller
             $admin,
             $validated
         ) {
+
             /*
             |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT: Serialize Administrative Closure Actions
+            | NS BEAUTY COMMENT: Serialize Administrator Actions
             |--------------------------------------------------------------------------
             */
 
@@ -769,7 +781,7 @@ class BookingManagementController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT: Verify Dates Have Not Become Past
+            | NS BEAUTY COMMENT: Prevent Past Closure Dates
             |--------------------------------------------------------------------------
             */
 
@@ -778,8 +790,7 @@ class BookingManagementController extends Controller
             )->toDateString();
 
             if (
-                $validated['start_date'] <
-                $currentToday
+                $validated['start_date'] < $currentToday
             ) {
                 throw ValidationException::withMessages([
                     'start_date' =>
@@ -789,9 +800,7 @@ class BookingManagementController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT: Reject Overlapping Active Closures
-            |--------------------------------------------------------------------------
-            | A new closure cannot overlap an existing active closure
+            | NS BEAUTY COMMENT: Prevent Overlapping Active Closures
             |--------------------------------------------------------------------------
             */
 
@@ -823,34 +832,40 @@ class BookingManagementController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT: Save New Closure
+            | NS BEAUTY COMMENT: Create Closure Record
             |--------------------------------------------------------------------------
             */
 
             $closure = StudioClosure::create([
                 'title' => $validated['title'],
+
                 'start_date' =>
                     $validated['start_date'],
+
                 'end_date' =>
                     $validated['end_date'],
+
                 'reason' =>
                     $validated['reason'],
+
                 'admin_notes' =>
                     $validated['admin_notes'] ?? null,
+
                 'status' =>
                     StudioClosure::STATUS_ACTIVE,
+
                 'created_by' => $admin->id,
+
                 'declared_at' => $now,
             ]);
 
             /*
             |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT: Find Affected Active Appointments
+            | NS BEAUTY COMMENT: Retrieve Affected Appointments
             |--------------------------------------------------------------------------
-            | Only future pending or approved appointments are eligible
             |
-            | Finished, cancelled, ongoing and no-show appointments
-            | are not changed
+            | Only pending or approved appointments
+            | inside the closure date range are considered.
             |--------------------------------------------------------------------------
             */
 
@@ -879,11 +894,12 @@ class BookingManagementController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT: Update Each Future Appointment
+            | NS BEAUTY COMMENT: Mark Affected Future Bookings
             |--------------------------------------------------------------------------
             */
 
             foreach ($affectedBookings as $booking) {
+
                 $bookingDate = Carbon::parse(
                     $booking->appointment_date
                 )->format('Y-m-d');
@@ -912,17 +928,21 @@ class BookingManagementController extends Controller
 
                 /*
                 |--------------------------------------------------------------------------
-                | NS BEAUTY COMMENT: Do Not Alter Started Appointments
+                | NS BEAUTY COMMENT: Do Not Change Started Bookings
                 |--------------------------------------------------------------------------
                 */
 
                 if (
-                    $appointmentStart->lessThanOrEqualTo(
-                        $now
-                    )
+                    $appointmentStart->lessThanOrEqualTo($now)
                 ) {
                     continue;
                 }
+
+                /*
+                |--------------------------------------------------------------------------
+                | NS BEAUTY COMMENT: Preserve Original Booking Details
+                |--------------------------------------------------------------------------
+                */
 
                 $this->flagAppointmentForRescheduling(
                     $booking,
@@ -936,7 +956,7 @@ class BookingManagementController extends Controller
 
                 /*
                 |--------------------------------------------------------------------------
-                | NS BEAUTY COMMENT: Record Affected Booking
+                | NS BEAUTY COMMENT: Log Affected Booking
                 |--------------------------------------------------------------------------
                 */
 
@@ -953,7 +973,7 @@ class BookingManagementController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT: Record Closure Declaration
+            | NS BEAUTY COMMENT: Log Closure Declaration
             |--------------------------------------------------------------------------
             */
 
@@ -982,17 +1002,31 @@ class BookingManagementController extends Controller
                 'start_date' => $validated['start_date'],
                 'end_date' => $validated['end_date'],
             ];
+
         }, 3);
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Notify After Database Commit
+        | NS BEAUTY COMMENT: Notify Customers After Database Commit
         |--------------------------------------------------------------------------
-        | Notifications must not roll back successfully saved closures
+        |
+        | Sending notifications outside the closure transaction
+        | prevents SMTP failures from reversing the saved closure.
+        |
+        | Collect notification statistics for server-side logging.
         |--------------------------------------------------------------------------
         */
 
+        $deliveryStats = [
+            'notifications_created' => 0,
+            'emails_accepted' => 0,
+            'emails_failed' => 0,
+            'customers_unresolved' => 0,
+            'notification_failures' => 0,
+        ];
+
         if (!empty($outcome['affected_ids'])) {
+
             Appointment::with('customer')
                 ->whereIn(
                     'id',
@@ -1001,26 +1035,129 @@ class BookingManagementController extends Controller
                 ->orderBy('id')
                 ->chunkById(
                     100,
-                    function ($bookings) use ($outcome) {
+                    function ($bookings) use (
+                        $outcome,
+                        &$deliveryStats
+                    ) {
+
                         foreach ($bookings as $booking) {
-                            $this->notifyCustomerSafely(
-                                $booking,
-                                'Studio Emergency Closure — Rescheduling Required',
-                                'Your appointment ' .
-                                $this->bookingCode($booking) .
-                                ' has been affected by a studio closure from ' .
-                                $outcome['start_date'] .
-                                ' to ' .
-                                $outcome['end_date'] .
-                                ' — reason: ' .
-                                $outcome['reason'] .
-                                ' — please open Booking Details to choose a replacement appointment schedule',
-                                'rescheduling_required'
-                            );
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | NS BEAUTY COMMENT: Emergency Closure Message
+                            |--------------------------------------------------------------------------
+                            */
+
+                            $notificationResult =
+                                $this->notifyCustomerSafely(
+                                    $booking,
+                                    'Studio Emergency Closure — Rescheduling Required',
+                                    'Your appointment ' .
+                                    $this->bookingCode($booking) .
+                                    ' has been affected by a studio closure from ' .
+                                    $outcome['start_date'] .
+                                    ' to ' .
+                                    $outcome['end_date'] .
+                                    ' — reason: ' .
+                                    $outcome['reason'] .
+                                    ' — please open Booking Details to choose a replacement appointment schedule',
+                                    'rescheduling_required'
+                                );
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | NS BEAUTY COMMENT: Summarize Delivery Results
+                            |--------------------------------------------------------------------------
+                            */
+
+                            if (
+                                $notificationResult[
+                                    'notification_created'
+                                ] ?? false
+                            ) {
+                                $deliveryStats[
+                                    'notifications_created'
+                                ]++;
+                            }
+
+                            if (
+                                $notificationResult[
+                                    'email_sent'
+                                ] ?? false
+                            ) {
+                                $deliveryStats[
+                                    'emails_accepted'
+                                ]++;
+                            } elseif (
+                                $notificationResult[
+                                    'email_attempted'
+                                ] ?? false
+                            ) {
+                                $deliveryStats[
+                                    'emails_failed'
+                                ]++;
+                            }
+
+                            if (
+                                empty(
+                                    $notificationResult[
+                                        'recipient_user_id'
+                                    ]
+                                )
+                            ) {
+                                $deliveryStats[
+                                    'customers_unresolved'
+                                ]++;
+                            }
+
+                            if (
+                                !empty(
+                                    $notificationResult[
+                                        'notification_error'
+                                    ]
+                                )
+                            ) {
+                                $deliveryStats[
+                                    'notification_failures'
+                                ]++;
+                            }
                         }
                     }
                 );
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Closure Notification Summary
+        |--------------------------------------------------------------------------
+        |
+        | The summary helps identify whether a missing email
+        | was caused by:
+        | - Missing customer account
+        | - Missing email address
+        | - SMTP error
+        | - Website notification failure
+        |--------------------------------------------------------------------------
+        */
+
+        Log::info(
+            'NS Beauty studio closure notification summary',
+            [
+                'closure_id' => $outcome['closure_id'],
+                'affected_bookings' =>
+                    $outcome['affected_count'],
+                'website_notifications_created' =>
+                    $deliveryStats['notifications_created'],
+                'emails_accepted_by_transport' =>
+                    $deliveryStats['emails_accepted'],
+                'email_attempts_failed' =>
+                    $deliveryStats['emails_failed'],
+                'customers_unresolved' =>
+                    $deliveryStats['customers_unresolved'],
+                'notification_failures' =>
+                    $deliveryStats['notification_failures'],
+            ]
+        );
 
         /*
         |--------------------------------------------------------------------------
@@ -1042,11 +1179,9 @@ class BookingManagementController extends Controller
     |--------------------------------------------------------------------------
     | NS BEAUTY COMMENT: Lift Studio Closure
     |--------------------------------------------------------------------------
-    | Lifting a closure restores the date for new bookings
-    | after booking restrictions are integrated
     |
-    | Previously affected appointments stay in their current
-    | rescheduling state and are not automatically restored
+    | Previously affected appointments are not automatically
+    | restored to their original statuses.
     |--------------------------------------------------------------------------
     */
 
@@ -1078,7 +1213,7 @@ class BookingManagementController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Lock and Lift Closure
+        | NS BEAUTY COMMENT: Transactional Closure Lifting
         |--------------------------------------------------------------------------
         */
 
@@ -1088,6 +1223,7 @@ class BookingManagementController extends Controller
             $request,
             $validated
         ) {
+
             $lockedClosure = StudioClosure::whereKey(
                 $closure->id
             )
@@ -1127,7 +1263,7 @@ class BookingManagementController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT: Record Closure Reopening
+            | NS BEAUTY COMMENT: Audit Closure Lifting
             |--------------------------------------------------------------------------
             */
 
@@ -1141,6 +1277,7 @@ class BookingManagementController extends Controller
                 ' — reason: ' .
                 $validated['lift_reason']
             );
+
         }, 3);
 
         return redirect()
@@ -1153,17 +1290,13 @@ class BookingManagementController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: Flag Appointment for Emergency Rescheduling
+    | NS BEAUTY COMMENT: Flag Appointment for Rescheduling
     |--------------------------------------------------------------------------
-    | Shared by individual and studio-wide emergency actions
     |
-    | Preserves:
-    | - Existing appointment ID
-    | - Original appointment date
-    | - Original appointment start time
-    | - Original staff ID
-    | - Selected services
-    | - Recorded service prices
+    | Shared between individual emergency rescheduling
+    | and studio-wide closures.
+    |
+    | Preserves the original appointment information.
     |--------------------------------------------------------------------------
     */
 
@@ -1173,6 +1306,7 @@ class BookingManagementController extends Controller
         int $adminId,
         Carbon $now
     ): void {
+
         $bookingDate = Carbon::parse(
             $booking->appointment_date
         )->format('Y-m-d');
@@ -1204,7 +1338,7 @@ class BookingManagementController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: Confirm Authenticated Administrator
+    | NS BEAUTY COMMENT: Verify Administrator Account
     |--------------------------------------------------------------------------
     */
 
@@ -1228,7 +1362,7 @@ class BookingManagementController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: Admin Password Verification
+    | NS BEAUTY COMMENT: Verify Administrator Password
     |--------------------------------------------------------------------------
     */
 
@@ -1236,6 +1370,7 @@ class BookingManagementController extends Controller
         $admin,
         string $password
     ): void {
+
         if (
             !Hash::check(
                 $password,
@@ -1251,7 +1386,7 @@ class BookingManagementController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: Normalize Booking Status
+    | NS BEAUTY COMMENT: Normalize Appointment Status
     |--------------------------------------------------------------------------
     */
 
@@ -1271,8 +1406,17 @@ class BookingManagementController extends Controller
     |--------------------------------------------------------------------------
     | NS BEAUTY COMMENT: Customer Notification Helper
     |--------------------------------------------------------------------------
-    | Uses existing NotificationService
-    | In-app delivery and email are handled by the service
+    |
+    | Important changes:
+    | - Returns actual NotificationService result
+    | - Explicitly requests email delivery
+    | - Logs unresolved customer accounts
+    | - Logs unsuccessful email attempts
+    | - Preserves website notifications when SMTP fails
+    | - Does not expose email credentials in logs
+    |
+    | Existing booking actions still succeed even if
+    | notification delivery encounters an error.
     |--------------------------------------------------------------------------
     */
 
@@ -1281,33 +1425,196 @@ class BookingManagementController extends Controller
         string $title,
         string $message,
         string $type
-    ): void {
+    ): array {
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Default Delivery Result
+        |--------------------------------------------------------------------------
+        */
+
+        $result = [
+            'notification_created' => false,
+            'email_attempted' => false,
+            'email_sent' => false,
+            'email_error' => null,
+            'recipient_user_id' => null,
+        ];
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Confirm Customer Record
+        |--------------------------------------------------------------------------
+        */
+
         try {
+
             if (!$booking->customer) {
-                return;
+
+                Log::warning(
+                    'NS Beauty customer notification skipped: Customer missing',
+                    [
+                        'appointment_id' => $booking->id,
+                        'notification_type' => $type,
+                    ]
+                );
+
+                return $result;
             }
 
-            app(NotificationService::class)
-                ->notifyCustomer(
-                    $booking->customer,
-                    $title,
-                    $message,
-                    route(
-                        'customer.booking.details',
-                        $booking->id,
-                        false
-                    ),
-                    $type,
-                    true
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Customer Notification Link
+            |--------------------------------------------------------------------------
+            */
+
+            $link = route(
+                'customer.booking.details',
+                $booking->id,
+                false
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Request Website and Email Delivery
+            |--------------------------------------------------------------------------
+            |
+            | Argument true:
+            | Attempt SMTP email delivery.
+            |
+            | Final argument true:
+            | Create a website notification.
+            |--------------------------------------------------------------------------
+            */
+
+            $result = app(
+                NotificationService::class
+            )->notifyCustomer(
+                $booking->customer,
+                $title,
+                $message,
+                $link,
+                $type,
+                true,
+                true
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Log Missing Recipient Account
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                empty($result['recipient_user_id'])
+            ) {
+
+                Log::warning(
+                    'NS Beauty notification: Customer user account unresolved',
+                    [
+                        'appointment_id' => $booking->id,
+                        'customer_id' =>
+                            $booking->customer->id,
+                        'notification_type' => $type,
+                    ]
                 );
-        } catch (\Throwable $exception) {
+
+                return $result;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Log Website Notification Result
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                !($result['notification_created'] ?? false)
+            ) {
+
+                Log::warning(
+                    'NS Beauty website notification was not created',
+                    [
+                        'appointment_id' => $booking->id,
+                        'customer_id' =>
+                            $booking->customer->id,
+                        'notification_type' => $type,
+                    ]
+                );
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Log Email Transport Result
+            |--------------------------------------------------------------------------
+            */
+
+            if ($result['email_sent'] ?? false) {
+
+                Log::info(
+                    'NS Beauty customer email accepted by transport',
+                    [
+                        'appointment_id' => $booking->id,
+                        'customer_id' =>
+                            $booking->customer->id,
+                        'recipient_user_id' =>
+                            $result['recipient_user_id'],
+                        'notification_type' => $type,
+                    ]
+                );
+
+            } else {
+
+                Log::warning(
+                    'NS Beauty customer email not sent',
+                    [
+                        'appointment_id' => $booking->id,
+                        'customer_id' =>
+                            $booking->customer->id,
+                        'recipient_user_id' =>
+                            $result['recipient_user_id'],
+                        'notification_type' => $type,
+                        'email_attempted' =>
+                            $result['email_attempted'] ?? false,
+                        'email_error' =>
+                            $result['email_error'] ?? null,
+                    ]
+                );
+            }
+
+        } catch (Throwable $exception) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Unexpected Notification Error
+            |--------------------------------------------------------------------------
+            |
+            | Do not roll back an already committed booking
+            | or studio closure due to a notification error.
+            |--------------------------------------------------------------------------
+            */
+
+            $result['notification_error'] =
+                $exception->getMessage();
+
+            Log::error(
+                'NS Beauty customer notification processing failed',
+                [
+                    'appointment_id' => $booking->id,
+                    'notification_type' => $type,
+                    'error' => $exception->getMessage(),
+                ]
+            );
+
             report($exception);
         }
+
+        return $result;
     }
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: Booking Code Helper
+    | NS BEAUTY COMMENT: Booking Reference Code
     |--------------------------------------------------------------------------
     */
 
@@ -1327,6 +1634,9 @@ class BookingManagementController extends Controller
     |--------------------------------------------------------------------------
     | NS BEAUTY COMMENT: Audit Log Helper
     |--------------------------------------------------------------------------
+    |
+    | Existing audit log fields are preserved.
+    |--------------------------------------------------------------------------
     */
 
     private function createAuditLog(
@@ -1335,6 +1645,7 @@ class BookingManagementController extends Controller
         string $action,
         string $description
     ): void {
+
         AuditLog::create([
             'user_id' => $adminId,
             'user_type' => 'admin',
