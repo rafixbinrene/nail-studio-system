@@ -16,7 +16,7 @@
         |--------------------------------------------------------------------------
         | NS BEAUTY COMMENT: REGISTRATION PAGE
         |--------------------------------------------------------------------------
-        | Nail Studio & Beauty
+        | NS & Beauty
         |
         | Changes:
         | 1. Fix duplicated password eye icons.
@@ -657,7 +657,7 @@
             </span>
 
             <span>
-                Nail Studio &amp; Beauty
+                NS &amp; Beauty
             </span>
         </div>
 
@@ -1223,7 +1223,7 @@
                         <strong>Terms and Conditions</strong>
                         and acknowledge the
                         <strong>Privacy Notice</strong>
-                        of Nail Studio &amp; Beauty.
+                        of NS &amp; Beauty.
                     </span>
 
                 </label>
