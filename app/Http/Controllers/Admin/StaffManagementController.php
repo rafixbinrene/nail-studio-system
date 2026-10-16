@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Appointment;
 use App\Models\AuditLog;
 use App\Models\Service;
 use App\Models\Staff;
 use App\Models\StaffActivationToken;
 use App\Models\StaffDayOff;
 use App\Models\User;
+use App\Services\NotificationService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -16,56 +19,46 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT:
+| NS BEAUTY COMMENT: Staff Management Controller
 |--------------------------------------------------------------------------
-| Staff Management Controller
-|--------------------------------------------------------------------------
-| Purpose:
-| - Displays staff records.
-| - Allows Admin to create staff accounts.
-| - Creates both users table login account and staff table profile.
-| - Sends staff activation email so staff can set their own password.
-| - Assigns existing services from Service Management to staff.
-| - Adds and removes staff day-off records.
-| - Enables, disables, deletes, restores staff.
-| - Records important actions in Audit Logs.
+| Features:
+| - Manage staff accounts, assigned services and activation emails
+| - Update staff status, profiles and service assignments
+| - Delete, restore and permanently delete staff
+| - Manage staff day-off records
+| - Automatically reassign bookings affected by new staff day-offs
+| - Mark appointments as rescheduling_required when necessary
+| - Preserve original appointment details
+| - Send customer, staff and admin notifications
+| - Record important changes in Audit Logs
 |
-| Defense explanation:
-| Staff accounts are created securely. The Admin creates the staff profile,
-| but the staff member sets their own password through an activation email.
-| This avoids sharing manual passwords and keeps staff login connected to OTP.
+| Emergency Scheduling:
+| A new staff day-off triggers a review of future active appointments
+| The system first attempts to find an available qualified replacement
+| If none exists, the appointment becomes rescheduling_required
+|
+| Important:
+| - Customer-selected rescheduling is implemented separately
+| - Studio-wide closures are implemented separately
 |--------------------------------------------------------------------------
 */
 
 class StaffManagementController extends Controller
 {
+    private const TIMEZONE = 'Asia/Kuala_Lumpur';
+
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT:
-    | FUNCTION: Staff Management Page
-    |--------------------------------------------------------------------------
-    | Purpose:
-    | - Shows staff list.
-    | - Shows deleted staff.
-    | - Loads available services from Service Management.
-    | - Shows staff statistics.
+    | NS BEAUTY COMMENT: Staff Management Page
     |--------------------------------------------------------------------------
     */
+
     public function index(Request $request)
     {
-        /*
-        |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT:
-        | Automatic cleanup.
-        |--------------------------------------------------------------------------
-        | Past day-off records are removed automatically.
-        | Deleted staff older than 30 days are permanently removed only if no
-        | booking records are connected.
-        |--------------------------------------------------------------------------
-        */
         $this->deleteExpiredDayOffs();
         $this->deleteExpiredTrashedStaff();
 
@@ -74,7 +67,11 @@ class StaffManagementController extends Controller
             'status' => $request->input('status', 'all'),
         ];
 
-        $query = Staff::with(['user', 'services', 'activeDayOffs'])
+        $query = Staff::with([
+            'user',
+            'services',
+            'activeDayOffs',
+        ])
             ->withCount('appointments')
             ->latest();
 
@@ -82,34 +79,38 @@ class StaffManagementController extends Controller
             $search = $filters['search'];
 
             $query->where(function ($query) use ($search) {
-                $query->where('full_name', 'like', "%{$search}%")
+                $query
+                    ->where('full_name', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")
                     ->orWhere('phone_number', 'like', "%{$search}%");
             });
         }
 
         if ($filters['status'] !== 'all') {
-            $query->where('status', $filters['status'] === 'active' ? 'Active' : 'Inactive');
+            $query->where(
+                'status',
+                $filters['status'] === 'active'
+                    ? 'Active'
+                    : 'Inactive'
+            );
         }
 
-        $staffMembers = $query->paginate(10)->withQueryString();
+        $staffMembers = $query
+            ->paginate(10)
+            ->withQueryString();
 
         $deletedStaff = Staff::onlyTrashed()
-            ->with(['services'])
+            ->with('services')
             ->withCount('appointments')
             ->latest('deleted_at')
             ->get();
 
-        /*
-        |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT:
-        | Service Management connection.
-        |--------------------------------------------------------------------------
-        | The staff skills/services checkbox list is automatically loaded from
-        | the official services created in Service Management.
-        |--------------------------------------------------------------------------
-        */
-        $services = Service::whereIn('status', ['Available', 'Unavailable', 'available', 'unavailable'])
+        $services = Service::whereIn('status', [
+            'Available',
+            'Unavailable',
+            'available',
+            'unavailable',
+        ])
             ->orderBy('service_name')
             ->get();
 
@@ -131,33 +132,21 @@ class StaffManagementController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT:
-    | FUNCTION: Add New Staff
+    | NS BEAUTY COMMENT: Create Staff Account
     |--------------------------------------------------------------------------
-    | New real workflow:
-    | 1. Admin enters staff name, email, phone, status, and services.
-    | 2. System creates user login account with role staff.
-    | 3. System creates staff profile connected through staff.user_id.
-    | 4. System creates activation token.
-    | 5. System sends activation email to staff.
-    | 6. Staff opens email link and sets their own password.
+    | Admin creates the account
+    | Staff activates their account through an email link
     |--------------------------------------------------------------------------
     */
+
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'full_name' => ['required', 'string', 'max:150'],
-
-            /*
-            |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT:
-            | Email must be unique in both staff and users table.
-            |--------------------------------------------------------------------------
-            | Purpose:
-            | - Prevents duplicate staff profile emails.
-            | - Prevents duplicate login account emails.
-            |--------------------------------------------------------------------------
-            */
+            'full_name' => [
+                'required',
+                'string',
+                'max:150',
+            ],
             'email' => [
                 'required',
                 'email',
@@ -165,40 +154,33 @@ class StaffManagementController extends Controller
                 'unique:staff,email',
                 'unique:users,email',
             ],
-
-            'phone_number' => ['nullable', 'string', 'max:30'],
-            'status' => ['required', Rule::in(['Active', 'Inactive'])],
-            'service_ids' => ['nullable', 'array'],
-            'service_ids.*' => ['integer', 'exists:services,id'],
+            'phone_number' => [
+                'nullable',
+                'string',
+                'max:30',
+            ],
+            'status' => [
+                'required',
+                Rule::in(['Active', 'Inactive']),
+            ],
+            'service_ids' => [
+                'nullable',
+                'array',
+            ],
+            'service_ids.*' => [
+                'integer',
+                'exists:services,id',
+            ],
         ]);
 
-        /*
-        |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT:
-        | Activation Token
-        |--------------------------------------------------------------------------
-        | Purpose:
-        | - Plain token is sent through email link.
-        | - Hashed token is stored in database.
-        |--------------------------------------------------------------------------
-        */
         $plainToken = Str::random(64);
         $activationUrl = null;
-        $staffName = $validated['full_name'];
-        $staffEmail = $validated['email'];
 
-        DB::transaction(function () use ($validated, $plainToken, &$activationUrl) {
-            /*
-            |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT:
-            | Create Staff Login Account
-            |--------------------------------------------------------------------------
-            | Purpose:
-            | - Creates staff account in users table.
-            | - Account is inactive until staff sets password through email link.
-            | - Random password is stored temporarily and cannot be used by staff.
-            |--------------------------------------------------------------------------
-            */
+        DB::transaction(function () use (
+            $validated,
+            $plainToken,
+            &$activationUrl
+        ) {
             $user = User::create([
                 'name' => $validated['full_name'],
                 'email' => $validated['email'],
@@ -212,16 +194,6 @@ class StaffManagementController extends Controller
                 'otp_verified_at' => null,
             ]);
 
-            /*
-            |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT:
-            | Create Staff Profile
-            |--------------------------------------------------------------------------
-            | Purpose:
-            | - Creates staff profile in staff table.
-            | - Connects staff profile to users table using user_id.
-            |--------------------------------------------------------------------------
-            */
             $staff = Staff::create([
                 'user_id' => $user->id,
                 'full_name' => $validated['full_name'],
@@ -230,28 +202,10 @@ class StaffManagementController extends Controller
                 'status' => $validated['status'],
             ]);
 
-            /*
-            |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT:
-            | Staff Service Assignment
-            |--------------------------------------------------------------------------
-            | Purpose:
-            | - Staff skills are assigned from the existing services created in
-            |   Service Management.
-            |--------------------------------------------------------------------------
-            */
-            $staff->services()->sync($validated['service_ids'] ?? []);
+            $staff->services()->sync(
+                $validated['service_ids'] ?? []
+            );
 
-            /*
-            |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT:
-            | Create Activation Token Record
-            |--------------------------------------------------------------------------
-            | Purpose:
-            | - Allows staff to activate account and set password.
-            | - Link expires after 3 days for security.
-            |--------------------------------------------------------------------------
-            */
             StaffActivationToken::create([
                 'user_id' => $user->id,
                 'token_hash' => hash('sha256', $plainToken),
@@ -259,62 +213,66 @@ class StaffManagementController extends Controller
                 'used_at' => null,
             ]);
 
-            $activationUrl = route('staff.activate.form', $plainToken);
+            $activationUrl = route(
+                'staff.activate.form',
+                $plainToken
+            );
 
             $this->createAuditLog(
-                action: 'create_staff',
-                description: 'Admin created staff account and activation email for: ' . $staff->full_name
+                'create_staff',
+                'Admin created staff account for ' . $staff->full_name
             );
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT:
-        | Send Staff Activation Email
-        |--------------------------------------------------------------------------
-        | Purpose:
-        | - Staff receives a real activation email.
-        | - Staff sets their own password.
-        |--------------------------------------------------------------------------
-        */
         $emailSent = $this->sendStaffActivationEmail(
-            staffName: $staffName,
-            staffEmail: $staffEmail,
-            activationUrl: $activationUrl
+            $validated['full_name'],
+            $validated['email'],
+            $activationUrl
         );
 
         if (!$emailSent) {
             return redirect()
                 ->route('admin.staff')
                 ->withErrors([
-                    'staff_email' => 'Staff account was created, but activation email could not be sent. Please check mail configuration.',
+                    'staff_email' =>
+                        'Staff created but activation email could not be sent',
                 ]);
         }
 
         return redirect()
             ->route('admin.staff')
-            ->with('success', 'Staff added successfully. Activation email has been sent to the staff.');
+            ->with(
+                'success',
+                'Staff added successfully — activation email sent'
+            );
     }
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT:
-    | FUNCTION: Update Staff
+    | NS BEAUTY COMMENT: Update Staff and Record Day Off
     |--------------------------------------------------------------------------
-    | Purpose:
-    | - Updates staff profile.
-    | - Updates connected user account name/email/status.
-    | - Syncs assigned services.
-    | - Adds day-off schedule if provided.
+    | When a new day off is saved:
+    | 1 - Validate the date range
+    | 2 - Save staff information and services
+    | 3 - Record the day off
+    | 4 - Find affected upcoming appointments
+    | 5 - Attempt automatic staff reassignment
+    | 6 - Save rescheduling status if no replacement exists
+    | 7 - Send notifications after the transaction commits
     |--------------------------------------------------------------------------
     */
+
     public function update(Request $request, Staff $staff)
     {
         $linkedUser = $this->findStaffUser($staff);
+        $today = Carbon::today(self::TIMEZONE)->toDateString();
 
         $validated = $request->validate([
-            'full_name' => ['required', 'string', 'max:150'],
-
+            'full_name' => [
+                'required',
+                'string',
+                'max:150',
+            ],
             'email' => [
                 'required',
                 'email',
@@ -322,65 +280,102 @@ class StaffManagementController extends Controller
                 Rule::unique('staff', 'email')->ignore($staff->id),
                 Rule::unique('users', 'email')->ignore($linkedUser?->id),
             ],
-
-            'phone_number' => ['nullable', 'string', 'max:30'],
-            'status' => ['required', Rule::in(['Active', 'Inactive'])],
-            'service_ids' => ['nullable', 'array'],
-            'service_ids.*' => ['integer', 'exists:services,id'],
-
-            'off_start_date' => ['nullable', 'date', 'after_or_equal:today'],
-            'off_end_date' => ['nullable', 'date', 'after_or_equal:off_start_date'],
-            'off_reason' => ['nullable', 'string', 'max:1000'],
+            'phone_number' => [
+                'nullable',
+                'string',
+                'max:30',
+            ],
+            'status' => [
+                'required',
+                Rule::in(['Active', 'Inactive']),
+            ],
+            'service_ids' => [
+                'nullable',
+                'array',
+            ],
+            'service_ids.*' => [
+                'integer',
+                'exists:services,id',
+            ],
+            'off_start_date' => [
+                'nullable',
+                'date_format:Y-m-d',
+                'after_or_equal:' . $today,
+            ],
+            'off_end_date' => [
+                'nullable',
+                'date_format:Y-m-d',
+                'after_or_equal:off_start_date',
+            ],
+            'off_reason' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
         ]);
 
-        if (
-            (!empty($validated['off_start_date']) && empty($validated['off_end_date'])) ||
-            (empty($validated['off_start_date']) && !empty($validated['off_end_date']))
-        ) {
+        $start = $validated['off_start_date'] ?? null;
+        $end = $validated['off_end_date'] ?? null;
+
+        if (($start && !$end) || (!$start && $end)) {
             return redirect()
                 ->route('admin.staff')
-                ->withErrors(['off_start_date' => 'Please provide both start date and end date for day off.']);
+                ->withErrors([
+                    'off_start_date' =>
+                        'Provide both the start and end dates for the day off',
+                ]);
         }
 
-        DB::transaction(function () use ($staff, $validated) {
-            $data = collect($validated)
-                ->except([
-                    'service_ids',
-                    'off_start_date',
-                    'off_end_date',
-                    'off_reason',
-                ])
-                ->toArray();
+        $outcomes = [];
+
+        DB::transaction(function () use (
+            $staff,
+            $validated,
+            $start,
+            $end,
+            &$outcomes
+        ) {
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Lock Staff Record
+            |--------------------------------------------------------------------------
+            */
+
+            $lockedStaff = Staff::whereKey($staff->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $lockedStaff->update([
+                'full_name' => $validated['full_name'],
+                'email' => $validated['email'],
+                'phone_number' =>
+                    $validated['phone_number'] ?? null,
+                'status' => $validated['status'],
+            ]);
 
             /*
             |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT:
-            | Update Staff Profile
+            | NS BEAUTY COMMENT: Update Linked User
             |--------------------------------------------------------------------------
             */
-            $staff->update($data);
 
-            /*
-            |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT:
-            | Sync Staff User Account
-            |--------------------------------------------------------------------------
-            | Purpose:
-            | - Keeps users table and staff table connected.
-            | - Staff login email always matches staff profile email.
-            |--------------------------------------------------------------------------
-            */
-            $user = $this->findStaffUser($staff);
+            $user = $this->findStaffUser($lockedStaff);
 
             if ($user) {
                 $user->update([
                     'name' => $validated['full_name'],
                     'email' => $validated['email'],
-                    'status' => $validated['status'] === 'Active' ? 'active' : 'inactive',
+                    'status' =>
+                        $validated['status'] === 'Active'
+                            ? 'active'
+                            : 'inactive',
                 ]);
 
-                if (Schema::hasColumn('staff', 'user_id') && $staff->user_id !== $user->id) {
-                    $staff->update([
+                if (
+                    Schema::hasColumn('staff', 'user_id') &&
+                    $lockedStaff->user_id !== $user->id
+                ) {
+                    $lockedStaff->update([
                         'user_id' => $user->id,
                     ]);
                 }
@@ -388,136 +383,709 @@ class StaffManagementController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT:
-            | Staff Service Sync
+            | NS BEAUTY COMMENT: Update Staff Services
             |--------------------------------------------------------------------------
             */
-            $staff->services()->sync($validated['service_ids'] ?? []);
+
+            $lockedStaff->services()->sync(
+                $validated['service_ids'] ?? []
+            );
 
             /*
             |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT:
-            | Staff Day-Off Record
-            |--------------------------------------------------------------------------
-            | Customer Booking checks staff_day_offs before allowing a booking.
+            | NS BEAUTY COMMENT: Create Day Off
             |--------------------------------------------------------------------------
             */
-            if (!empty($validated['off_start_date']) && !empty($validated['off_end_date'])) {
+
+            if ($start && $end) {
                 StaffDayOff::create([
-                    'staff_id' => $staff->id,
-                    'start_date' => $validated['off_start_date'],
-                    'end_date' => $validated['off_end_date'],
+                    'staff_id' => $lockedStaff->id,
+                    'start_date' => $start,
+                    'end_date' => $end,
                     'reason' => $validated['off_reason'] ?? null,
                 ]);
+
+                /*
+                |--------------------------------------------------------------------------
+                | NS BEAUTY COMMENT: Automatically Review Affected Bookings
+                |--------------------------------------------------------------------------
+                */
+
+                $outcomes = $this->reassignAffectedAppointments(
+                    $lockedStaff,
+                    $start,
+                    $end,
+                    $validated['off_reason'] ?? null
+                );
             }
 
             $this->createAuditLog(
-                action: 'update_staff',
-                description: 'Admin updated staff profile: ' . $staff->full_name
+                'update_staff',
+                'Admin updated staff profile for ' .
+                $lockedStaff->full_name
+            );
+        }, 3);
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Send Notifications After Commit
+        |--------------------------------------------------------------------------
+        */
+
+        $this->sendEmergencyNotifications($outcomes);
+
+        $reassigned = collect($outcomes)
+            ->where('outcome', 'reassigned')
+            ->count();
+
+        $rescheduling = collect($outcomes)
+            ->where('outcome', 'reschedule')
+            ->count();
+
+        return redirect()
+            ->route('admin.staff')
+            ->with(
+                'success',
+                'Staff updated successfully — ' .
+                $reassigned . ' bookings reassigned and ' .
+                $rescheduling . ' require rescheduling'
+            );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Emergency Staff Reassignment
+    |--------------------------------------------------------------------------
+    | Only future appointments are processed
+    | Finished, cancelled and no-show bookings are excluded
+    |
+    | The appointment ID, selected services and total price are preserved
+    |--------------------------------------------------------------------------
+    */
+
+    private function reassignAffectedAppointments(
+        Staff $absentStaff,
+        string $startDate,
+        string $endDate,
+        ?string $dayOffReason = null
+    ): array {
+        $now = Carbon::now(self::TIMEZONE);
+        $results = [];
+
+        $appointments = Appointment::with([
+            'customer',
+            'services',
+        ])
+            ->where('staff_id', $absentStaff->id)
+            ->whereBetween(
+                'appointment_date',
+                [$startDate, $endDate]
+            )
+            ->whereIn(
+                'status',
+                Appointment::ACTIVE_STATUSES
+            )
+            ->orderBy('appointment_date')
+            ->orderBy('start_time')
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($appointments as $appointment) {
+            $date = Carbon::parse(
+                $appointment->appointment_date
+            )->format('Y-m-d');
+
+            $startTime = substr(
+                (string) $appointment->start_time,
+                0,
+                5
+            );
+
+            $appointmentStart = Carbon::createFromFormat(
+                '!Y-m-d H:i',
+                $date . ' ' . $startTime,
+                self::TIMEZONE
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Do Not Change Past Appointments
+            |--------------------------------------------------------------------------
+            */
+
+            if ($appointmentStart->lessThanOrEqualTo($now)) {
+                continue;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Find an Available Replacement
+            |--------------------------------------------------------------------------
+            */
+
+            $replacement = $this->findReplacementStaff(
+                $absentStaff,
+                $appointment
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Preserve Original Details
+            |--------------------------------------------------------------------------
+            | Original fields are set only when empty
+            | Existing history is never overwritten
+            |--------------------------------------------------------------------------
+            */
+
+            $originalData = [
+                'original_appointment_date' =>
+                    $appointment->original_appointment_date
+                        ?? $date,
+
+                'original_start_time' =>
+                    $appointment->original_start_time
+                        ?? $appointment->start_time,
+
+                'original_staff_id' =>
+                    $appointment->original_staff_id
+                        ?? $appointment->staff_id,
+            ];
+
+            if ($replacement) {
+                /*
+                |--------------------------------------------------------------------------
+                | NS BEAUTY COMMENT: Automatic Beautician Reassignment
+                |--------------------------------------------------------------------------
+                | Keep the existing appointment date and time
+                | Only change the assigned beautician
+                |--------------------------------------------------------------------------
+                */
+
+                $appointment->update(array_merge(
+                    $originalData,
+                    [
+                        'staff_id' => $replacement->id,
+                    ]
+                ));
+
+                $this->createAuditLog(
+                    'emergency_staff_reassigned',
+                    'Booking ' .
+                    $this->bookingCode($appointment->id) .
+                    ' reassigned from ' .
+                    $absentStaff->full_name .
+                    ' to ' .
+                    $replacement->full_name .
+                    ' due to staff day off'
+                );
+            } else {
+                /*
+                |--------------------------------------------------------------------------
+                | NS BEAUTY COMMENT: No Qualified Replacement Found
+                |--------------------------------------------------------------------------
+                | Update appointment status in the database
+                | Preserve original booking information
+                | Do not cancel the appointment or mark it no-show
+                |--------------------------------------------------------------------------
+                */
+
+                $reason =
+                    'Assigned beautician unavailable due to staff day off';
+
+                if ($dayOffReason && trim($dayOffReason) !== '') {
+                    $reason .= ' — ' . trim($dayOffReason);
+                }
+
+                $reason = Str::limit($reason, 1000, '');
+
+                $appointment->update(array_merge(
+                    $originalData,
+                    [
+                        'status' => 'rescheduling_required',
+                        'rescheduling_reason' => $reason,
+                        'rescheduling_requested_at' => $now,
+                        'status_updated_by' => auth()->id(),
+                        'status_updated_at' => $now,
+                    ]
+                ));
+
+                /*
+                |--------------------------------------------------------------------------
+                | NS BEAUTY COMMENT: Record Rescheduling Requirement
+                |--------------------------------------------------------------------------
+                */
+
+                $this->createAuditLog(
+                    'emergency_rescheduling_needed',
+                    'Booking ' .
+                    $this->bookingCode($appointment->id) .
+                    ' marked rescheduling_required because ' .
+                    'no qualified available replacement was found'
+                );
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Store Notification Outcome
+            |--------------------------------------------------------------------------
+            | Notifications are sent after the database transaction
+            |--------------------------------------------------------------------------
+            */
+
+            $results[] = [
+                'appointment_id' => $appointment->id,
+                'outcome' =>
+                    $replacement ? 'reassigned' : 'reschedule',
+                'date' => $date,
+                'time' => $startTime,
+                'replacement_name' => $replacement?->full_name,
+            ];
+        }
+
+        return $results;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Find Qualified Available Beautician
+    |--------------------------------------------------------------------------
+    | Requirements:
+    | - Staff must be active
+    | - Staff must offer every service in the appointment
+    | - Staff must not be on day off
+    | - Staff must not have an overlapping active appointment
+    |
+    | All checks must pass before automatic reassignment
+    |--------------------------------------------------------------------------
+    */
+
+    private function findReplacementStaff(
+        Staff $absentStaff,
+        Appointment $appointment
+    ): ?Staff {
+        $date = Carbon::parse(
+            $appointment->appointment_date
+        )->format('Y-m-d');
+
+        $serviceIds = $appointment->services
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id);
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Avoid Assigning Unqualified Staff
+        |--------------------------------------------------------------------------
+        */
+
+        if ($serviceIds->isEmpty()) {
+            return null;
+        }
+
+        if (!Schema::hasTable('staff_services')) {
+            return null;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Determine Booking End Time
+        |--------------------------------------------------------------------------
+        | Fallback to recorded service durations when needed
+        |--------------------------------------------------------------------------
+        */
+
+        $endTime = $appointment->end_time;
+
+        if (!$endTime) {
+            $duration = $appointment->services->sum(
+                function ($service) {
+                    return (int) (
+                        $service->pivot->duration
+                        ?? $service->duration
+                        ?? 0
+                    );
+                }
+            );
+
+            if ($duration <= 0) {
+                return null;
+            }
+
+            $endTime = Carbon::parse(
+                $date . ' ' . $appointment->start_time,
+                self::TIMEZONE
+            )
+                ->addMinutes($duration)
+                ->format('H:i:s');
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Retrieve Potential Replacement Staff
+        |--------------------------------------------------------------------------
+        */
+
+        $candidates = Staff::with('services')
+            ->where('id', '!=', $absentStaff->id)
+            ->whereIn('status', ['Active', 'active'])
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($candidates as $candidate) {
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Verify Every Required Service
+            |--------------------------------------------------------------------------
+            */
+
+            $assignedIds = $candidate->services
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id);
+
+            if ($serviceIds->diff($assignedIds)->isNotEmpty()) {
+                continue;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Check Staff Day Off
+            |--------------------------------------------------------------------------
+            */
+
+            $onDayOff = StaffDayOff::where(
+                'staff_id',
+                $candidate->id
+            )
+                ->whereDate('start_date', '<=', $date)
+                ->whereDate('end_date', '>=', $date)
+                ->exists();
+
+            if ($onDayOff) {
+                continue;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Check Appointment Conflicts
+            |--------------------------------------------------------------------------
+            | Standard overlap rule:
+            |
+            | Existing start < requested end
+            | AND
+            | Existing end > requested start
+            |--------------------------------------------------------------------------
+            */
+
+            $hasConflict = Appointment::where(
+                'staff_id',
+                $candidate->id
+            )
+                ->whereDate('appointment_date', $date)
+                ->whereIn(
+                    'status',
+                    Appointment::ACTIVE_STATUSES
+                )
+                ->where(
+                    'start_time',
+                    '<',
+                    $endTime
+                )
+                ->where(
+                    'end_time',
+                    '>',
+                    $appointment->start_time
+                )
+                ->exists();
+
+            if ($hasConflict) {
+                continue;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Qualified Replacement Found
+            |--------------------------------------------------------------------------
+            */
+
+            return $candidate;
+        }
+
+        return null;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Emergency Scheduling Notifications
+    |--------------------------------------------------------------------------
+    | NotificationService handles:
+    | - In-app notification creation
+    | - Email delivery attempts
+    |
+    | Each recipient is processed independently so one notification
+    | failure does not prevent attempting notifications to others
+    |--------------------------------------------------------------------------
+    */
+
+    private function sendEmergencyNotifications(array $outcomes): void
+    {
+        if (empty($outcomes)) {
+            return;
+        }
+
+        $service = app(NotificationService::class);
+
+        foreach ($outcomes as $outcome) {
+            $appointment = Appointment::with([
+                'customer',
+                'staff',
+            ])->find($outcome['appointment_id']);
+
+            if (!$appointment) {
+                continue;
+            }
+
+            $bookingCode = $this->bookingCode($appointment->id);
+
+            $dateTime =
+                $outcome['date'] .
+                ' at ' .
+                $outcome['time'] .
+                ' MYT';
+
+            $customerLink = route(
+                'customer.booking.details',
+                $appointment->id,
+                false
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Notify Customer
+            |--------------------------------------------------------------------------
+            */
+
+            if ($appointment->customer) {
+                try {
+                    if ($outcome['outcome'] === 'reassigned') {
+                        $service->notifyCustomer(
+                            $appointment->customer,
+                            'Your Beautician Has Changed',
+                            'Your booking ' .
+                            $bookingCode .
+                            ' on ' .
+                            $dateTime .
+                            ' has been reassigned to ' .
+                            $outcome['replacement_name'] .
+                            ' due to staff unavailability — your appointment date and time remain unchanged',
+                            $customerLink,
+                            'staff_reassigned',
+                            true
+                        );
+                    } else {
+                        $service->notifyCustomer(
+                            $appointment->customer,
+                            'Appointment Rescheduling Required',
+                            'Your booking ' .
+                            $bookingCode .
+                            ' on ' .
+                            $dateTime .
+                            ' is affected by a staff emergency and no qualified replacement is available — please contact the studio to arrange a new schedule',
+                            $customerLink,
+                            'rescheduling_required',
+                            true
+                        );
+                    }
+                } catch (\Throwable $exception) {
+                    report($exception);
+                }
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Notify Replacement Beautician
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                $outcome['outcome'] === 'reassigned' &&
+                $appointment->staff
+            ) {
+                try {
+                    $service->notifyStaff(
+                        $appointment->staff,
+                        'Emergency Appointment Assignment',
+                        'Booking ' .
+                        $bookingCode .
+                        ' on ' .
+                        $dateTime .
+                        ' has been assigned to you',
+                        route('staff.appointments', [], false),
+                        'staff_reassigned',
+                        true
+                    );
+                } catch (\Throwable $exception) {
+                    report($exception);
+                }
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Notify Administrators
+            |--------------------------------------------------------------------------
+            */
+
+            try {
+                $service->notifyAdmins(
+                    $outcome['outcome'] === 'reassigned'
+                        ? 'Emergency Staff Reassignment'
+                        : 'Appointment Rescheduling Required',
+
+                    'Booking ' .
+                    $bookingCode .
+                    (
+                        $outcome['outcome'] === 'reassigned'
+                            ? ' reassigned to ' .
+                                $outcome['replacement_name']
+                            : ' requires customer rescheduling'
+                    ),
+
+                    route('admin.bookings', [], false),
+                    'emergency_schedule_change',
+                    true
+                );
+            } catch (\Throwable $exception) {
+                report($exception);
+            }
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Booking Code Helper
+    |--------------------------------------------------------------------------
+    */
+
+    private function bookingCode(int $id): string
+    {
+        return 'BK-' . str_pad(
+            (string) $id,
+            4,
+            '0',
+            STR_PAD_LEFT
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Toggle Staff Status
+    |--------------------------------------------------------------------------
+    */
+
+    public function toggleStatus(Staff $staff)
+    {
+        $newStatus =
+            $staff->status === 'Active'
+                ? 'Inactive'
+                : 'Active';
+
+        DB::transaction(function () use ($staff, $newStatus) {
+            $staff->update([
+                'status' => $newStatus,
+            ]);
+
+            $this->syncStaffUserStatus($staff);
+
+            $this->createAuditLog(
+                'change_staff_status',
+                'Admin changed staff status for ' .
+                $staff->full_name .
+                ' to ' .
+                $newStatus
             );
         });
 
         return redirect()
             ->route('admin.staff')
-            ->with('success', 'Staff updated successfully.');
+            ->with(
+                'success',
+                'Staff status updated successfully'
+            );
     }
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT:
-    | FUNCTION: Toggle Staff Status
+    | NS BEAUTY COMMENT: Soft Delete Staff
     |--------------------------------------------------------------------------
     */
-    public function toggleStatus(Staff $staff)
-    {
-        $newStatus = $staff->status === 'Active' ? 'Inactive' : 'Active';
 
-        $staff->update([
-            'status' => $newStatus,
-        ]);
-
-        $this->syncStaffUserStatus($staff);
-
-        $this->createAuditLog(
-            action: 'change_staff_status',
-            description: 'Admin changed staff status: ' . $staff->full_name . ' to ' . $newStatus
-        );
-
-        return redirect()
-            ->route('admin.staff')
-            ->with('success', 'Staff status updated successfully.');
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT:
-    | FUNCTION: Soft Delete Staff
-    |--------------------------------------------------------------------------
-    | Purpose:
-    | - Staff is moved to Deleted Staff first.
-    | - Staff can be restored within 30 days.
-    | - Connected user account is deactivated.
-    |--------------------------------------------------------------------------
-    */
     public function destroy(Staff $staff)
     {
         $staffName = $staff->full_name;
 
-        $staff->update([
-            'status' => 'Inactive',
-        ]);
+        DB::transaction(function () use ($staff, $staffName) {
+            $staff->update([
+                'status' => 'Inactive',
+            ]);
 
-        $this->syncStaffUserStatus($staff);
+            $this->syncStaffUserStatus($staff);
 
-        $staff->delete();
+            $staff->delete();
 
-        $this->createAuditLog(
-            action: 'delete_staff',
-            description: 'Admin moved staff to Deleted Staff: ' . $staffName
-        );
+            $this->createAuditLog(
+                'delete_staff',
+                'Admin moved staff to Deleted Staff: ' .
+                $staffName
+            );
+        });
 
         return redirect()
             ->route('admin.staff')
-            ->with('success', 'Staff moved to Deleted Staff. It can be restored within 30 days.');
+            ->with(
+                'success',
+                'Staff moved to Deleted Staff — restore within 30 days'
+            );
     }
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT:
-    | FUNCTION: Restore Staff
+    | NS BEAUTY COMMENT: Restore Staff
     |--------------------------------------------------------------------------
     */
+
     public function restore(int $id)
     {
         $staff = Staff::onlyTrashed()->findOrFail($id);
 
-        $staff->restore();
+        DB::transaction(function () use ($staff) {
+            $staff->restore();
 
-        $staff->update([
-            'status' => 'Active',
-        ]);
+            $staff->update([
+                'status' => 'Active',
+            ]);
 
-        $this->syncStaffUserStatus($staff);
+            $this->syncStaffUserStatus($staff);
 
-        $this->createAuditLog(
-            action: 'restore_staff',
-            description: 'Admin restored staff: ' . $staff->full_name
-        );
+            $this->createAuditLog(
+                'restore_staff',
+                'Admin restored staff: ' .
+                $staff->full_name
+            );
+        });
 
         return redirect()
             ->route('admin.staff')
-            ->with('success', 'Staff restored successfully.');
+            ->with(
+                'success',
+                'Staff restored successfully'
+            );
     }
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT:
-    | FUNCTION: Permanent Delete Staff
-    |--------------------------------------------------------------------------
-    | Purpose:
-    | - Only allowed if staff has no connected appointment records.
+    | NS BEAUTY COMMENT: Permanently Delete Staff
     |--------------------------------------------------------------------------
     */
+
     public function forceDelete(int $id)
     {
         $staff = Staff::onlyTrashed()
@@ -528,70 +1096,92 @@ class StaffManagementController extends Controller
             return redirect()
                 ->route('admin.staff')
                 ->withErrors([
-                    'staff_delete' => 'This staff cannot be permanently deleted because booking records are connected to this staff.',
+                    'staff_delete' =>
+                        'This staff cannot be permanently deleted while linked booking records exist',
                 ]);
         }
 
         $staffName = $staff->full_name;
 
-        $staff->services()->detach();
-        $staff->dayOffs()->delete();
-        $staff->forceDelete();
+        DB::transaction(function () use ($staff, $staffName) {
+            $staff->services()->detach();
+            $staff->dayOffs()->delete();
+            $staff->forceDelete();
 
-        $this->createAuditLog(
-            action: 'permanent_delete_staff',
-            description: 'Admin permanently deleted staff: ' . $staffName
-        );
+            $this->createAuditLog(
+                'permanent_delete_staff',
+                'Admin permanently deleted staff: ' .
+                $staffName
+            );
+        });
 
         return redirect()
             ->route('admin.staff')
-            ->with('success', 'Staff permanently deleted.');
+            ->with(
+                'success',
+                'Staff permanently deleted'
+            );
     }
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT:
-    | FUNCTION: Remove Staff Day-Off
+    | NS BEAUTY COMMENT: Remove Staff Day Off
     |--------------------------------------------------------------------------
     */
+
     public function destroyDayOff(StaffDayOff $dayOff)
     {
-        $staffName = $dayOff->staff->full_name ?? 'Unknown staff';
+        $staffName =
+            $dayOff->staff?->full_name ?? 'Unknown staff';
 
         $dayOff->delete();
 
         $this->createAuditLog(
-            action: 'remove_staff_day_off',
-            description: 'Admin removed day off record for: ' . $staffName
+            'remove_staff_day_off',
+            'Admin removed day off for ' .
+            $staffName
         );
 
         return redirect()
             ->route('admin.staff')
-            ->with('success', 'Staff day off removed successfully.');
+            ->with(
+                'success',
+                'Staff day off removed successfully'
+            );
     }
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT:
-    | PRIVATE FUNCTION: Delete Expired Day-Offs
+    | NS BEAUTY COMMENT: Delete Expired Day-Off Records
     |--------------------------------------------------------------------------
     */
+
     private function deleteExpiredDayOffs(): void
     {
-        StaffDayOff::whereDate('end_date', '<', today())->delete();
+        StaffDayOff::whereDate(
+            'end_date',
+            '<',
+            Carbon::today(self::TIMEZONE)->toDateString()
+        )->delete();
     }
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT:
-    | PRIVATE FUNCTION: Delete Expired Trashed Staff
+    | NS BEAUTY COMMENT: Clean Up Expired Deleted Staff
+    |--------------------------------------------------------------------------
+    | Staff with booking history must not be permanently deleted
     |--------------------------------------------------------------------------
     */
+
     private function deleteExpiredTrashedStaff(): void
     {
         $expiredStaff = Staff::onlyTrashed()
             ->withCount('appointments')
-            ->where('deleted_at', '<=', now()->subDays(30))
+            ->where(
+                'deleted_at',
+                '<=',
+                now()->subDays(30)
+            )
             ->get();
 
         foreach ($expiredStaff as $staff) {
@@ -605,14 +1195,10 @@ class StaffManagementController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT:
-    | PRIVATE FUNCTION: Sync Staff User Status
-    |--------------------------------------------------------------------------
-    | Purpose:
-    | - Staff Active = user active
-    | - Staff Inactive = user inactive
+    | NS BEAUTY COMMENT: Synchronize Staff Login Account
     |--------------------------------------------------------------------------
     */
+
     private function syncStaffUserStatus(Staff $staff): void
     {
         $user = $this->findStaffUser($staff);
@@ -622,35 +1208,37 @@ class StaffManagementController extends Controller
         }
 
         $user->update([
-            'status' => $staff->status === 'Active' ? 'active' : 'inactive',
+            'status' =>
+                $staff->status === 'Active'
+                    ? 'active'
+                    : 'inactive',
         ]);
     }
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT:
-    | PRIVATE FUNCTION: Find Staff User
-    |--------------------------------------------------------------------------
-    | Purpose:
-    | - Finds linked user through user_id first.
-    | - Falls back to email if user_id is missing.
+    | NS BEAUTY COMMENT: Find Linked Staff User
     |--------------------------------------------------------------------------
     */
+
     private function findStaffUser(Staff $staff): ?User
     {
         if ($staff->user_id) {
             return User::find($staff->user_id);
         }
 
-        return User::where('email', $staff->email)->first();
+        return User::where(
+            'email',
+            $staff->email
+        )->first();
     }
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT:
-    | PRIVATE FUNCTION: Send Staff Activation Email
+    | NS BEAUTY COMMENT: Send Staff Activation Email
     |--------------------------------------------------------------------------
     */
+
     private function sendStaffActivationEmail(
         string $staffName,
         string $staffEmail,
@@ -659,15 +1247,18 @@ class StaffManagementController extends Controller
         try {
             Mail::raw(
                 "Hello {$staffName},\n\n" .
-                "Your staff account for Nail Studio & Beauty has been created.\n\n" .
-                "Please activate your account and set your password using this link:\n\n" .
+                "Your staff account for Nail Studio & Beauty has been created\n\n" .
+                "Activate your account and set your password using the link below\n\n" .
                 "{$activationUrl}\n\n" .
-                "This link will expire in 3 days.\n\n" .
-                "After activation, you can login using your email, password, and Email OTP.\n\n" .
-                "If you did not expect this email, please ignore it.",
+                "The activation link expires in 3 days\n\n" .
+                "After activation, sign in using your email, password and OTP\n\n" .
+                "If you did not expect this email, you may ignore it",
                 function ($message) use ($staffEmail) {
-                    $message->to($staffEmail)
-                        ->subject('Nail Studio & Beauty - Staff Account Activation');
+                    $message
+                        ->to($staffEmail)
+                        ->subject(
+                            'Nail Studio & Beauty - Staff Account Activation'
+                        );
                 }
             );
 
@@ -681,12 +1272,16 @@ class StaffManagementController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT:
-    | PRIVATE FUNCTION: Create Audit Log
+    | NS BEAUTY COMMENT: Audit Logging
+    |--------------------------------------------------------------------------
+    | Preserves compatibility with your existing audit_logs table
     |--------------------------------------------------------------------------
     */
-    private function createAuditLog(string $action, string $description): void
-    {
+
+    private function createAuditLog(
+        string $action,
+        string $description
+    ): void {
         $data = [
             'user_type' => auth()->user()->role ?? 'admin',
             'action' => $action,

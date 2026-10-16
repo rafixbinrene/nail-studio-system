@@ -9,6 +9,7 @@ use App\Models\Customer;
 use App\Models\Service;
 use App\Models\Staff;
 use App\Models\StaffDayOff;
+use App\Models\StudioClosure;
 use App\Services\NotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -19,42 +20,27 @@ use Illuminate\Validation\Rule;
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Customer Booking Controller
+| NS BEAUTY COMMENT: CUSTOMER BOOKING CONTROLLER
 |--------------------------------------------------------------------------
-| Purpose:
-| - Display the customer booking page
-| - Enforce a seven-day booking window using Malaysian time
-| - Enforce customer booking limits
-| - Validate regular and follow-up services
-| - Validate staff skills and day-offs
-| - Prevent overlapping bookings
-| - Provide database-backed appointment availability
-| - Preserve audit logging and user notifications
+| - Regular and follow-up appointments
+| - Seven-day advance booking window, including today
+| - Malaysia business timezone
+| - Sunday closing day
+| - Studio-wide emergency closures
+| - Staff qualifications and scheduled day-offs
+| - Appointment overlap prevention
+| - Customer active booking limits
+| - Notifications and audit logging
 |--------------------------------------------------------------------------
 */
 
 class BookingController extends Controller
 {
-    /*
-    |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: Business Timezone
-    |--------------------------------------------------------------------------
-    | All customer appointment dates and times use Malaysian time
-    | The hosting server may be located in another timezone
-    |--------------------------------------------------------------------------
-    */
-
     private const BUSINESS_TIMEZONE = 'Asia/Kuala_Lumpur';
 
-    /*
-    |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: Available Booking Start Times
-    |--------------------------------------------------------------------------
-    | These start times match the existing booking page
-    | Changes to studio operating hours should be applied consistently
-    | to the frontend and backend
-    |--------------------------------------------------------------------------
-    */
+    private const BOOKING_WINDOW_DAYS = 6;
+
+    private const CLOSED_WEEKDAY = Carbon::SUNDAY;
 
     private const BOOKING_TIMES = [
         '10:00',
@@ -74,9 +60,7 @@ class BookingController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: Customer Booking Page
-    |--------------------------------------------------------------------------
-    | Preserve existing view data and customer matching
+    | NS BEAUTY COMMENT: DISPLAY CUSTOMER BOOKING PAGE
     |--------------------------------------------------------------------------
     */
 
@@ -84,16 +68,19 @@ class BookingController extends Controller
     {
         $user = $request->user();
 
-        $customer = Customer::where(function ($query) use ($user) {
-            $query->where('user_id', $user->id)
-                ->orWhere('email', $user->email);
-        })->first();
+        $customer = $this->findCustomer($user);
 
         $customerCompletedBookings = 0;
         $customerActiveBookings = 0;
         $eligibleFollowUps = collect();
 
         if ($customer) {
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Completed Booking History
+            |--------------------------------------------------------------------------
+            */
+
             $customerCompletedBookings = Appointment::where(
                 'customer_id',
                 $customer->id
@@ -101,23 +88,32 @@ class BookingController extends Controller
                 ->whereIn('status', ['finished', 'Finished'])
                 ->count();
 
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Booking Limit Occupancy
+            |--------------------------------------------------------------------------
+            */
+
             $customerActiveBookings = Appointment::where(
                 'customer_id',
                 $customer->id
             )
-                ->whereIn('status', Appointment::ACTIVE_STATUSES)
+                ->whereIn(
+                    'status',
+                    $this->customerOccupiedStatuses()
+                )
                 ->count();
 
             /*
             |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT: Eligible Follow-up Appointments
+            | NS BEAUTY COMMENT: Eligible Follow-Up Appointments
             |--------------------------------------------------------------------------
             */
 
             $eligibleFollowUps = Appointment::with([
-                    'staff',
-                    'services',
-                ])
+                'staff',
+                'services',
+            ])
                 ->where('customer_id', $customer->id)
                 ->whereIn('status', ['finished', 'Finished'])
                 ->orderByDesc('appointment_date')
@@ -128,44 +124,72 @@ class BookingController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Live Available Services
+        | NS BEAUTY COMMENT: Available Services
         |--------------------------------------------------------------------------
         */
 
         $services = Service::whereIn(
-                'status',
-                ['Available', 'available']
-            )
+            'status',
+            ['Available', 'available']
+        )
             ->orderBy('service_name')
             ->get();
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Active Beauticians
+        | NS BEAUTY COMMENT: Active Staff and Skills
         |--------------------------------------------------------------------------
         */
 
         $staffMembers = Staff::with([
-                'services',
-                'activeDayOffs',
-            ])
+            'services',
+            'activeDayOffs',
+        ])
             ->whereIn('status', ['Active', 'active'])
             ->orderBy('full_name')
             ->get();
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Staff Day-offs
-        |--------------------------------------------------------------------------
-        | Query relative to today's date in Malaysia
+        | NS BEAUTY COMMENT: Staff Day-Off Records
         |--------------------------------------------------------------------------
         */
+
+        $today = Carbon::today(
+            self::BUSINESS_TIMEZONE
+        );
 
         $staffDayOffs = StaffDayOff::with('staff')
             ->whereDate(
                 'end_date',
                 '>=',
-                Carbon::today(self::BUSINESS_TIMEZONE)->toDateString()
+                $today->toDateString()
+            )
+            ->orderBy('start_date')
+            ->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Active Studio Closure Records
+        |--------------------------------------------------------------------------
+        | Expose closures within the seven-day booking window
+        | for optional use by the customer booking interface
+        |--------------------------------------------------------------------------
+        */
+
+        $studioClosures = StudioClosure::query()
+            ->active()
+            ->whereDate(
+                'end_date',
+                '>=',
+                $today->toDateString()
+            )
+            ->whereDate(
+                'start_date',
+                '<=',
+                $today->copy()
+                    ->addDays(self::BOOKING_WINDOW_DAYS)
+                    ->toDateString()
             )
             ->orderBy('start_date')
             ->get();
@@ -175,33 +199,32 @@ class BookingController extends Controller
             'services' => $services,
             'staffMembers' => $staffMembers,
             'staffDayOffs' => $staffDayOffs,
-            'customerCompletedBookings' => $customerCompletedBookings,
-            'customerActiveBookings' => $customerActiveBookings,
+            'studioClosures' => $studioClosures,
+            'customerCompletedBookings' =>
+                $customerCompletedBookings,
+            'customerActiveBookings' =>
+                $customerActiveBookings,
             'eligibleFollowUps' => $eligibleFollowUps,
         ]);
     }
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: Database-backed Slot Availability
+    | NS BEAUTY COMMENT: REAL-TIME APPOINTMENT AVAILABILITY
     |--------------------------------------------------------------------------
-    | Purpose:
-    | - Provides actual availability for the selected beautician
-    | - Considers total duration of all selected services
-    | - Disables past or already-started times in Malaysia
-    | - Disables dates when the staff member is on day off
-    | - Detects overlapping active appointments
-    |
-    | IMPORTANT:
-    | The route and frontend request will be connected in the next files
-    | The store method also independently validates booking availability
+    | Returns actual appointment slots from database records
+    | Closed dates return unavailable slots
     |--------------------------------------------------------------------------
     */
 
     public function availability(Request $request): JsonResponse
     {
-        $today = Carbon::today(self::BUSINESS_TIMEZONE);
-        $maxDate = $today->copy()->addDays(6);
+        $today = Carbon::today(
+            self::BUSINESS_TIMEZONE
+        );
+
+        $maxDate = $today->copy()
+            ->addDays(self::BOOKING_WINDOW_DAYS);
 
         $validated = $request->validate([
             'appointment_date' => [
@@ -210,19 +233,23 @@ class BookingController extends Controller
                 'after_or_equal:' . $today->toDateString(),
                 'before_or_equal:' . $maxDate->toDateString(),
             ],
+
             'staff_id' => [
                 'required',
                 'integer',
                 'exists:staff,id',
             ],
+
             'booking_type' => [
                 'required',
                 Rule::in(['regular', 'followup']),
             ],
+
             'selected_service_ids' => [
                 'required',
                 'string',
             ],
+
             'follow_up_appointment_id' => [
                 'nullable',
                 'integer',
@@ -231,43 +258,40 @@ class BookingController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Account Eligibility
+        | NS BEAUTY COMMENT: Account Status
         |--------------------------------------------------------------------------
         */
 
         $user = $request->user();
 
-        if (in_array(
-            strtolower($user->status ?? 'active'),
-            ['blocked', 'inactive'],
-            true
-        )) {
-            return response()->json([
-                'message' => 'Your account cannot create appointments',
-            ], 403);
-        }
-
-        $customer = Customer::where(function ($query) use ($user) {
-            $query->where('user_id', $user->id)
-                ->orWhere('email', $user->email);
-        })->first();
-
         if (
-            $customer &&
-            in_array(
-                strtolower($customer->status ?? 'active'),
-                ['blocked', 'inactive'],
-                true
+            $this->isBlockedOrInactive(
+                $user->status ?? 'active'
             )
         ) {
             return response()->json([
-                'message' => 'Your customer account cannot create appointments',
+                'message' =>
+                    'Your account cannot create appointments',
+            ], 403);
+        }
+
+        $customer = $this->findCustomer($user);
+
+        if (
+            $customer &&
+            $this->isBlockedOrInactive(
+                $customer->status ?? 'active'
+            )
+        ) {
+            return response()->json([
+                'message' =>
+                    'Your customer account cannot create appointments',
             ], 403);
         }
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Selected Services
+        | NS BEAUTY COMMENT: Selected Service IDs
         |--------------------------------------------------------------------------
         */
 
@@ -275,11 +299,20 @@ class BookingController extends Controller
             $validated['selected_service_ids']
         );
 
-        if ($serviceIds->isEmpty() || $serviceIds->count() > 3) {
+        if (
+            $serviceIds->isEmpty() ||
+            $serviceIds->count() > 3
+        ) {
             return response()->json([
                 'message' => 'Select between 1 and 3 services',
             ], 422);
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Follow-Up Service Validation
+        |--------------------------------------------------------------------------
+        */
 
         if ($validated['booking_type'] === 'followup') {
             if (
@@ -287,126 +320,197 @@ class BookingController extends Controller
                 empty($validated['follow_up_appointment_id'])
             ) {
                 return response()->json([
-                    'message' => 'Select an eligible finished booking',
+                    'message' =>
+                        'Select an eligible finished booking',
                 ], 422);
             }
 
             $originalBooking = Appointment::with('services')
-                ->where(
-                    'id',
+                ->whereKey(
                     $validated['follow_up_appointment_id']
                 )
                 ->where('customer_id', $customer->id)
-                ->whereIn('status', ['finished', 'Finished'])
+                ->whereIn(
+                    'status',
+                    ['finished', 'Finished']
+                )
                 ->first();
 
             if (!$originalBooking) {
                 return response()->json([
-                    'message' => 'The selected follow-up history is invalid',
+                    'message' =>
+                        'The selected follow-up history is invalid',
                 ], 422);
             }
 
-            $originalServiceIds = $originalBooking->services
+            $originalServiceIds = $originalBooking
+                ->services
                 ->pluck('id')
                 ->map(fn ($id) => (int) $id);
 
-            if ($serviceIds->diff($originalServiceIds)->isNotEmpty()) {
+            if (
+                $serviceIds
+                    ->diff($originalServiceIds)
+                    ->isNotEmpty()
+            ) {
                 return response()->json([
-                    'message' => 'Select services from the linked finished booking',
+                    'message' =>
+                        'Select services from the linked finished booking',
                 ], 422);
             }
 
-            $selectedServices = $originalBooking->services
-                ->filter(function ($service) use ($serviceIds) {
-                    return $serviceIds->contains((int) $service->id);
-                });
+            $selectedServices = $originalBooking
+                ->services
+                ->filter(
+                    fn ($service) =>
+                        $serviceIds->contains(
+                            (int) $service->id
+                        )
+                );
 
             $totalDuration = $selectedServices->sum(
-                fn ($service) => $this->getOriginalServiceDuration($service)
+                fn ($service) =>
+                    $this->getOriginalServiceDuration(
+                        $service
+                    )
             );
         } else {
-            $selectedServices = Service::whereIn('id', $serviceIds)
-                ->whereIn('status', ['Available', 'available'])
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Regular Booking Services
+            |--------------------------------------------------------------------------
+            */
+
+            $selectedServices = Service::whereIn(
+                'id',
+                $serviceIds
+            )
+                ->whereIn(
+                    'status',
+                    ['Available', 'available']
+                )
                 ->get();
 
-            if ($selectedServices->count() !== $serviceIds->count()) {
+            if (
+                $selectedServices->count() !==
+                $serviceIds->count()
+            ) {
                 return response()->json([
-                    'message' => 'One or more selected services are unavailable',
+                    'message' =>
+                        'One or more selected services are unavailable',
                 ], 422);
             }
 
             $totalDuration = $selectedServices->sum(
-                fn ($service) => (int) $service->duration
+                fn ($service) =>
+                    (int) $service->duration
             );
         }
 
         if ($totalDuration <= 0) {
             return response()->json([
-                'message' => 'The selected service duration is invalid',
+                'message' =>
+                    'The selected service duration is invalid',
             ], 422);
         }
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Beautician Validation
+        | NS BEAUTY COMMENT: Beautician Qualifications
         |--------------------------------------------------------------------------
         */
 
         $staff = Staff::with('services')
-            ->where('id', $validated['staff_id'])
-            ->whereIn('status', ['Active', 'active'])
+            ->whereKey(
+                $validated['staff_id']
+            )
+            ->whereIn(
+                'status',
+                ['Active', 'active']
+            )
             ->first();
 
         if (!$staff) {
             return response()->json([
-                'message' => 'The selected beautician is unavailable',
+                'message' =>
+                    'The selected beautician is unavailable',
             ], 422);
         }
 
-        if (!$this->staffCanPerformServices($staff, $serviceIds)) {
+        if (
+            !$this->staffCanPerformServices(
+                $staff,
+                $serviceIds
+            )
+        ) {
             return response()->json([
-                'message' => 'The selected beautician is not assigned to all selected services',
+                'message' =>
+                    'The selected beautician is not assigned to all selected services',
             ], 422);
         }
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Calculate Each Slot from Actual Records
+        | NS BEAUTY COMMENT: Studio Closure Information
         |--------------------------------------------------------------------------
         */
 
-        $slots = $this->buildAvailabilitySlots(
-            (int) $staff->id,
-            $validated['appointment_date'],
-            (int) $totalDuration
+        $date = $validated['appointment_date'];
+
+        $activeClosure = StudioClosure::activeClosureOn(
+            $date
         );
+
+        $studioClosed = $this->isStudioClosedOnDate(
+            $date
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Return Availability JSON
+        |--------------------------------------------------------------------------
+        */
 
         return response()->json([
             'timezone' => self::BUSINESS_TIMEZONE,
-            'date' => $validated['appointment_date'],
+
+            'date' => $date,
+
             'staff_id' => (int) $staff->id,
+
             'duration' => (int) $totalDuration,
-            'slots' => $slots,
+
+            'studio_closed' => $studioClosed,
+
+            'closure_reason' =>
+                $activeClosure?->reason,
+
+            'slots' => $this->buildAvailabilitySlots(
+                (int) $staff->id,
+                $date,
+                (int) $totalDuration
+            ),
         ]);
     }
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: Store Customer Booking
-    |--------------------------------------------------------------------------
-    | Preserves the original booking creation process
-    | Adds Malaysian-time and slot availability enforcement
+    | NS BEAUTY COMMENT: STORE CUSTOMER BOOKING
     |--------------------------------------------------------------------------
     */
 
     public function store(Request $request)
     {
-        $today = Carbon::today(self::BUSINESS_TIMEZONE);
-        $maxDate = $today->copy()->addDays(6);
+        $today = Carbon::today(
+            self::BUSINESS_TIMEZONE
+        );
+
+        $maxDate = $today->copy()
+            ->addDays(self::BOOKING_WINDOW_DAYS);
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Validate Input and Booking Window
+        | NS BEAUTY COMMENT: Validate Booking Submission
         |--------------------------------------------------------------------------
         */
 
@@ -415,45 +519,61 @@ class BookingController extends Controller
                 'required',
                 Rule::in(['regular', 'followup']),
             ],
-            'selected_service_ids' => ['nullable', 'string'],
-            'selected_services' => ['nullable', 'string'],
+
+            'selected_service_ids' => [
+                'nullable',
+                'string',
+            ],
+
+            'selected_services' => [
+                'nullable',
+                'string',
+            ],
+
             'follow_up_appointment_id' => [
                 'nullable',
                 'integer',
                 'exists:appointments,id',
             ],
+
             'staff_id' => [
                 'required',
                 'integer',
                 'exists:staff,id',
             ],
+
             'appointment_date' => [
                 'required',
                 'date_format:Y-m-d',
                 'after_or_equal:' . $today->toDateString(),
                 'before_or_equal:' . $maxDate->toDateString(),
             ],
+
             'start_time' => [
                 'required',
                 'date_format:H:i',
                 Rule::in(self::BOOKING_TIMES),
             ],
+
             'customer_name' => [
                 'required',
                 'string',
                 'max:255',
             ],
+
             'customer_phone' => [
                 'required',
                 'string',
                 'max:30',
                 'regex:/^[0-9+\-\s()]+$/',
             ],
+
             'customer_email' => [
                 'required',
                 'email',
                 'max:255',
             ],
+
             'follow_up_reason' => [
                 'nullable',
                 'string',
@@ -461,21 +581,51 @@ class BookingController extends Controller
             ],
         ]);
 
-        $user = $request->user();
-
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Email Ownership Validation
+        | NS BEAUTY COMMENT: Block Sunday and Emergency Closures
+        |--------------------------------------------------------------------------
+        | Validate on the server, not only in the date picker
         |--------------------------------------------------------------------------
         */
 
+        $requestedDate = $validated['appointment_date'];
+
+        if ($this->isStudioClosedOnDate($requestedDate)) {
+            $closure = StudioClosure::activeClosureOn(
+                $requestedDate
+            );
+
+            $message = $closure
+                ? 'The studio is closed on this date — ' .
+                    $closure->reason .
+                    ' — please choose another date'
+                : 'Nail Studio & Beauty is closed every Sunday — please choose another date';
+
+            return back()
+                ->withErrors([
+                    'appointment_date' => $message,
+                ])
+                ->withInput();
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Authenticated Customer
+        |--------------------------------------------------------------------------
+        */
+
+        $user = $request->user();
+
         if (
-            strtolower($validated['customer_email']) !==
-            strtolower($user->email)
+            strtolower(
+                $validated['customer_email']
+            ) !== strtolower($user->email)
         ) {
             return back()
                 ->withErrors([
-                    'customer_email' => 'The booking email must match your account email',
+                    'customer_email' =>
+                        'The booking email must match your account email',
                 ])
                 ->withInput();
         }
@@ -486,10 +636,9 @@ class BookingController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $customer = Customer::where(function ($query) use ($user) {
-            $query->where('user_id', $user->id)
-                ->orWhere('email', $user->email);
-        })->first();
+        $customer = $this->findCustomer(
+            $user
+        );
 
         $isNewCustomer = !$customer;
 
@@ -497,41 +646,38 @@ class BookingController extends Controller
             $customer = new Customer();
         }
 
-        $customerStatus = strtolower(
-            $customer->status ?? 'active'
-        );
-
-        $userStatus = strtolower(
-            $user->status ?? 'active'
-        );
-
-        if (in_array($userStatus, ['blocked', 'inactive'], true)) {
-            return back()
-                ->withErrors([
-                    'booking' => 'Your account cannot create bookings',
-                ])
-                ->withInput();
-        }
-
         if (
-            !$isNewCustomer &&
-            in_array($customerStatus, ['blocked', 'inactive'], true)
+            $this->isBlockedOrInactive(
+                $user->status ?? 'active'
+            ) ||
+            (
+                !$isNewCustomer &&
+                $this->isBlockedOrInactive(
+                    $customer->status ?? 'active'
+                )
+            )
         ) {
             return back()
                 ->withErrors([
-                    'booking' => 'Your customer account cannot create bookings',
+                    'booking' =>
+                        'Your account cannot create bookings',
                 ])
                 ->withInput();
         }
 
         $customer->fill([
             'user_id' => $user->id,
-            'full_name' => $validated['customer_name'],
+            'full_name' =>
+                $validated['customer_name'],
             'email' => $user->email,
-            'phone_number' => $validated['customer_phone'],
+            'phone_number' =>
+                $validated['customer_phone'],
         ]);
 
-        if ($isNewCustomer || empty($customer->status)) {
+        if (
+            $isNewCustomer ||
+            empty($customer->status)
+        ) {
             $customer->status = 'active';
         }
 
@@ -539,10 +685,11 @@ class BookingController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Booking Limit
+        | NS BEAUTY COMMENT: Customer Active Booking Limit
         |--------------------------------------------------------------------------
-        | New customer: 1 active booking
-        | Customer with finished booking: 2 active bookings
+        | First-time customers: 1 active appointment
+        | After one finished appointment: 2 active appointments
+        | Rescheduling-required appointments count toward limit
         |--------------------------------------------------------------------------
         */
 
@@ -550,29 +697,40 @@ class BookingController extends Controller
             'customer_id',
             $customer->id
         )
-            ->whereIn('status', ['finished', 'Finished'])
+            ->whereIn(
+                'status',
+                ['finished', 'Finished']
+            )
             ->count();
 
-        $activeBookingLimit = $completedBookings >= 1 ? 2 : 1;
+        $activeBookingLimit =
+            $completedBookings >= 1 ? 2 : 1;
 
         $activeBookings = Appointment::where(
             'customer_id',
             $customer->id
         )
-            ->whereIn('status', Appointment::ACTIVE_STATUSES)
+            ->whereIn(
+                'status',
+                $this->customerOccupiedStatuses()
+            )
             ->count();
 
-        if ($activeBookings >= $activeBookingLimit) {
+        if (
+            $activeBookings >=
+            $activeBookingLimit
+        ) {
             return back()
                 ->withErrors([
-                    'booking' => 'You have reached your active booking limit',
+                    'booking' =>
+                        'You have reached your active booking limit — appointments awaiting rescheduling are included',
                 ])
                 ->withInput();
         }
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Maximum Three Services
+        | NS BEAUTY COMMENT: Selected Services
         |--------------------------------------------------------------------------
         */
 
@@ -583,67 +741,93 @@ class BookingController extends Controller
         if ($selectedServiceIds->isEmpty()) {
             return back()
                 ->withErrors([
-                    'selected_services' => 'Please select at least one service',
+                    'selected_services' =>
+                        'Please select at least one service',
                 ])
                 ->withInput();
         }
 
-        if ($selectedServiceIds->count() > 3) {
+        if (
+            $selectedServiceIds->count() > 3
+        ) {
             return back()
                 ->withErrors([
-                    'selected_services' => 'Maximum of 3 services per booking',
+                    'selected_services' =>
+                        'Maximum of 3 services per booking',
                 ])
                 ->withInput();
         }
-
-        $followUpAppointment = null;
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Follow-up Booking Validation
+        | NS BEAUTY COMMENT: Regular or Follow-Up Booking
         |--------------------------------------------------------------------------
         */
 
-        if ($validated['booking_type'] === 'followup') {
-            if (empty($validated['follow_up_appointment_id'])) {
+        $followUpAppointment = null;
+
+        if (
+            $validated['booking_type'] === 'followup'
+        ) {
+            if (
+                empty(
+                    $validated['follow_up_appointment_id']
+                )
+            ) {
                 return back()
                     ->withErrors([
-                        'follow_up_appointment_id' => 'Select a finished booking for the follow-up',
+                        'follow_up_appointment_id' =>
+                            'Select a finished booking for the follow-up',
                     ])
                     ->withInput();
             }
 
             $followUpAppointment = Appointment::with([
-                    'services',
-                    'staff',
-                ])
-                ->where(
-                    'id',
+                'services',
+                'staff',
+            ])
+                ->whereKey(
                     $validated['follow_up_appointment_id']
                 )
-                ->where('customer_id', $customer->id)
-                ->whereIn('status', ['finished', 'Finished'])
+                ->where(
+                    'customer_id',
+                    $customer->id
+                )
+                ->whereIn(
+                    'status',
+                    ['finished', 'Finished']
+                )
                 ->first();
 
             if (!$followUpAppointment) {
                 return back()
                     ->withErrors([
-                        'follow_up_appointment_id' => 'The selected finished booking is invalid',
+                        'follow_up_appointment_id' =>
+                            'The selected finished booking is invalid',
                     ])
                     ->withInput();
             }
 
-            if ($followUpAppointment->services->isEmpty()) {
+            if (
+                $followUpAppointment
+                    ->services
+                    ->isEmpty()
+            ) {
                 return back()
                     ->withErrors([
-                        'follow_up_appointment_id' => 'The selected booking has no recorded services',
+                        'follow_up_appointment_id' =>
+                            'The selected booking has no recorded services',
                     ])
                     ->withInput();
             }
 
-            $originalServiceIds = $followUpAppointment->services
-                ->pluck('id')
-                ->map(fn ($id) => (int) $id);
+            $originalServiceIds =
+                $followUpAppointment
+                    ->services
+                    ->pluck('id')
+                    ->map(
+                        fn ($id) => (int) $id
+                    );
 
             if (
                 $selectedServiceIds
@@ -652,292 +836,380 @@ class BookingController extends Controller
             ) {
                 return back()
                     ->withErrors([
-                        'selected_services' => 'Select services from the linked finished booking only',
+                        'selected_services' =>
+                            'Select services from the linked finished booking only',
                     ])
                     ->withInput();
             }
 
-            $services = $followUpAppointment->services
-                ->filter(function ($service) use ($selectedServiceIds) {
-                    return $selectedServiceIds->contains(
-                        (int) $service->id
-                    );
-                })
+            $services = $followUpAppointment
+                ->services
+                ->filter(
+                    fn ($service) =>
+                        $selectedServiceIds->contains(
+                            (int) $service->id
+                        )
+                )
                 ->values();
 
             $totalPrice = 0;
 
             $totalDuration = $services->sum(
-                fn ($service) => $this->getOriginalServiceDuration($service)
+                fn ($service) =>
+                    $this->getOriginalServiceDuration(
+                        $service
+                    )
             );
         } else {
             /*
             |--------------------------------------------------------------------------
-            | NS BEAUTY COMMENT: Regular Booking Services
+            | NS BEAUTY COMMENT: Regular Services
             |--------------------------------------------------------------------------
             */
 
             $services = Service::whereIn(
-                    'id',
-                    $selectedServiceIds
-                )
+                'id',
+                $selectedServiceIds
+            )
                 ->whereIn(
                     'status',
                     ['Available', 'available']
                 )
                 ->get();
 
-            if ($services->count() !== $selectedServiceIds->count()) {
+            if (
+                $services->count() !==
+                $selectedServiceIds->count()
+            ) {
                 return back()
                     ->withErrors([
-                        'selected_services' => 'One or more selected services are unavailable',
+                        'selected_services' =>
+                            'One or more selected services are unavailable',
                     ])
                     ->withInput();
             }
 
-            $totalPrice = $services->sum('price');
+            $totalPrice = $services->sum(
+                'price'
+            );
 
             $totalDuration = $services->sum(
-                fn ($service) => (int) $service->duration
+                fn ($service) =>
+                    (int) $service->duration
             );
         }
 
-        if ($services->isEmpty() || $totalDuration <= 0) {
+        if (
+            $services->isEmpty() ||
+            $totalDuration <= 0
+        ) {
             return back()
                 ->withErrors([
-                    'selected_services' => 'The selected services or duration are invalid',
+                    'selected_services' =>
+                        'The selected services or duration are invalid',
                 ])
                 ->withInput();
         }
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Staff Status and Skill Validation
+        | NS BEAUTY COMMENT: Validate Selected Beautician
         |--------------------------------------------------------------------------
         */
 
         $staff = Staff::with('services')
-            ->where('id', $validated['staff_id'])
-            ->whereIn('status', ['Active', 'active'])
+            ->whereKey(
+                $validated['staff_id']
+            )
+            ->whereIn(
+                'status',
+                ['Active', 'active']
+            )
             ->first();
 
         if (!$staff) {
             return back()
                 ->withErrors([
-                    'staff_id' => 'The selected beautician is unavailable',
+                    'staff_id' =>
+                        'The selected beautician is unavailable',
                 ])
                 ->withInput();
         }
-
-        if (!$this->staffCanPerformServices(
-            $staff,
-            $selectedServiceIds
-        )) {
-            return back()
-                ->withErrors([
-                    'staff_id' => 'The selected beautician is not assigned to all selected services',
-                ])
-                ->withInput();
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Malaysian Appointment Time
-        |--------------------------------------------------------------------------
-        | Explicit timezone prevents dependence on server settings
-        |--------------------------------------------------------------------------
-        */
-
-        $startDateTime = Carbon::createFromFormat(
-            'Y-m-d H:i',
-            $validated['appointment_date'] . ' ' . $validated['start_time'],
-            self::BUSINESS_TIMEZONE
-        )->second(0);
-
-        $endDateTime = $startDateTime->copy()
-            ->addMinutes($totalDuration);
 
         if (
-            $startDateTime->lessThanOrEqualTo(
-                Carbon::now(self::BUSINESS_TIMEZONE)
+            !$this->staffCanPerformServices(
+                $staff,
+                $selectedServiceIds
             )
         ) {
             return back()
                 ->withErrors([
-                    'start_time' => 'The selected appointment time has already started or passed',
+                    'staff_id' =>
+                        'The selected beautician is not assigned to all selected services',
                 ])
                 ->withInput();
         }
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Staff Day-off Validation
+        | NS BEAUTY COMMENT: Appointment Start and End
         |--------------------------------------------------------------------------
         */
 
-        if ($this->staffHasDayOff(
-            $staff->id,
-            $validated['appointment_date']
-        )) {
+        $startDateTime = Carbon::createFromFormat(
+            '!Y-m-d H:i',
+            $validated['appointment_date'] . ' ' .
+            $validated['start_time'],
+            self::BUSINESS_TIMEZONE
+        );
+
+        $endDateTime = $startDateTime
+            ->copy()
+            ->addMinutes(
+                (int) $totalDuration
+            );
+
+        if (
+            $startDateTime->lessThanOrEqualTo(
+                Carbon::now(
+                    self::BUSINESS_TIMEZONE
+                )
+            )
+        ) {
             return back()
                 ->withErrors([
-                    'staff_id' => 'The selected beautician is on day off',
+                    'start_time' =>
+                        'The selected appointment time has already started or passed',
                 ])
                 ->withInput();
         }
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Transaction and Double Booking Protection
+        | NS BEAUTY COMMENT: Check Staff Day-Offs
         |--------------------------------------------------------------------------
-        | Lock the staff record to serialize bookings for the same staff
-        | Lock the customer record and recheck the active booking limit
-        | Recheck the selected time before saving
+        */
+
+        if (
+            $this->staffHasDayOff(
+                $staff->id,
+                $requestedDate
+            )
+        ) {
+            return back()
+                ->withErrors([
+                    'staff_id' =>
+                        'The selected beautician is on day off',
+                ])
+                ->withInput();
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Database Booking Transaction
+        |--------------------------------------------------------------------------
+        | All critical conditions are checked again before saving
         |--------------------------------------------------------------------------
         */
 
         try {
-            $appointment = DB::transaction(function () use (
-                $validated,
-                $request,
-                $user,
-                $customer,
-                $services,
-                $selectedServiceIds,
-                $totalPrice,
-                $totalDuration,
-                $startDateTime,
-                $endDateTime,
-                $followUpAppointment
-            ) {
-                /*
-                |--------------------------------------------------------------------------
-                | NS BEAUTY COMMENT: Lock Selected Staff
-                |--------------------------------------------------------------------------
-                */
+            $appointment = DB::transaction(
+                function () use (
+                    $validated,
+                    $request,
+                    $user,
+                    $customer,
+                    $services,
+                    $selectedServiceIds,
+                    $totalPrice,
+                    $totalDuration,
+                    $startDateTime,
+                    $endDateTime,
+                    $followUpAppointment
+                ) {
+                    /*
+                    |--------------------------------------------------------------------------
+                    | NS BEAUTY COMMENT: Lock Staff Record
+                    |--------------------------------------------------------------------------
+                    */
 
-                $lockedStaff = Staff::where(
-                        'id',
+                    $lockedStaff = Staff::whereKey(
                         $validated['staff_id']
                     )
-                    ->lockForUpdate()
-                    ->first();
+                        ->lockForUpdate()
+                        ->first();
 
-                if (
-                    !$lockedStaff ||
-                    !in_array(
-                        strtolower($lockedStaff->status ?? ''),
-                        ['active'],
-                        true
+                    if (
+                        !$lockedStaff ||
+                        strtolower(
+                            $lockedStaff->status ?? ''
+                        ) !== 'active'
+                    ) {
+                        throw new \RuntimeException(
+                            'The selected beautician is no longer available'
+                        );
+                    }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | NS BEAUTY COMMENT: Lock Customer Record
+                    |--------------------------------------------------------------------------
+                    */
+
+                    Customer::whereKey(
+                        $customer->id
                     )
-                ) {
-                    throw new \RuntimeException(
-                        'The selected beautician is no longer available'
-                    );
-                }
+                        ->lockForUpdate()
+                        ->firstOrFail();
 
-                /*
-                |--------------------------------------------------------------------------
-                | NS BEAUTY COMMENT: Lock Customer and Recheck Limit
-                |--------------------------------------------------------------------------
-                */
+                    /*
+                    |--------------------------------------------------------------------------
+                    | NS BEAUTY COMMENT: Recheck Booking Limits
+                    |--------------------------------------------------------------------------
+                    */
 
-                Customer::whereKey($customer->id)
-                    ->lockForUpdate()
-                    ->firstOrFail();
-
-                $finishedCount = Appointment::where(
+                    $finishedCount = Appointment::where(
                         'customer_id',
                         $customer->id
                     )
-                    ->whereIn('status', ['finished', 'Finished'])
-                    ->count();
+                        ->whereIn(
+                            'status',
+                            ['finished', 'Finished']
+                        )
+                        ->count();
 
-                $bookingLimit = $finishedCount >= 1 ? 2 : 1;
+                    $bookingLimit =
+                        $finishedCount >= 1 ? 2 : 1;
 
-                $activeCount = Appointment::where(
+                    $activeCount = Appointment::where(
                         'customer_id',
                         $customer->id
                     )
-                    ->whereIn('status', Appointment::ACTIVE_STATUSES)
-                    ->count();
+                        ->whereIn(
+                            'status',
+                            $this->customerOccupiedStatuses()
+                        )
+                        ->count();
 
-                if ($activeCount >= $bookingLimit) {
-                    throw new \RuntimeException(
-                        'You have reached your active booking limit'
+                    if (
+                        $activeCount >= $bookingLimit
+                    ) {
+                        throw new \RuntimeException(
+                            'You have reached your active booking limit'
+                        );
+                    }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | NS BEAUTY COMMENT: Recheck Date and Time
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $transactionToday = Carbon::today(
+                        self::BUSINESS_TIMEZONE
                     );
-                }
 
-                /*
-                |--------------------------------------------------------------------------
-                | NS BEAUTY COMMENT: Final Malaysia Time Check
-                |--------------------------------------------------------------------------
-                */
+                    $transactionMaxDate =
+                        $transactionToday
+                            ->copy()
+                            ->addDays(
+                                self::BOOKING_WINDOW_DAYS
+                            );
 
-                $transactionToday = Carbon::today(
-                    self::BUSINESS_TIMEZONE
-                );
+                    if (
+                        $startDateTime->lessThanOrEqualTo(
+                            Carbon::now(
+                                self::BUSINESS_TIMEZONE
+                            )
+                        ) ||
+                        $startDateTime->toDateString() <
+                            $transactionToday->toDateString() ||
+                        $startDateTime->toDateString() >
+                            $transactionMaxDate->toDateString()
+                    ) {
+                        throw new \RuntimeException(
+                            'The selected appointment date or time is no longer available'
+                        );
+                    }
 
-                $transactionMaxDate = $transactionToday
-                    ->copy()
-                    ->addDays(6);
+                    /*
+                    |--------------------------------------------------------------------------
+                    | NS BEAUTY COMMENT: Final Studio Closure Check
+                    |--------------------------------------------------------------------------
+                    | Lock matching closure records so a lift cannot
+                    | change them while this booking is being created
+                    |--------------------------------------------------------------------------
+                    */
 
-                if (
-                    $startDateTime->lessThanOrEqualTo(
-                        Carbon::now(self::BUSINESS_TIMEZONE)
-                    ) ||
-                    $startDateTime->toDateString() <
-                        $transactionToday->toDateString() ||
-                    $startDateTime->toDateString() >
-                        $transactionMaxDate->toDateString()
-                ) {
-                    throw new \RuntimeException(
-                        'The selected appointment date or time is no longer available'
-                    );
-                }
+                    $closureDuringSave = StudioClosure::query()
+                        ->active()
+                        ->affectingDate(
+                            $validated['appointment_date']
+                        )
+                        ->lockForUpdate()
+                        ->first();
 
-                /*
-                |--------------------------------------------------------------------------
-                | NS BEAUTY COMMENT: Final Staff Day-off Check
-                |--------------------------------------------------------------------------
-                */
+                    if ($closureDuringSave) {
+                        throw new \RuntimeException(
+                            'The studio is closed on this date — ' .
+                            $closureDuringSave->reason
+                        );
+                    }
 
-                $staffOnDayOff = StaffDayOff::where(
-                        'staff_id',
-                        $validated['staff_id']
+                    if (
+                        $this->isSundayClosed(
+                            $validated['appointment_date']
+                        )
+                    ) {
+                        throw new \RuntimeException(
+                            'Nail Studio & Beauty is closed every Sunday'
+                        );
+                    }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | NS BEAUTY COMMENT: Final Staff Day-Off Check
+                    |--------------------------------------------------------------------------
+                    */
+
+                    if (
+                        $this->staffHasDayOff(
+                            (int) $lockedStaff->id,
+                            $validated['appointment_date']
+                        )
+                    ) {
+                        throw new \RuntimeException(
+                            'The selected beautician is on day off for this date'
+                        );
+                    }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | NS BEAUTY COMMENT: Final Skills Check
+                    |--------------------------------------------------------------------------
+                    */
+
+                    if (
+                        !Schema::hasTable(
+                            'staff_services'
+                        )
+                    ) {
+                        throw new \RuntimeException(
+                            'Staff service assignments are temporarily unavailable'
+                        );
+                    }
+
+                    $assignedServiceIds = DB::table(
+                        'staff_services'
                     )
-                    ->whereDate(
-                        'start_date',
-                        '<=',
-                        $validated['appointment_date']
-                    )
-                    ->whereDate(
-                        'end_date',
-                        '>=',
-                        $validated['appointment_date']
-                    )
-                    ->exists();
-
-                if ($staffOnDayOff) {
-                    throw new \RuntimeException(
-                        'The selected beautician is on day off for this date'
-                    );
-                }
-
-                /*
-                |--------------------------------------------------------------------------
-                | NS BEAUTY COMMENT: Final Staff Skill Check
-                |--------------------------------------------------------------------------
-                */
-
-                if (Schema::hasTable('staff_services')) {
-                    $assignedServiceIds = DB::table('staff_services')
                         ->where(
                             'staff_id',
-                            $validated['staff_id']
+                            $lockedStaff->id
                         )
                         ->pluck('service_id')
-                        ->map(fn ($id) => (int) $id);
+                        ->map(
+                            fn ($id) => (int) $id
+                        );
 
                     if (
                         $selectedServiceIds
@@ -948,163 +1220,185 @@ class BookingController extends Controller
                             'The beautician is no longer assigned to the selected services'
                         );
                     }
-                }
 
-                /*
-                |--------------------------------------------------------------------------
-                | NS BEAUTY COMMENT: Actual Appointment Overlap Check
-                |--------------------------------------------------------------------------
-                | Existing start < requested end
-                | Existing end > requested start
-                |--------------------------------------------------------------------------
-                */
+                    /*
+                    |--------------------------------------------------------------------------
+                    | NS BEAUTY COMMENT: Appointment Overlap Check
+                    |--------------------------------------------------------------------------
+                    */
 
-                $hasConflict = Appointment::where(
+                    $hasConflict = Appointment::where(
                         'staff_id',
-                        $validated['staff_id']
+                        $lockedStaff->id
                     )
-                    ->whereDate(
-                        'appointment_date',
-                        $validated['appointment_date']
-                    )
-                    ->whereIn(
-                        'status',
-                        Appointment::ACTIVE_STATUSES
-                    )
-                    ->where(function ($query) use (
-                        $startDateTime,
-                        $endDateTime
-                    ) {
-                        $query->where(
-                                'start_time',
-                                '<',
-                                $endDateTime->format('H:i:s')
-                            )
-                            ->where(
-                                'end_time',
-                                '>',
-                                $startDateTime->format('H:i:s')
-                            );
-                    })
-                    ->exists();
-
-                if ($hasConflict) {
-                    throw new \RuntimeException(
-                        'The selected time is fully booked for this beautician'
-                    );
-                }
-
-                /*
-                |--------------------------------------------------------------------------
-                | NS BEAUTY COMMENT: Save Appointment
-                |--------------------------------------------------------------------------
-                */
-
-                $appointment = Appointment::create([
-                    'customer_id' => $customer->id,
-                    'staff_id' => $validated['staff_id'],
-                    'appointment_date' => $validated['appointment_date'],
-                    'start_time' => $startDateTime->format('H:i:s'),
-                    'end_time' => $endDateTime->format('H:i:s'),
-                    'total_price' => $totalPrice,
-                    'status' => 'pending',
-                    'booking_type' => $validated['booking_type'],
-                    'follow_up_appointment_id' => $followUpAppointment?->id,
-                    'follow_up_from' => $followUpAppointment
-                        ? 'BK-' . str_pad(
-                            $followUpAppointment->id,
-                            4,
-                            '0',
-                            STR_PAD_LEFT
+                        ->whereDate(
+                            'appointment_date',
+                            $validated['appointment_date']
                         )
-                        : null,
-                    'follow_up_reason' =>
-                        $validated['follow_up_reason'] ?? null,
-                ]);
+                        ->whereIn(
+                            'status',
+                            Appointment::ACTIVE_STATUSES
+                        )
+                        ->where(
+                            'start_time',
+                            '<',
+                            $endDateTime->format(
+                                'H:i:s'
+                            )
+                        )
+                        ->where(
+                            'end_time',
+                            '>',
+                            $startDateTime->format(
+                                'H:i:s'
+                            )
+                        )
+                        ->exists();
 
-                /*
-                |--------------------------------------------------------------------------
-                | NS BEAUTY COMMENT: Attach Actual Services
-                |--------------------------------------------------------------------------
-                */
-
-                foreach ($services as $service) {
-                    if ($validated['booking_type'] === 'followup') {
-                        $appointment->services()->attach(
-                            $service->id,
-                            [
-                                'price' => 0,
-                                'duration' =>
-                                    $this->getOriginalServiceDuration($service),
-                            ]
-                        );
-                    } else {
-                        $appointment->services()->attach(
-                            $service->id,
-                            [
-                                'price' => $service->price,
-                                'duration' => $service->duration,
-                            ]
+                    if ($hasConflict) {
+                        throw new \RuntimeException(
+                            'The selected time is fully booked for this beautician'
                         );
                     }
-                }
 
-                /*
-                |--------------------------------------------------------------------------
-                | NS BEAUTY COMMENT: Preserve Audit Logging
-                |--------------------------------------------------------------------------
-                */
+                    /*
+                    |--------------------------------------------------------------------------
+                    | NS BEAUTY COMMENT: Create Appointment
+                    |--------------------------------------------------------------------------
+                    */
 
-                AuditLog::create([
-                    'user_id' => $user->id,
-                    'user_type' => 'customer',
-                    'action' =>
-                        $validated['booking_type'] === 'followup'
-                            ? 'create_followup_booking'
-                            : 'create_booking',
-                    'module' => 'Customer Booking',
-                    'description' =>
-                        $validated['booking_type'] === 'followup'
-                            ? 'Customer created follow-up booking #BK-' .
-                                str_pad(
-                                    $appointment->id,
-                                    4,
-                                    '0',
-                                    STR_PAD_LEFT
-                                ) .
-                                ' from original booking #BK-' .
-                                str_pad(
+                    $appointment = Appointment::create([
+                        'customer_id' => $customer->id,
+                        'staff_id' => $lockedStaff->id,
+                        'appointment_date' =>
+                            $validated['appointment_date'],
+                        'start_time' =>
+                            $startDateTime->format(
+                                'H:i:s'
+                            ),
+                        'end_time' =>
+                            $endDateTime->format(
+                                'H:i:s'
+                            ),
+                        'total_price' => $totalPrice,
+                        'status' => 'pending',
+                        'booking_type' =>
+                            $validated['booking_type'],
+                        'follow_up_appointment_id' =>
+                            $followUpAppointment?->id,
+                        'follow_up_from' =>
+                            $followUpAppointment
+                                ? 'BK-' . str_pad(
                                     $followUpAppointment->id,
                                     4,
                                     '0',
                                     STR_PAD_LEFT
                                 )
-                            : 'Customer created booking #BK-' .
-                                str_pad(
-                                    $appointment->id,
-                                    4,
-                                    '0',
-                                    STR_PAD_LEFT
-                                ),
-                    'ip_address' => $request->ip(),
-                    'user_agent' => $request->userAgent(),
-                ]);
+                                : null,
+                        'follow_up_reason' =>
+                            $validated['follow_up_reason']
+                            ?? null,
+                    ]);
 
-                return $appointment;
-            });
+                    /*
+                    |--------------------------------------------------------------------------
+                    | NS BEAUTY COMMENT: Attach Selected Services
+                    |--------------------------------------------------------------------------
+                    */
+
+                    foreach ($services as $service) {
+                        if (
+                            $validated['booking_type'] ===
+                            'followup'
+                        ) {
+                            $appointment
+                                ->services()
+                                ->attach(
+                                    $service->id,
+                                    [
+                                        'price' => 0,
+                                        'duration' =>
+                                            $this->getOriginalServiceDuration(
+                                                $service
+                                            ),
+                                    ]
+                                );
+                        } else {
+                            $appointment
+                                ->services()
+                                ->attach(
+                                    $service->id,
+                                    [
+                                        'price' =>
+                                            $service->price,
+                                        'duration' =>
+                                            $service->duration,
+                                    ]
+                                );
+                        }
+                    }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | NS BEAUTY COMMENT: Booking Audit Log
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $bookingCode = 'BK-' . str_pad(
+                        (string) $appointment->id,
+                        4,
+                        '0',
+                        STR_PAD_LEFT
+                    );
+
+                    $isFollowUp =
+                        $validated['booking_type'] ===
+                        'followup';
+
+                    $description = $isFollowUp
+                        ? 'Customer created follow-up booking #' .
+                            $bookingCode .
+                            ' from original booking #BK-' .
+                            str_pad(
+                                (string) $followUpAppointment->id,
+                                4,
+                                '0',
+                                STR_PAD_LEFT
+                            )
+                        : 'Customer created booking #' .
+                            $bookingCode;
+
+                    AuditLog::create([
+                        'user_id' => $user->id,
+                        'user_type' => 'customer',
+                        'action' => $isFollowUp
+                            ? 'create_followup_booking'
+                            : 'create_booking',
+                        'module' => 'Customer Booking',
+                        'description' => $description,
+                        'ip_address' => $request->ip(),
+                        'user_agent' =>
+                            $request->userAgent(),
+                    ]);
+
+                    return $appointment;
+                },
+                3
+            );
         } catch (\RuntimeException $exception) {
             return back()
                 ->withErrors([
-                    'booking' => $exception->getMessage(),
+                    'booking' =>
+                        $exception->getMessage(),
                 ])
                 ->withInput();
         }
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Existing Notification Integration
+        | NS BEAUTY COMMENT: Booking Notifications
         |--------------------------------------------------------------------------
-        | Retains customer, admin, and staff notifications
+        | Notifications are sent after transaction completion
         |--------------------------------------------------------------------------
         */
 
@@ -1114,66 +1408,148 @@ class BookingController extends Controller
             'services',
         ]);
 
-        $notificationService = app(NotificationService::class);
+        $notificationService = app(
+            NotificationService::class
+        );
 
         $bookingCode = 'BK-' . str_pad(
-            $appointment->id,
+            (string) $appointment->id,
             4,
             '0',
             STR_PAD_LEFT
         );
 
-        $mainService = $appointment->services
-            ->first()?->service_name ?? 'Beauty Service';
+        $mainService = $appointment
+            ->services
+            ->first()?->service_name
+            ?? 'Beauty Service';
 
         $bookingTypeLabel =
             $validated['booking_type'] === 'followup'
                 ? 'backjob / follow-up booking'
                 : 'booking';
 
-        $notificationService->notifyCustomer(
-            $appointment->customer,
-            'Booking Created Successfully',
-            'Your ' . $bookingTypeLabel . ' #' . $bookingCode .
-                ' for ' . $mainService . ' has been created successfully',
-            route(
-                'customer.booking.details',
-                $appointment->id,
-                false
-            ),
-            'booking_created'
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Notify Customer
+        |--------------------------------------------------------------------------
+        */
+
+        $this->sendNotificationSafely(
+            function () use (
+                $notificationService,
+                $appointment,
+                $bookingCode,
+                $bookingTypeLabel,
+                $mainService
+            ) {
+                $notificationService->notifyCustomer(
+                    $appointment->customer,
+                    'Booking Created Successfully',
+                    'Your ' .
+                    $bookingTypeLabel .
+                    ' #' .
+                    $bookingCode .
+                    ' for ' .
+                    $mainService .
+                    ' has been created successfully',
+                    route(
+                        'customer.booking.details',
+                        $appointment->id,
+                        false
+                    ),
+                    'booking_created'
+                );
+            }
         );
 
-        $notificationService->notifyAdmins(
-            'New Customer Booking',
-            $customer->full_name . ' created ' .
-                $bookingTypeLabel . ' #' . $bookingCode .
-                ' for ' . $mainService,
-            route('admin.bookings', [], false),
-            'new_booking'
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Notify Administrators
+        |--------------------------------------------------------------------------
+        */
+
+        $this->sendNotificationSafely(
+            function () use (
+                $notificationService,
+                $customer,
+                $bookingCode,
+                $bookingTypeLabel,
+                $mainService
+            ) {
+                $notificationService->notifyAdmins(
+                    'New Customer Booking',
+                    $customer->full_name .
+                    ' created ' .
+                    $bookingTypeLabel .
+                    ' #' .
+                    $bookingCode .
+                    ' for ' .
+                    $mainService,
+                    route(
+                        'admin.bookings',
+                        [],
+                        false
+                    ),
+                    'new_booking'
+                );
+            }
         );
 
-        $notificationService->notifyStaff(
-            $appointment->staff,
-            $validated['booking_type'] === 'followup'
-                ? 'New Backjob / Follow-up Assigned'
-                : 'New Appointment Assigned',
-            'Appointment #' . $bookingCode .
-                ' for ' . $mainService .
-                ' has been assigned to you',
-            route('staff.appointments', [], false),
-            $validated['booking_type'] === 'followup'
-                ? 'followup_assigned'
-                : 'appointment_assigned'
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Notify Assigned Staff
+        |--------------------------------------------------------------------------
+        */
+
+        $this->sendNotificationSafely(
+            function () use (
+                $notificationService,
+                $appointment,
+                $bookingCode,
+                $mainService,
+                $validated
+            ) {
+                $isFollowUp =
+                    $validated['booking_type'] ===
+                    'followup';
+
+                $notificationService->notifyStaff(
+                    $appointment->staff,
+                    $isFollowUp
+                        ? 'New Backjob / Follow-up Assigned'
+                        : 'New Appointment Assigned',
+                    'Appointment #' .
+                    $bookingCode .
+                    ' for ' .
+                    $mainService .
+                    ' has been assigned to you',
+                    route(
+                        'staff.appointments',
+                        [],
+                        false
+                    ),
+                    $isFollowUp
+                        ? 'followup_assigned'
+                        : 'appointment_assigned'
+                );
+            }
         );
 
         return redirect()
             ->route('customer.booking')
-            ->with('booking_success', true)
-            ->with('booking_id', $bookingCode)
+            ->with(
+                'booking_success',
+                true
+            )
+            ->with(
+                'booking_id',
+                $bookingCode
+            )
             ->with(
                 'booking_message',
-                $validated['booking_type'] === 'followup'
+                $validated['booking_type'] ===
+                'followup'
                     ? 'Your backjob / follow-up booking has been recorded and linked to your previous appointment'
                     : 'Your booking has been recorded successfully'
             );
@@ -1181,10 +1557,14 @@ class BookingController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: Build Real Availability Slots
+    | NS BEAUTY COMMENT: BUILD AVAILABLE TIME SLOTS
     |--------------------------------------------------------------------------
-    | The same calculation is used by the availability endpoint
-    | to check staff day-offs, elapsed times, and overlaps
+    | The frontend receives:
+    | - available
+    | - past
+    | - booked
+    | - day_off
+    | - closed
     |--------------------------------------------------------------------------
     */
 
@@ -1193,7 +1573,19 @@ class BookingController extends Controller
         string $date,
         int $duration
     ): array {
-        $now = Carbon::now(self::BUSINESS_TIMEZONE);
+        $now = Carbon::now(
+            self::BUSINESS_TIMEZONE
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Check Full Studio Closures
+        |--------------------------------------------------------------------------
+        */
+
+        $closedOnDate = $this->isStudioClosedOnDate(
+            $date
+        );
 
         $onDayOff = $this->staffHasDayOff(
             $staffId,
@@ -1202,16 +1594,22 @@ class BookingController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Load Actual Active Appointments
+        | NS BEAUTY COMMENT: Existing Staff Appointments
         |--------------------------------------------------------------------------
         */
 
         $existingAppointments = Appointment::where(
-                'staff_id',
-                $staffId
+            'staff_id',
+            $staffId
+        )
+            ->whereDate(
+                'appointment_date',
+                $date
             )
-            ->whereDate('appointment_date', $date)
-            ->whereIn('status', Appointment::ACTIVE_STATUSES)
+            ->whereIn(
+                'status',
+                Appointment::ACTIVE_STATUSES
+            )
             ->get([
                 'id',
                 'start_time',
@@ -1222,37 +1620,57 @@ class BookingController extends Controller
 
         foreach (self::BOOKING_TIMES as $time) {
             $start = Carbon::createFromFormat(
-                'Y-m-d H:i',
+                '!Y-m-d H:i',
                 $date . ' ' . $time,
                 self::BUSINESS_TIMEZONE
-            )->second(0);
+            );
 
-            $end = $start->copy()
+            $end = $start
+                ->copy()
                 ->addMinutes($duration);
 
             $status = 'available';
 
-            if ($start->lessThanOrEqualTo($now)) {
+            /*
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: Slot Priority
+            |--------------------------------------------------------------------------
+            | 1. Studio closure or Sunday
+            | 2. Past appointment time
+            | 3. Staff day off
+            | 4. Existing booking conflict
+            |--------------------------------------------------------------------------
+            */
+
+            if ($closedOnDate) {
+                $status = 'closed';
+            } elseif (
+                $start->lessThanOrEqualTo($now)
+            ) {
                 $status = 'past';
             } elseif ($onDayOff) {
                 $status = 'day_off';
             } else {
-                foreach ($existingAppointments as $appointment) {
+                foreach (
+                    $existingAppointments as
+                    $appointment
+                ) {
+                    if (!$appointment->end_time) {
+                        $status = 'booked';
+                        break;
+                    }
+
                     $existingStart = Carbon::parse(
-                        $date . ' ' . $appointment->start_time,
+                        $date . ' ' .
+                        $appointment->start_time,
                         self::BUSINESS_TIMEZONE
                     );
 
                     $existingEnd = Carbon::parse(
-                        $date . ' ' . $appointment->end_time,
+                        $date . ' ' .
+                        $appointment->end_time,
                         self::BUSINESS_TIMEZONE
                     );
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | NS BEAUTY COMMENT: Duration-based Overlap
-                    |--------------------------------------------------------------------------
-                    */
 
                     if (
                         $existingStart->lessThan($end) &&
@@ -1266,7 +1684,8 @@ class BookingController extends Controller
 
             $slots[] = [
                 'time' => $time,
-                'available' => $status === 'available',
+                'available' =>
+                    $status === 'available',
                 'status' => $status,
             ];
         }
@@ -1276,9 +1695,111 @@ class BookingController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: Staff Skill Validation Helper
+    | NS BEAUTY COMMENT: SUNDAY CLOSURE
     |--------------------------------------------------------------------------
-    | Preserve compatibility with the existing staff_services table
+    */
+
+    private function isSundayClosed(
+        string $date
+    ): bool {
+        return Carbon::createFromFormat(
+            '!Y-m-d',
+            $date,
+            self::BUSINESS_TIMEZONE
+        )->dayOfWeek === self::CLOSED_WEEKDAY;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: COMBINED STUDIO CLOSURE CHECK
+    |--------------------------------------------------------------------------
+    | Returns true when the date is either:
+    | - Sunday
+    | - Covered by an active emergency closure
+    |--------------------------------------------------------------------------
+    */
+
+    private function isStudioClosedOnDate(
+        string $date
+    ): bool {
+        if ($this->isSundayClosed($date)) {
+            return true;
+        }
+
+        return StudioClosure::isClosedOn(
+            $date
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: CUSTOMER BOOKING OCCUPANCY
+    |--------------------------------------------------------------------------
+    | A rescheduling-required booking still counts toward
+    | the customer's active booking limit, even though
+    | it does not reserve its original staff time slot
+    |--------------------------------------------------------------------------
+    */
+
+    private function customerOccupiedStatuses(): array
+    {
+        return array_values(
+            array_unique(
+                array_merge(
+                    Appointment::ACTIVE_STATUSES,
+                    Appointment::RESCHEDULING_STATUSES
+                )
+            )
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: CUSTOMER RECORD LOOKUP
+    |--------------------------------------------------------------------------
+    */
+
+    private function findCustomer(
+        $user
+    ): ?Customer {
+        return Customer::where(
+            function ($query) use ($user) {
+                $query
+                    ->where(
+                        'user_id',
+                        $user->id
+                    )
+                    ->orWhere(
+                        'email',
+                        $user->email
+                    );
+            }
+        )->first();
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: BLOCKED AND INACTIVE USERS
+    |--------------------------------------------------------------------------
+    */
+
+    private function isBlockedOrInactive(
+        ?string $status
+    ): bool {
+        return in_array(
+            strtolower(
+                $status ?? 'active'
+            ),
+            ['blocked', 'inactive'],
+            true
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: STAFF QUALIFICATIONS
+    |--------------------------------------------------------------------------
+    | All selected services must be assigned to the beautician
     |--------------------------------------------------------------------------
     */
 
@@ -1286,13 +1807,20 @@ class BookingController extends Controller
         Staff $staff,
         $selectedServiceIds
     ): bool {
-        if (!Schema::hasTable('staff_services')) {
-            return true;
+        if (
+            !Schema::hasTable(
+                'staff_services'
+            )
+        ) {
+            return false;
         }
 
-        $assignedServiceIds = $staff->services
+        $assignedServiceIds = $staff
+            ->services
             ->pluck('id')
-            ->map(fn ($id) => (int) $id);
+            ->map(
+                fn ($id) => (int) $id
+            );
 
         return $selectedServiceIds
             ->diff($assignedServiceIds)
@@ -1301,7 +1829,7 @@ class BookingController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: Staff Day-off Helper
+    | NS BEAUTY COMMENT: STAFF DAY-OFF VALIDATION
     |--------------------------------------------------------------------------
     */
 
@@ -1309,22 +1837,42 @@ class BookingController extends Controller
         int $staffId,
         string $date
     ): bool {
-        return StaffDayOff::where('staff_id', $staffId)
-            ->whereDate('start_date', '<=', $date)
-            ->whereDate('end_date', '>=', $date)
+        return StaffDayOff::where(
+            'staff_id',
+            $staffId
+        )
+            ->whereDate(
+                'start_date',
+                '<=',
+                $date
+            )
+            ->whereDate(
+                'end_date',
+                '>=',
+                $date
+            )
             ->exists();
     }
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: Selected Service ID Parser
+    | NS BEAUTY COMMENT: SELECTED SERVICE ID PARSER
     |--------------------------------------------------------------------------
     */
 
-    private function parseServiceIds(?string $value)
-    {
-        return collect(explode(',', $value ?? ''))
-            ->map(fn ($id) => (int) trim($id))
+    private function parseServiceIds(
+        ?string $value
+    ) {
+        return collect(
+            explode(
+                ',',
+                $value ?? ''
+            )
+        )
+            ->map(
+                fn ($id) =>
+                    (int) trim($id)
+            )
             ->filter()
             ->unique()
             ->values();
@@ -1332,14 +1880,15 @@ class BookingController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: Follow-up Original Duration
+    | NS BEAUTY COMMENT: ORIGINAL FOLLOW-UP SERVICE DURATION
     |--------------------------------------------------------------------------
-    | Uses recorded appointment service duration when available
+    | Use the duration recorded in the original booking
     |--------------------------------------------------------------------------
     */
 
-    private function getOriginalServiceDuration($service): int
-    {
+    private function getOriginalServiceDuration(
+        $service
+    ): int {
         $pivotDuration = (int) (
             $service->pivot->duration ?? 0
         );
@@ -1348,6 +1897,26 @@ class BookingController extends Controller
             return $pivotDuration;
         }
 
-        return (int) ($service->duration ?? 0);
+        return (int) (
+            $service->duration ?? 0
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: SAFE NOTIFICATION DISPATCH
+    |--------------------------------------------------------------------------
+    | The saved booking remains valid even if email fails
+    |--------------------------------------------------------------------------
+    */
+
+    private function sendNotificationSafely(
+        callable $callback
+    ): void {
+        try {
+            $callback();
+        } catch (\Throwable $exception) {
+            report($exception);
+        }
     }
 }

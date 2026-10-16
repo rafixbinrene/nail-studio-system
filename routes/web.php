@@ -3,10 +3,20 @@
 
 use App\Http\Controllers\Frontend\HomeController;
 use App\Http\Controllers\NotificationController;
+
 use App\Http\Controllers\Admin\BookingManagementController;
+use App\Http\Controllers\Admin\AuditLogController;
+use App\Http\Controllers\Admin\ServiceManagementController;
+use App\Http\Controllers\Admin\StaffManagementController;
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\ContentManagementController;
+use App\Http\Controllers\Admin\CustomerManagementController;
+
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\OtpController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\StaffActivationController;
+
 use App\Http\Controllers\Customer\BookingController as CustomerBookingController;
 use App\Http\Controllers\Customer\BookingDetailsController;
 use App\Http\Controllers\Customer\CustomerCancelBookingController;
@@ -14,14 +24,9 @@ use App\Http\Controllers\Customer\CustomerDashboardController;
 use App\Http\Controllers\Customer\CustomerHistoryController;
 use App\Http\Controllers\Customer\CustomerProfileController;
 use App\Http\Controllers\Customer\FeedbackController;
+
 use App\Http\Controllers\Staff\StaffAppointmentController;
-use App\Http\Controllers\Admin\AuditLogController;
-use App\Http\Controllers\Admin\ServiceManagementController;
-use App\Http\Controllers\Admin\StaffManagementController;
-use App\Http\Controllers\Admin\AdminDashboardController;
-use App\Http\Controllers\Admin\ContentManagementController;
-use App\Http\Controllers\Admin\CustomerManagementController;
-use App\Http\Controllers\Auth\StaffActivationController;
+
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -30,57 +35,113 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::get('/', [HomeController::class, 'index'])
-    ->name('home');
+Route::get('/', [
+    HomeController::class,
+    'index'
+])->name('home');
 
 /*
 |--------------------------------------------------------------------------
 | NS BEAUTY COMMENT: Guest Authentication Pages
 |--------------------------------------------------------------------------
+| Authentication forms are available only to guests
+|--------------------------------------------------------------------------
 */
 
 Route::middleware('guest')->group(function () {
-    Route::get('/login', [AuthenticatedSessionController::class, 'create'])
-        ->name('login');
 
-    Route::post('/login', [AuthenticatedSessionController::class, 'store'])
-        ->name('login.submit');
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Login
+    |--------------------------------------------------------------------------
+    */
 
-    Route::get('/register', [RegisteredUserController::class, 'create'])
-        ->name('register');
+    Route::get('/login', [
+        AuthenticatedSessionController::class,
+        'create'
+    ])->name('login');
 
-    Route::post('/register', [RegisteredUserController::class, 'store'])
-        ->name('register.store');
+    Route::post('/login', [
+        AuthenticatedSessionController::class,
+        'store'
+    ])->name('login.submit');
 
-    Route::get('/otp-verification', [OtpController::class, 'show'])
-        ->name('otp.verification');
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Customer Registration
+    |--------------------------------------------------------------------------
+    */
 
-    Route::post('/otp-verification', [OtpController::class, 'verify'])
-        ->name('otp.verify');
+    Route::get('/register', [
+        RegisteredUserController::class,
+        'create'
+    ])->name('register');
 
-    Route::post('/otp-resend', [OtpController::class, 'resend'])
-        ->name('otp.resend');
+    Route::post('/register', [
+        RegisteredUserController::class,
+        'store'
+    ])->name('register.store');
 
-    Route::get('/forgot-password', [OtpController::class, 'forgotForm'])
-        ->name('password.request');
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: OTP Verification
+    |--------------------------------------------------------------------------
+    */
 
-    Route::post('/forgot-password', [OtpController::class, 'sendForgotOtp'])
-        ->name('password.otp.send');
+    Route::get('/otp-verification', [
+        OtpController::class,
+        'show'
+    ])->name('otp.verification');
 
-    Route::get('/reset-password', [OtpController::class, 'resetForm'])
-        ->name('password.reset.form');
+    Route::post('/otp-verification', [
+        OtpController::class,
+        'verify'
+    ])->name('otp.verify');
 
-    Route::post('/reset-password', [OtpController::class, 'resetPassword'])
-        ->name('password.reset');
+    Route::post('/otp-resend', [
+        OtpController::class,
+        'resend'
+    ])->name('otp.resend');
+
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Forgot and Reset Password
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/forgot-password', [
+        OtpController::class,
+        'forgotForm'
+    ])->name('password.request');
+
+    Route::post('/forgot-password', [
+        OtpController::class,
+        'sendForgotOtp'
+    ])->name('password.otp.send');
+
+    Route::get('/reset-password', [
+        OtpController::class,
+        'resetForm'
+    ])->name('password.reset.form');
+
+    Route::post('/reset-password', [
+        OtpController::class,
+        'resetPassword'
+    ])->name('password.reset');
 });
 
 /*
 |--------------------------------------------------------------------------
 | NS BEAUTY COMMENT: Logout
 |--------------------------------------------------------------------------
+| Authenticated users can securely terminate their session
+|--------------------------------------------------------------------------
 */
 
-Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
+Route::post('/logout', [
+    AuthenticatedSessionController::class,
+    'destroy'
+])
     ->middleware('auth')
     ->name('logout');
 
@@ -88,14 +149,23 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
 |--------------------------------------------------------------------------
 | NS BEAUTY COMMENT: Customer Pages
 |--------------------------------------------------------------------------
-| All customer booking routes require an authenticated customer account
+| All routes below require authentication and customer role
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role:customer'])
+Route::middleware([
+    'auth',
+    'role:customer'
+])
     ->prefix('customer')
     ->name('customer.')
     ->group(function () {
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Customer Dashboard
+        |--------------------------------------------------------------------------
+        */
 
         Route::get('/dashboard', [
             CustomerDashboardController::class,
@@ -105,8 +175,6 @@ Route::middleware(['auth', 'role:customer'])
         /*
         |--------------------------------------------------------------------------
         | NS BEAUTY COMMENT: Customer Booking
-        |--------------------------------------------------------------------------
-        | Booking page and booking submission
         |--------------------------------------------------------------------------
         */
 
@@ -122,22 +190,13 @@ Route::middleware(['auth', 'role:customer'])
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Real-Time Appointment Availability
+        | NS BEAUTY COMMENT: Real-Time Booking Availability
         |--------------------------------------------------------------------------
-        | New route:
-        | GET /customer/booking/availability
+        | Checks appointment date, time, staff, services,
+        | overlapping appointments, and staff day-offs
         |
-        | Purpose:
-        | - Retrieve time slots for the selected date and beautician
-        | - Check actual database appointments
-        | - Check total selected service duration
-        | - Mark overlapping appointments as fully booked
-        | - Disable staff day-offs and elapsed Malaysian times
-        |
-        | Security:
-        | - Customer authentication required
-        | - Customer role required
-        | - Inputs validated in BookingController::availability
+        | The BookingController will also be updated to
+        | enforce studio-wide closure dates
         |--------------------------------------------------------------------------
         */
 
@@ -146,10 +205,22 @@ Route::middleware(['auth', 'role:customer'])
             'availability'
         ])->name('booking.availability');
 
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Customer History
+        |--------------------------------------------------------------------------
+        */
+
         Route::get('/history', [
             CustomerHistoryController::class,
             'index'
         ])->name('history');
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Customer Profile
+        |--------------------------------------------------------------------------
+        */
 
         Route::get('/profile', [
             CustomerProfileController::class,
@@ -166,6 +237,12 @@ Route::middleware(['auth', 'role:customer'])
             'updatePassword'
         ])->name('password.update');
 
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Customer Feedback
+        |--------------------------------------------------------------------------
+        */
+
         Route::get('/feedback/{id}', [
             FeedbackController::class,
             'show'
@@ -176,10 +253,22 @@ Route::middleware(['auth', 'role:customer'])
             'store'
         ])->name('feedback.store');
 
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Customer Booking Details
+        |--------------------------------------------------------------------------
+        */
+
         Route::get('/booking-details/{id}', [
             BookingDetailsController::class,
             'show'
         ])->name('booking.details');
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Customer Booking Cancellation
+        |--------------------------------------------------------------------------
+        */
 
         Route::get('/cancel-booking/{id}', [
             CustomerCancelBookingController::class,
@@ -190,6 +279,29 @@ Route::middleware(['auth', 'role:customer'])
             CustomerCancelBookingController::class,
             'cancel'
         ])->name('booking.cancel');
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Customer Emergency Rescheduling
+        |--------------------------------------------------------------------------
+        | PATCH /customer/booking-details/{id}/reschedule
+        |
+        | - Customer must own the appointment
+        | - Appointment must require emergency rescheduling
+        | - Preserves original appointment details
+        | - Checks staff eligibility and schedule conflicts
+        | - Enforces the seven-day booking window
+        | - Prevents Sunday appointments
+        |
+        | Studio-wide closure validation must also be
+        | integrated into BookingDetailsController
+        |--------------------------------------------------------------------------
+        */
+
+        Route::patch('/booking-details/{id}/reschedule', [
+            BookingDetailsController::class,
+            'reschedule'
+        ])->name('booking.reschedule');
 
         /*
         |--------------------------------------------------------------------------
@@ -217,17 +329,34 @@ Route::middleware(['auth', 'role:customer'])
 |--------------------------------------------------------------------------
 | NS BEAUTY COMMENT: Staff Pages
 |--------------------------------------------------------------------------
+| All routes below require authentication and staff role
+|--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role:staff'])
+Route::middleware([
+    'auth',
+    'role:staff'
+])
     ->prefix('staff')
     ->name('staff.')
     ->group(function () {
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Staff Dashboard
+        |--------------------------------------------------------------------------
+        */
 
         Route::get('/dashboard', [
             StaffAppointmentController::class,
             'dashboard'
         ])->name('dashboard');
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Staff Appointment Management
+        |--------------------------------------------------------------------------
+        */
 
         Route::get('/appointments', [
             StaffAppointmentController::class,
@@ -239,8 +368,22 @@ Route::middleware(['auth', 'role:staff'])
             'updateStatus'
         ])->name('appointments.status');
 
-        Route::view('/availability', 'staff.availability')
-            ->name('availability');
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Staff Availability
+        |--------------------------------------------------------------------------
+        */
+
+        Route::view(
+            '/availability',
+            'staff.availability'
+        )->name('availability');
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Staff Profile
+        |--------------------------------------------------------------------------
+        */
 
         Route::get('/profile', [
             StaffAppointmentController::class,
@@ -256,6 +399,12 @@ Route::middleware(['auth', 'role:staff'])
             StaffAppointmentController::class,
             'updatePassword'
         ])->name('password.update');
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Staff Notifications
+        |--------------------------------------------------------------------------
+        */
 
         Route::get('/notifications', [
             NotificationController::class,
@@ -277,6 +426,8 @@ Route::middleware(['auth', 'role:staff'])
 |--------------------------------------------------------------------------
 | NS BEAUTY COMMENT: Staff Account Activation
 |--------------------------------------------------------------------------
+| Allows staff to activate their accounts using a valid token
+|--------------------------------------------------------------------------
 */
 
 Route::get('/staff/activate/{token}', [
@@ -297,27 +448,133 @@ Route::post('/staff/activate/{token}', [
 |--------------------------------------------------------------------------
 | NS BEAUTY COMMENT: Admin Pages
 |--------------------------------------------------------------------------
+| All routes below require authentication and administrator role
+|--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role:admin'])
+Route::middleware([
+    'auth',
+    'role:admin'
+])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Admin Dashboard
+        |--------------------------------------------------------------------------
+        */
 
         Route::get('/dashboard', [
             AdminDashboardController::class,
             'index'
         ])->name('dashboard');
 
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Booking Management
+        |--------------------------------------------------------------------------
+        */
+
         Route::get('/bookings', [
             BookingManagementController::class,
             'index'
         ])->name('bookings');
 
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Cancel Appointment
+        |--------------------------------------------------------------------------
+        | Requires administrator password in the controller
+        |--------------------------------------------------------------------------
+        */
+
         Route::patch('/bookings/{booking}/cancel', [
             BookingManagementController::class,
             'cancel'
         ])->name('bookings.cancel');
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Individual Emergency Rescheduling
+        |--------------------------------------------------------------------------
+        | Admin marks an eligible booking as rescheduling_required
+        |--------------------------------------------------------------------------
+        */
+
+        Route::patch('/bookings/{booking}/reschedule', [
+            BookingManagementController::class,
+            'requestRescheduling'
+        ])->name('bookings.reschedule');
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Studio-Wide Emergency Closure
+        |--------------------------------------------------------------------------
+        |
+        | NEW INTEGRATED FEATURE
+        |
+        | This feature is part of Admin Booking Management
+        | No separate sidebar module or StudioClosureController
+        | is required
+        |
+        | POST /admin/bookings/closures
+        |
+        | Controller:
+        | BookingManagementController::declareStudioClosure()
+        |
+        | Security:
+        | - Authenticated administrator only
+        | - CSRF verification
+        | - Admin password required
+        | - Date range validation
+        | - Overlapping closure validation
+        |
+        | Effects:
+        | - Creates a studio closure record
+        | - Marks eligible future appointments for rescheduling
+        | - Preserves original appointment details
+        | - Records Audit Logs
+        | - Attempts customer notifications
+        |--------------------------------------------------------------------------
+        */
+
+        Route::post('/bookings/closures', [
+            BookingManagementController::class,
+            'declareStudioClosure'
+        ])->name('bookings.closures.store');
+
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Lift Studio-Wide Emergency Closure
+        |--------------------------------------------------------------------------
+        |
+        | NEW INTEGRATED FEATURE
+        |
+        | PATCH /admin/bookings/closures/{closure}/lift
+        |
+        | Controller:
+        | BookingManagementController::liftStudioClosure()
+        |
+        | Security:
+        | - Authenticated administrator only
+        | - CSRF verification
+        | - Admin password required
+        | - Reopening reason required
+        |
+        | Effects:
+        | - Marks active closure as lifted
+        | - Preserves closure history
+        | - Records administrator and reopening details
+        | - Does not automatically restore disrupted bookings
+        |--------------------------------------------------------------------------
+        */
+
+        Route::patch('/bookings/closures/{closure}/lift', [
+            BookingManagementController::class,
+            'liftStudioClosure'
+        ])->name('bookings.closures.lift');
 
         /*
         |--------------------------------------------------------------------------
@@ -454,8 +711,16 @@ Route::middleware(['auth', 'role:admin'])
             'index'
         ])->name('auditlogs');
 
-        Route::view('/settings', 'admin.settings')
-            ->name('settings');
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Settings
+        |--------------------------------------------------------------------------
+        */
+
+        Route::view(
+            '/settings',
+            'admin.settings'
+        )->name('settings');
 
         /*
         |--------------------------------------------------------------------------

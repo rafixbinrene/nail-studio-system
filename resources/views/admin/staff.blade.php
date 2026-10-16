@@ -1,111 +1,393 @@
+
 @extends('layouts.app')
 
-{{-- 
+{{--
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT:
+| NS BEAUTY COMMENT: Admin Staff Management
 |--------------------------------------------------------------------------
-| Admin Staff Management View
+| Features:
+| - Add staff with email account activation
+| - Assign official services to staff
+| - Edit staff information
+| - Manage normal and emergency day-offs
+| - Explain automatic reassignment and rescheduling
+| - Enable and disable staff
+| - Delete, restore and permanently delete staff
 |
-| Purpose:
-| - Shows staff profiles.
-| - Allows admin to add, edit, enable, disable, and delete staff.
-| - Allows admin to assign existing services from Service Management to staff.
-| - Allows admin to set staff day-off date ranges.
-|
-| Defense explanation:
-| This module supports staff scheduling because the admin can assign services
-| to staff based on the official services created in Service Management.
-| This prevents duplicate service records and keeps service assignment clean.
+| Design:
+| - Main containers: 24px radius
+| - Inner controls: 14px radius
+| - Muji-inspired brown, cream and glass theme
+| - Sidebar remains visible during popups
+| - No unnecessary popup close icons
 |--------------------------------------------------------------------------
 --}}
 
 @section('styles')
 <style>
-.page-header {
+.ns-staff {
+    --ns-radius-main: 24px;
+    --ns-radius-inner: 14px;
+    --ns-brown: #6f4e37;
+    --ns-dark: #2f2118;
+    --ns-muted: #7d6d60;
+    --ns-border: rgba(111,78,55,.13);
+    --ns-glass: var(--glass,rgba(255,255,255,.58));
+    --ns-gradient: linear-gradient(135deg,#8a7158,#5d3f2c);
+
+    width: 100%;
+    min-width: 0;
+    color: var(--ns-dark);
+}
+
+.ns-staff *,
+.ns-staff *::before,
+.ns-staff *::after {
+    box-sizing: border-box;
+}
+
+.ns-staff .page-header {
     margin-bottom: 28px;
 }
 
-.page-header h1 {
+.ns-staff .page-header h1 {
     font-size: 34px;
+    line-height: 1.2;
     margin-bottom: 8px;
 }
 
-.page-header p {
-    color: var(--muted);
+.ns-staff .page-header p {
+    color: var(--ns-muted);
     font-size: 14px;
+    line-height: 1.7;
 }
 
-.alert {
-    padding: 14px 16px;
-    border-radius: 18px;
+.ns-staff .alert {
+    padding: 14px 18px;
     margin-bottom: 20px;
-    font-size: 14px;
+    border-radius: var(--ns-radius-inner);
+    font-size: 13px;
     font-weight: 700;
+    line-height: 1.6;
 }
 
-.alert-success {
-    background: rgba(81,148,91,.16);
+.ns-staff .alert-success {
+    background: rgba(81,148,91,.12);
     color: #2f7d3c;
     border: 1px solid rgba(81,148,91,.25);
 }
 
-.alert-error {
+.ns-staff .alert-error {
     background: rgba(184,77,77,.12);
-    color: #b84d4d;
+    color: #a63e3e;
     border: 1px solid rgba(184,77,77,.22);
 }
 
-.stats-grid {
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Summary Cards
+|--------------------------------------------------------------------------
+*/
+
+.ns-staff .stats-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4,minmax(0,1fr));
     gap: 16px;
     margin-bottom: 24px;
 }
 
-.stat-card,
-.filter-card,
-.form-card,
-.staff-card,
-.deleted-card {
-    background: var(--glass);
+.ns-staff .stat-card,
+.ns-staff .filter-card,
+.ns-staff .form-card,
+.ns-staff .staff-card,
+.ns-staff .deleted-card {
+    background: var(--ns-glass);
     backdrop-filter: blur(28px);
-    border: 1px solid var(--border);
-    border-radius: 26px;
+    -webkit-backdrop-filter: blur(28px);
+    border: 1px solid var(--border,rgba(111,78,55,.13));
+    border-radius: var(--ns-radius-main);
     box-shadow:
         0 20px 60px rgba(47,33,24,.08),
-        inset 0 1px 0 rgba(255,255,255,.7);
+        inset 0 1px 0 rgba(255,255,255,.65);
+    min-width: 0;
 }
 
-.stat-card {
-    padding: 20px;
+.ns-staff .stat-card {
+    padding: 22px;
 }
 
-.stat-card h2 {
+.ns-staff .stat-card h2 {
     font-size: 28px;
-    color: var(--brown);
+    color: var(--ns-brown);
+    line-height: 1.2;
 }
 
-.stat-card p {
-    color: var(--muted);
-    font-size: 12px;
+.ns-staff .stat-card p {
     margin-top: 6px;
+    color: var(--ns-muted);
+    font-size: 12px;
     font-weight: 700;
 }
 
-.filter-card,
-.form-card {
-    padding: 22px;
+.ns-staff .filter-card,
+.ns-staff .form-card {
+    padding: 24px;
     margin-bottom: 24px;
 }
 
-.filter-row {
+.ns-staff .card-title {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 20px;
+}
+
+.ns-staff .card-title h2 {
+    font-size: 22px;
+    margin-bottom: 6px;
+}
+
+.ns-staff .card-title p {
+    color: var(--ns-muted);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Form Layouts
+|--------------------------------------------------------------------------
+*/
+
+.ns-staff .filter-row {
     display: grid;
     grid-template-columns: 1.5fr 1fr auto auto;
     gap: 14px;
     align-items: end;
 }
 
-.card-title {
+.ns-staff .form-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1.2fr .9fr .8fr;
+    gap: 14px;
+    align-items: end;
+}
+
+.ns-staff .form-group.full,
+.ns-staff .full {
+    grid-column: 1/-1;
+}
+
+.ns-staff label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.ns-staff input:not([type="checkbox"]),
+.ns-staff select,
+.ns-staff textarea {
+    display: block;
+    width: 100%;
+    padding: 13px 14px;
+    min-height: 46px;
+    border-radius: var(--ns-radius-inner);
+    border: 1px solid var(--ns-border);
+    background: rgba(255,255,255,.68);
+    color: var(--ns-dark);
+    outline: none;
+    font: inherit;
+    font-size: 13px;
+}
+
+.ns-staff input:focus,
+.ns-staff select:focus,
+.ns-staff textarea:focus {
+    border-color: var(--ns-brown);
+    box-shadow: 0 0 0 3px rgba(111,78,55,.10);
+}
+
+.ns-staff input::placeholder,
+.ns-staff textarea::placeholder {
+    color: #aaa096;
+}
+
+.ns-staff textarea {
+    min-height: 95px;
+    resize: vertical;
+}
+
+.ns-staff .help {
+    display: block;
+    margin-top: 7px;
+    color: var(--ns-muted);
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.ns-staff .error-text {
+    display: block;
+    color: #b84d4d;
+    font-size: 12px;
+    margin-top: 6px;
+    font-weight: 800;
+}
+
+.ns-staff .checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(4,minmax(0,1fr));
+    gap: 10px;
+}
+
+.ns-staff .checkbox-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 12px;
+    margin: 0;
+    border-radius: var(--ns-radius-inner);
+    background: rgba(255,255,255,.46);
+    border: 1px solid var(--ns-border);
+    color: var(--ns-dark);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.5;
+    cursor: pointer;
+}
+
+.ns-staff .checkbox-pill:has(input:checked) {
+    border-color: var(--ns-brown);
+    background: rgba(255,255,255,.85);
+}
+
+.ns-staff .checkbox-pill input {
+    width: 17px;
+    height: 17px;
+    flex: 0 0 auto;
+    accent-color: var(--ns-brown);
+}
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Action Buttons
+|--------------------------------------------------------------------------
+*/
+
+.ns-staff .filter-btn,
+.ns-staff .reset-btn,
+.ns-staff .primary-btn,
+.ns-staff .light-btn,
+.ns-staff .danger-btn,
+.ns-staff .success-btn,
+.ns-staff .status-btn,
+.ns-staff .action-btn,
+.ns-staff .modal-danger,
+.ns-staff .modal-primary,
+.ns-staff .modal-success,
+.ns-staff .modal-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 18px;
+    min-height: 43px;
+    border-radius: var(--ns-radius-inner);
+    border: 1px solid transparent;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 800;
+    text-decoration: none;
+    text-align: center;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.ns-staff .filter-btn,
+.ns-staff .primary-btn,
+.ns-staff .modal-primary {
+    background: var(--ns-gradient);
+    color: white;
+}
+
+.ns-staff .reset-btn,
+.ns-staff .light-btn,
+.ns-staff .modal-back {
+    background: rgba(255,255,255,.62);
+    color: var(--ns-dark);
+    border-color: var(--ns-border);
+}
+
+.ns-staff .danger-btn {
+    background: rgba(184,77,77,.12);
+    color: #a33f3f;
+    border-color: rgba(184,77,77,.20);
+}
+
+.ns-staff .modal-danger {
+    background: #b84d4d;
+    color: white;
+}
+
+.ns-staff .success-btn,
+.ns-staff .modal-success {
+    background: rgba(81,148,91,.16);
+    color: #2f7d3c;
+    border-color: rgba(81,148,91,.25);
+}
+
+.ns-staff .status-btn {
+    background: rgba(138,113,88,.16);
+    color: var(--ns-brown);
+    border-color: rgba(138,113,88,.20);
+}
+
+.ns-staff button:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.ns-staff button:focus-visible,
+.ns-staff a:focus-visible {
+    outline: 3px solid rgba(111,78,55,.35);
+    outline-offset: 3px;
+}
+
+.ns-staff .form-actions,
+.ns-staff .actions,
+.ns-staff .modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.ns-staff .form-actions {
+    justify-content: flex-end;
+    margin-top: 18px;
+}
+
+.ns-staff .modal-actions {
+    justify-content: flex-end;
+    margin-top: 24px;
+}
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Staff List
+|--------------------------------------------------------------------------
+*/
+
+.ns-staff .staff-list {
+    display: grid;
+    gap: 18px;
+}
+
+.ns-staff .staff-card {
+    padding: 24px;
+}
+
+.ns-staff .staff-top {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
@@ -113,311 +395,151 @@
     margin-bottom: 20px;
 }
 
-.card-title h2 {
-    font-size: 22px;
-    margin-bottom: 6px;
-}
-
-.card-title p {
-    color: var(--muted);
-    font-size: 13px;
-    line-height: 1.5;
-}
-
-.form-grid {
-    display: grid;
-    grid-template-columns: 1.2fr 1.2fr .9fr .8fr;
-    gap: 14px;
-    align-items: end;
-}
-
-.form-group.full {
-    grid-column: 1 / -1;
-}
-
-label {
-    display: block;
-    margin-bottom: 8px;
-    font-size: 13px;
-    font-weight: 800;
-}
-
-input,
-select,
-textarea {
-    width: 100%;
-    padding: 13px 14px;
-    border-radius: 16px;
-    border: 1px solid var(--border);
-    background: rgba(255,255,255,.65);
-    outline: none;
-}
-
-textarea {
-    resize: none;
-    height: 95px;
-}
-
-.help {
-    display: block;
-    margin-top: 7px;
-    color: var(--muted);
-    font-size: 12px;
-    line-height: 1.4;
-}
-
-.error-text {
-    display: block;
-    color: #b84d4d;
-    font-size: 12px;
-    margin-top: 6px;
-    font-weight: 800;
-}
-
-.filter-btn,
-.reset-btn,
-.primary-btn,
-.light-btn,
-.danger-btn,
-.success-btn,
-.status-btn,
-.action-btn {
-    border: none;
-    text-decoration: none;
-    padding: 11px 18px;
-    border-radius: 999px;
-    font-size: 13px;
-    font-weight: 900;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    white-space: nowrap;
-}
-
-.filter-btn,
-.primary-btn {
-    background: linear-gradient(135deg,#8a7158,#5d3f2c);
-    color: white;
-}
-
-.reset-btn,
-.light-btn {
-    background: rgba(255,255,255,.55);
-    color: var(--dark);
-    border: 1px solid var(--border);
-}
-
-.danger-btn {
-    background: rgba(184,77,77,.12);
-    color: #b84d4d;
-    border: 1px solid rgba(184,77,77,.22);
-}
-
-.success-btn {
-    background: rgba(81,148,91,.16);
-    color: #2f7d3c;
-    border: 1px solid rgba(81,148,91,.25);
-}
-
-.status-btn {
-    background: rgba(138,113,88,.18);
-    color: #6f4e37;
-    border: 1px solid rgba(138,113,88,.22);
-}
-
-.form-actions {
+.ns-staff .staff-main {
     display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    margin-top: 18px;
-}
-
-.checkbox-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-}
-
-.checkbox-pill {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 11px 12px;
-    border-radius: 999px;
-    background: rgba(255,255,255,.45);
-    border: 1px solid var(--border);
-    color: var(--dark);
-    font-size: 13px;
-    font-weight: 800;
-}
-
-.checkbox-pill input {
-    width: auto;
-}
-
-.staff-list {
-    display: grid;
-    gap: 20px;
-}
-
-.staff-card {
-    padding: 24px;
-}
-
-.staff-top {
-    display: flex;
-    justify-content: space-between;
-    gap: 18px;
-    margin-bottom: 18px;
-}
-
-.staff-main {
-    display: flex;
-    gap: 16px;
     align-items: flex-start;
+    gap: 16px;
+    min-width: 0;
 }
 
-.staff-avatar {
-    width: 76px;
-    height: 76px;
-    border-radius: 22px;
+.ns-staff .staff-avatar {
     display: grid;
     place-items: center;
-    background: linear-gradient(135deg,#8a7158,#5d3f2c);
+    width: 76px;
+    height: 76px;
+    flex: 0 0 76px;
+    border-radius: var(--ns-radius-inner);
+    background: var(--ns-gradient);
     color: white;
-    font-size: 20px;
+    font-size: 21px;
     font-weight: 900;
-    flex: 0 0 auto;
 }
 
-.staff-top h3 {
+.ns-staff .staff-main h3 {
+    margin-bottom: 6px;
     font-size: 18px;
-    margin-bottom: 5px;
+    overflow-wrap: anywhere;
 }
 
-.staff-top p {
-    color: var(--muted);
-    font-size: 13px;
-    line-height: 1.5;
-}
-
-.badge-row {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-}
-
-.status,
-.account-badge,
-.dayoff-badge {
-    display: inline-block;
-    padding: 8px 14px;
-    border-radius: 999px;
+.ns-staff .staff-main p {
+    color: var(--ns-muted);
     font-size: 12px;
-    font-weight: 900;
-    height: fit-content;
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+}
+
+.ns-staff .badge-row {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.ns-staff .status,
+.ns-staff .account-badge,
+.ns-staff .dayoff-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 7px 11px;
+    border-radius: var(--ns-radius-inner);
+    font-size: 11px;
+    font-weight: 800;
     white-space: nowrap;
 }
 
-.status.active {
-    background: rgba(81,148,91,.18);
+.ns-staff .status.active {
+    background: rgba(81,148,91,.16);
     color: #2f7d3c;
 }
 
-.status.inactive {
+.ns-staff .status.inactive {
     background: rgba(184,77,77,.15);
     color: #b84d4d;
 }
 
-.account-badge {
+.ns-staff .account-badge {
     background: rgba(255,255,255,.55);
-    color: var(--dark);
-    border: 1px solid var(--border);
+    color: var(--ns-dark);
+    border: 1px solid var(--ns-border);
 }
 
-.dayoff-badge {
-    background: rgba(255,196,87,.22);
-    color: #9a6a00;
+.ns-staff .dayoff-badge {
+    background: rgba(255,196,87,.20);
+    color: #906000;
 }
 
-.details-grid {
+.ns-staff .details-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
+    grid-template-columns: repeat(4,minmax(0,1fr));
+    gap: 14px;
     margin-bottom: 18px;
 }
 
-.detail-box {
-    background: rgba(255,255,255,.45);
+.ns-staff .detail-box {
+    padding: 16px;
+    min-width: 0;
+    border-radius: var(--ns-radius-inner);
+    background: rgba(255,255,255,.46);
     border: 1px solid rgba(255,255,255,.65);
-    border-radius: 20px;
-    padding: 16px;
 }
 
-.detail-box small {
-    color: var(--muted);
-    font-size: 11px;
-    font-weight: 900;
+.ns-staff .detail-box small {
+    color: var(--ns-muted);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .03em;
 }
 
-.detail-box p {
+.ns-staff .detail-box p {
     margin-top: 6px;
-    font-size: 14px;
-    font-weight: 700;
-    word-break: break-word;
-}
-
-.skill-box,
-.dayoff-box {
-    padding: 16px;
-    border-radius: 20px;
-    background: rgba(255,255,255,.38);
-    border: 1px solid rgba(255,255,255,.6);
-    margin-bottom: 18px;
-}
-
-.dayoff-box {
-    background: rgba(255,196,87,.10);
-    border: 1px solid rgba(255,196,87,.22);
-}
-
-.skill-box small,
-.dayoff-box small {
-    display: block;
-    color: var(--muted);
-    font-size: 11px;
-    font-weight: 900;
-    margin-bottom: 8px;
-}
-
-.skill-chip,
-.dayoff-chip {
-    display: inline-block;
-    margin: 4px 6px 4px 0;
-    padding: 8px 12px;
-    border-radius: 999px;
-    background: rgba(255,255,255,.55);
-    border: 1px solid var(--border);
     font-size: 13px;
     font-weight: 700;
+    overflow-wrap: anywhere;
 }
 
-.dayoff-chip {
+.ns-staff .skill-box,
+.ns-staff .dayoff-box {
+    padding: 16px;
+    margin-bottom: 18px;
+    border-radius: var(--ns-radius-inner);
+    border: 1px solid rgba(255,255,255,.65);
+    background: rgba(255,255,255,.40);
+}
+
+.ns-staff .dayoff-box {
+    background: rgba(255,196,87,.10);
+    border-color: rgba(255,196,87,.22);
+}
+
+.ns-staff .skill-box small,
+.ns-staff .dayoff-box small {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--ns-muted);
+}
+
+.ns-staff .skill-chip,
+.ns-staff .dayoff-chip {
+    display: inline-flex;
+    align-items: center;
+    margin: 3px 6px 3px 0;
+    padding: 8px 11px;
+    border-radius: var(--ns-radius-inner);
+    background: rgba(255,255,255,.65);
+    border: 1px solid var(--ns-border);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.ns-staff .dayoff-chip {
     background: rgba(255,196,87,.16);
-    color: #9a6a00;
-    border: 1px solid rgba(255,196,87,.25);
+    color: #8d6100;
+    border-color: rgba(255,196,87,.25);
 }
 
-.actions {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.deleted-header {
+.ns-staff .deleted-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -425,33 +547,225 @@ textarea {
     margin: 28px 0 18px;
 }
 
-.deleted-header h2 {
+.ns-staff .deleted-header h2 {
     font-size: 22px;
 }
 
-.deleted-header p {
-    color: var(--muted);
-    font-size: 13px;
+.ns-staff .deleted-header p {
     margin-top: 5px;
+    color: var(--ns-muted);
+    font-size: 13px;
 }
 
-.pagination {
+.ns-staff .pagination {
     margin-top: 24px;
 }
 
-.empty-state {
+.ns-staff .empty-state {
+    padding: 48px 20px;
     text-align: center;
-    padding: 60px 20px;
-    background: var(--glass);
-    border: 1px solid var(--border);
-    border-radius: 30px;
-    color: var(--muted);
+    background: var(--ns-glass);
+    border: 1px solid var(--ns-border);
+    border-radius: var(--ns-radius-main);
+    color: var(--ns-muted);
 }
 
-.empty-state h3 {
-    color: var(--dark);
+.ns-staff .empty-state h3 {
     margin-bottom: 8px;
+    color: var(--ns-dark);
 }
+
+.ns-staff .empty-state p {
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Emergency Day Off Notice
+|--------------------------------------------------------------------------
+*/
+
+.ns-staff .emergency-info {
+    padding: 18px;
+    margin: 12px 0 18px;
+    border-radius: var(--ns-radius-inner);
+    border: 1px solid rgba(138,113,88,.25);
+    background: rgba(138,113,88,.08);
+}
+
+.ns-staff .emergency-info h4 {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--ns-brown);
+    margin-bottom: 9px;
+}
+
+.ns-staff .emergency-info p,
+.ns-staff .emergency-info li {
+    color: var(--ns-muted);
+    font-size: 12px;
+    line-height: 1.7;
+}
+
+.ns-staff .emergency-info ol {
+    padding-left: 18px;
+    margin: 10px 0 0;
+}
+
+.ns-staff .emergency-info li {
+    margin-bottom: 5px;
+}
+
+.ns-staff .emergency-info strong {
+    color: var(--ns-dark);
+}
+
+.ns-staff .emergency-confirm {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 13px;
+    margin-top: 16px;
+    border-radius: var(--ns-radius-inner);
+    background: rgba(255,255,255,.58);
+    border: 1px solid var(--ns-border);
+}
+
+.ns-staff .emergency-confirm input {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    flex: 0 0 18px;
+    accent-color: var(--ns-brown);
+}
+
+.ns-staff .emergency-confirm span {
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--ns-dark);
+}
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Popup Layout
+|--------------------------------------------------------------------------
+| Sidebar remains accessible during all popups
+|--------------------------------------------------------------------------
+*/
+
+.ns-staff .modal-overlay {
+    position: fixed;
+    inset: 0 0 0 280px;
+    z-index: 999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow-y: auto;
+    background: rgba(47,33,24,.35);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.ns-staff .modal-overlay.show {
+    display: flex;
+}
+
+.ns-staff .modal {
+    width: 100%;
+    max-width: 640px;
+    max-height: calc(100dvh - 40px);
+    overflow-y: auto;
+    padding: 28px;
+    border-radius: var(--ns-radius-main);
+    background: rgba(255,255,255,.96);
+    border: 1px solid rgba(255,255,255,.90);
+    box-shadow:
+        0 25px 80px rgba(47,33,24,.20),
+        inset 0 1px 0 rgba(255,255,255,.7);
+    scrollbar-width: thin;
+}
+
+.ns-staff .modal.large {
+    max-width: 900px;
+}
+
+.ns-staff .modal h3 {
+    margin-bottom: 10px;
+    font-size: 22px;
+}
+
+.ns-staff .modal > p {
+    margin-bottom: 18px;
+    color: var(--ns-muted);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.ns-staff .modal-grid {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 14px;
+}
+
+.ns-staff .modal-grid .full {
+    grid-column: 1/-1;
+}
+
+.ns-staff .dayoff-list {
+    display: grid;
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.ns-staff .dayoff-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    border-radius: var(--ns-radius-inner);
+    background: rgba(255,255,255,.56);
+    border: 1px solid var(--ns-border);
+}
+
+.ns-staff .dayoff-item p {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--ns-muted);
+}
+
+.ns-staff .dayoff-item strong {
+    color: var(--ns-dark);
+}
+
+.ns-staff .warning-box {
+    padding: 16px;
+    margin: 18px 0;
+    border-radius: var(--ns-radius-inner);
+    background: rgba(184,77,77,.10);
+    border: 1px solid rgba(184,77,77,.22);
+}
+
+.ns-staff .warning-box strong {
+    display: block;
+    margin-bottom: 6px;
+    color: #a73e3e;
+}
+
+.ns-staff .warning-box span {
+    color: var(--ns-muted);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Keep Admin Sidebar Above Overlay
+|--------------------------------------------------------------------------
+*/
 
 .sidebar,
 .admin-sidebar,
@@ -461,211 +775,88 @@ aside.sidebar,
     z-index: 10000 !important;
 }
 
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 280px;
-    background: rgba(47,33,24,.35);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    z-index: 999;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    overflow-y: auto;
-}
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Responsive Layout
+|--------------------------------------------------------------------------
+*/
 
-.modal-overlay.show {
-    display: flex;
-}
-
-.modal {
-    width: 100%;
-    max-width: 640px;
-    max-height: calc(100vh - 40px);
-    overflow-y: auto;
-    background: rgba(255,255,255,.92);
-    border: 1px solid rgba(255,255,255,.9);
-    border-radius: 30px;
-    padding: 28px;
-    box-shadow:
-        0 25px 80px rgba(47,33,24,.20),
-        inset 0 1px 0 rgba(255,255,255,.8);
-}
-
-.modal.large {
-    max-width: 900px;
-}
-
-.modal h3 {
-    margin-bottom: 10px;
-    font-size: 22px;
-}
-
-.modal p {
-    color: var(--muted);
-    font-size: 14px;
-    line-height: 1.6;
-    margin-bottom: 18px;
-}
-
-.modal-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 14px;
-}
-
-.modal-grid .full {
-    grid-column: 1 / -1;
-}
-
-.dayoff-list {
-    display: grid;
-    gap: 12px;
-    margin-top: 10px;
-}
-
-.dayoff-item {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    align-items: center;
-    padding: 14px;
-    border-radius: 20px;
-    background: rgba(255,255,255,.45);
-    border: 1px solid rgba(255,255,255,.65);
-}
-
-.dayoff-item p {
-    margin-bottom: 0;
-}
-
-.warning-box {
-    padding: 16px;
-    border-radius: 20px;
-    background: rgba(184,77,77,.12);
-    border: 1px solid rgba(184,77,77,.22);
-    margin-bottom: 18px;
-}
-
-.warning-box strong {
-    color: #b84d4d;
-    display: block;
-    margin-bottom: 6px;
-}
-
-.warning-box span {
-    color: var(--muted);
-    font-size: 13px;
-    line-height: 1.6;
-}
-
-.modal-actions {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-top: 18px;
-}
-
-.modal-danger {
-    padding: 13px 20px;
-    border-radius: 999px;
-    border: none;
-    background: #b84d4d;
-    color: white;
-    font-weight: 900;
-    cursor: pointer;
-}
-
-.modal-primary {
-    padding: 13px 20px;
-    border-radius: 999px;
-    border: none;
-    background: linear-gradient(135deg,#8a7158,#5d3f2c);
-    color: white;
-    font-weight: 900;
-    cursor: pointer;
-}
-
-.modal-success {
-    padding: 13px 20px;
-    border-radius: 999px;
-    border: none;
-    background: #2f7d3c;
-    color: white;
-    font-weight: 900;
-    cursor: pointer;
-}
-
-.modal-back {
-    padding: 13px 20px;
-    border-radius: 999px;
-    border: 1px solid var(--border);
-    background: rgba(255,255,255,.65);
-    color: var(--dark);
-    font-weight: 900;
-    cursor: pointer;
-}
-
-@media(max-width:1100px) {
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
+@media (max-width:1100px) {
+    .ns-staff .stats-grid {
+        grid-template-columns: repeat(2,minmax(0,1fr));
     }
 
-    .filter-row,
-    .form-grid,
-    .details-grid,
-    .modal-grid,
-    .checkbox-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .badge-row {
-        justify-content: flex-start;
+    .ns-staff .filter-row,
+    .ns-staff .form-grid,
+    .ns-staff .details-grid,
+    .ns-staff .checkbox-grid {
+        grid-template-columns: repeat(2,minmax(0,1fr));
     }
 }
 
-@media(max-width:900px) {
-    .modal-overlay {
+@media (max-width:900px) {
+    .ns-staff .modal-overlay {
         left: 0;
     }
+
+    .ns-staff .modal-grid {
+        grid-template-columns: minmax(0,1fr);
+    }
 }
 
-@media(max-width:700px) {
-    .stats-grid {
-        grid-template-columns: 1fr;
+@media (max-width:700px) {
+    .ns-staff .page-header h1 {
+        font-size: 28px;
     }
 
-    .staff-top,
-    .staff-main,
-    .deleted-header,
-    .dayoff-item {
+    .ns-staff .stats-grid,
+    .ns-staff .filter-row,
+    .ns-staff .form-grid,
+    .ns-staff .details-grid,
+    .ns-staff .checkbox-grid {
+        grid-template-columns: minmax(0,1fr);
+    }
+
+    .ns-staff .filter-card,
+    .ns-staff .form-card,
+    .ns-staff .staff-card {
+        padding: 18px;
+    }
+
+    .ns-staff .staff-top,
+    .ns-staff .staff-main,
+    .ns-staff .deleted-header,
+    .ns-staff .dayoff-item {
         flex-direction: column;
         align-items: stretch;
     }
 
-    .staff-avatar {
-        width: 100%;
-        height: 110px;
+    .ns-staff .staff-avatar {
+        width: 70px;
+        height: 70px;
+        flex-basis: 70px;
     }
 
-    .filter-btn,
-    .reset-btn,
-    .primary-btn,
-    .light-btn,
-    .danger-btn,
-    .success-btn,
-    .status-btn,
-    .action-btn,
-    .modal-danger,
-    .modal-primary,
-    .modal-success,
-    .modal-back {
+    .ns-staff .badge-row {
+        justify-content: flex-start;
+    }
+
+    .ns-staff .modal {
+        padding: 22px 16px;
+    }
+
+    .ns-staff .actions > *,
+    .ns-staff .form-actions > *,
+    .ns-staff .modal-actions > * {
         width: 100%;
-        text-align: center;
+    }
+
+    .ns-staff .modal-overlay {
+        padding: 12px;
+    }
+
+    .ns-staff .modal {
+        max-height: calc(100dvh - 24px);
     }
 }
 </style>
@@ -673,514 +864,1010 @@ aside.sidebar,
 
 @section('content')
 
-<div class="page-header">
-    <h1>Staff Management</h1>
-    <p>Manage staff profiles, assigned services from Service Management, account status, and day-off schedules.</p>
-</div>
+<div class="ns-staff">
 
-@if (session('success'))
-    <div class="alert alert-success">
-        {{ session('success') }}
-    </div>
-@endif
+    {{--
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Page Header
+    |--------------------------------------------------------------------------
+    --}}
 
-@if ($errors->any())
-    <div class="alert alert-error">
-        {{ $errors->first() }}
-    </div>
-@endif
+    <div class="page-header">
+        <h1>Staff Management</h1>
 
-<div class="stats-grid">
-    <div class="stat-card">
-        <h2>{{ $stats['total'] }}</h2>
-        <p>Total Staff</p>
+        <p>
+            Manage staff profiles, service assignments, account status,
+            day-offs and emergency scheduling
+        </p>
     </div>
 
-    <div class="stat-card">
-        <h2>{{ $stats['active'] }}</h2>
-        <p>Active Staff</p>
-    </div>
+    {{--
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Laravel Feedback
+    |--------------------------------------------------------------------------
+    --}}
 
-    <div class="stat-card">
-        <h2>{{ $stats['inactive'] }}</h2>
-        <p>Inactive Staff</p>
-    </div>
-
-    <div class="stat-card">
-        <h2>{{ $stats['on_day_off'] }}</h2>
-        <p>On Day Off</p>
-    </div>
-</div>
-
-<section class="filter-card">
-    <form method="GET" action="{{ route('admin.staff') }}">
-        <div class="filter-row">
-            <div>
-                <label>Search</label>
-                <input
-                    type="text"
-                    name="search"
-                    value="{{ $filters['search'] }}"
-                    placeholder="Search staff name, email, or phone number..."
-                >
-            </div>
-
-            <div>
-                <label>Status</label>
-                <select name="status">
-                    <option value="all" {{ $filters['status'] === 'all' ? 'selected' : '' }}>All</option>
-                    <option value="active" {{ $filters['status'] === 'active' ? 'selected' : '' }}>Active</option>
-                    <option value="inactive" {{ $filters['status'] === 'inactive' ? 'selected' : '' }}>Inactive</option>
-                </select>
-            </div>
-
-            <button type="submit" class="filter-btn">Filter</button>
-
-            <a href="{{ route('admin.staff') }}" class="reset-btn">Reset</a>
+    @if (session('success'))
+        <div class="alert alert-success" role="status">
+            {{ session('success') }}
         </div>
-    </form>
-</section>
+    @endif
 
-<section class="form-card">
-    <div class="card-title">
+    @if ($errors->any())
+        <div class="alert alert-error" role="alert">
+            {{ $errors->first() }}
+        </div>
+    @endif
+
+    {{--
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Staff Statistics
+    |--------------------------------------------------------------------------
+    --}}
+
+    <div class="stats-grid">
+
+        <div class="stat-card">
+            <h2>{{ $stats['total'] }}</h2>
+            <p>Total Staff</p>
+        </div>
+
+        <div class="stat-card">
+            <h2>{{ $stats['active'] }}</h2>
+            <p>Active Staff</p>
+        </div>
+
+        <div class="stat-card">
+            <h2>{{ $stats['inactive'] }}</h2>
+            <p>Inactive Staff</p>
+        </div>
+
+        <div class="stat-card">
+            <h2>{{ $stats['on_day_off'] }}</h2>
+            <p>On Day Off</p>
+        </div>
+
+    </div>
+
+    {{--
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Search and Filter
+    |--------------------------------------------------------------------------
+    --}}
+
+    <section class="filter-card">
+
+        <form method="GET" action="{{ route('admin.staff') }}">
+
+            <div class="filter-row">
+
+                <div>
+                    <label for="staffSearch">Search</label>
+
+                    <input
+                        type="text"
+                        id="staffSearch"
+                        name="search"
+                        value="{{ $filters['search'] }}"
+                        placeholder="Search name, email or phone number"
+                    >
+                </div>
+
+                <div>
+                    <label for="staffStatusFilter">Status</label>
+
+                    <select id="staffStatusFilter" name="status">
+                        <option value="all" {{ $filters['status'] === 'all' ? 'selected' : '' }}>
+                            All
+                        </option>
+
+                        <option value="active" {{ $filters['status'] === 'active' ? 'selected' : '' }}>
+                            Active
+                        </option>
+
+                        <option value="inactive" {{ $filters['status'] === 'inactive' ? 'selected' : '' }}>
+                            Inactive
+                        </option>
+                    </select>
+                </div>
+
+                <button type="submit" class="filter-btn">
+                    Filter
+                </button>
+
+                <a href="{{ route('admin.staff') }}" class="reset-btn">
+                    Reset
+                </a>
+
+            </div>
+        </form>
+
+    </section>
+
+    {{--
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Add Staff
+    |--------------------------------------------------------------------------
+    | Staff activation email is handled by StaffManagementController
+    |--------------------------------------------------------------------------
+    --}}
+
+    <section class="form-card">
+
+        <div class="card-title">
+            <div>
+                <h2>Add New Staff</h2>
+
+                <p>
+                    Create a staff account and assign services from Service Management
+                </p>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ route('admin.staff.store') }}">
+            @csrf
+
+            <div class="form-grid">
+
+                <div>
+                    <label for="newStaffName">Full Name</label>
+
+                    <input
+                        type="text"
+                        id="newStaffName"
+                        name="full_name"
+                        value="{{ old('full_name') }}"
+                        maxlength="150"
+                        required
+                    >
+                </div>
+
+                <div>
+                    <label for="newStaffEmail">Email</label>
+
+                    <input
+                        type="email"
+                        id="newStaffEmail"
+                        name="email"
+                        value="{{ old('email') }}"
+                        maxlength="150"
+                        required
+                    >
+                </div>
+
+                <div>
+                    <label for="newStaffPhone">Phone Number</label>
+
+                    <input
+                        type="text"
+                        id="newStaffPhone"
+                        name="phone_number"
+                        value="{{ old('phone_number') }}"
+                        maxlength="30"
+                    >
+                </div>
+
+                <div>
+                    <label for="newStaffStatus">Status</label>
+
+                    <select id="newStaffStatus" name="status" required>
+                        <option
+                            value="Active"
+                            {{ old('status','Active') === 'Active' ? 'selected' : '' }}
+                        >
+                            Active
+                        </option>
+
+                        <option
+                            value="Inactive"
+                            {{ old('status') === 'Inactive' ? 'selected' : '' }}
+                        >
+                            Inactive
+                        </option>
+                    </select>
+                </div>
+
+                <div class="form-group full">
+
+                    <label>Assigned Services</label>
+
+                    <div class="checkbox-grid">
+
+                        @forelse ($services as $service)
+
+                            <label class="checkbox-pill">
+
+                                <input
+                                    type="checkbox"
+                                    name="service_ids[]"
+                                    value="{{ $service->id }}"
+                                    {{ in_array($service->id, old('service_ids', [])) ? 'checked' : '' }}
+                                >
+
+                                <span>{{ $service->service_name }}</span>
+
+                            </label>
+
+                        @empty
+
+                            <small class="help">
+                                No services found — add services in Service Management first
+                            </small>
+
+                        @endforelse
+
+                    </div>
+
+                    <small class="help">
+                        Staff will only be eligible for bookings that match their assigned services
+                    </small>
+
+                </div>
+
+            </div>
+
+            <div class="form-actions">
+
+                <button type="reset" class="light-btn">
+                    Clear
+                </button>
+
+                <button type="submit" class="primary-btn">
+                    Add Staff
+                </button>
+
+            </div>
+
+        </form>
+
+    </section>
+
+    {{--
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Staff List Heading
+    |--------------------------------------------------------------------------
+    --}}
+
+    <div class="deleted-header">
+
         <div>
-            <h2>Add New Staff</h2>
-            <p>Create a staff profile and assign services that already exist in Service Management.</p>
-        </div>
-    </div>
-
-    <form method="POST" action="{{ route('admin.staff.store') }}">
-        @csrf
-
-        <div class="form-grid">
-            <div>
-                <label>Full Name</label>
-                <input type="text" name="full_name" value="{{ old('full_name') }}" maxlength="150" required>
-            </div>
-
-            <div>
-                <label>Email</label>
-                <input type="email" name="email" value="{{ old('email') }}" maxlength="150" required>
-            </div>
-
-            <div>
-                <label>Phone Number</label>
-                <input type="text" name="phone_number" value="{{ old('phone_number') }}" maxlength="30">
-            </div>
-
-            <div>
-                <label>Status</label>
-                <select name="status" required>
-                    <option value="Active" {{ old('status', 'Active') === 'Active' ? 'selected' : '' }}>Active</option>
-                    <option value="Inactive" {{ old('status') === 'Inactive' ? 'selected' : '' }}>Inactive</option>
-                </select>
-            </div>
-
-            <div class="form-group full">
-                <label>Services from Service Management</label>
-
-                <div class="checkbox-grid">
-                    @forelse ($services as $service)
-                        <label class="checkbox-pill">
-                            <input
-                                type="checkbox"
-                                name="service_ids[]"
-                                value="{{ $service->id }}"
-                                {{ in_array($service->id, old('service_ids', [])) ? 'checked' : '' }}
-                            >
-                            {{ $service->service_name }}
-                        </label>
-                    @empty
-                        <small class="help">No services found. Please add services in Service Management first.</small>
-                    @endforelse
-                </div>
-            </div>
-        </div>
-
-        <div class="form-actions">
-            <button type="reset" class="light-btn">Clear</button>
-            <button type="submit" class="primary-btn">Add Staff</button>
-        </div>
-    </form>
-</section>
-
-<div class="deleted-header">
-    <div>
-        <h2>Staff List</h2>
-        <p>Manage active staff. Deleted staff can be restored within 30 days.</p>
-    </div>
-
-    <button type="button" class="light-btn" onclick="openStaffModal('deletedStaffModal')">
-        Deleted Staff
-        @if ($deletedStaff->count() > 0)
-            ({{ $deletedStaff->count() }})
-        @endif
-    </button>
-</div>
-
-<div class="staff-list">
-    @forelse ($staffMembers as $staff)
-        @php
-            $statusKey = strtolower($staff->status ?? 'Active');
-
-            $initials = collect(explode(' ', $staff->full_name))
-                ->filter()
-                ->take(2)
-                ->map(fn ($word) => strtoupper(substr($word, 0, 1)))
-                ->implode('');
-
-            $hasDayOff = $staff->activeDayOffs->count() > 0;
-        @endphp
-
-        <section class="staff-card">
-            <div class="staff-top">
-                <div class="staff-main">
-                    <div class="staff-avatar">
-                        {{ $initials ?: 'S' }}
-                    </div>
-
-                    <div>
-                        <h3>{{ $staff->full_name }}</h3>
-
-                        <p>
-                            Staff ID:
-                            #ST-{{ str_pad($staff->id, 4, '0', STR_PAD_LEFT) }}
-                        </p>
-
-                        <p>
-                            Created:
-                            {{ $staff->created_at ? $staff->created_at->format('F d, Y h:i A') : 'Not recorded' }}
-                        </p>
-                    </div>
-                </div>
-
-                <div class="badge-row">
-                    @if ($hasDayOff)
-                        <span class="dayoff-badge">Has Day Off</span>
-                    @endif
-
-                    <span class="status {{ $statusKey }}">
-                        {{ $staff->status }}
-                    </span>
-                </div>
-            </div>
-
-            <div class="details-grid">
-                <div class="detail-box">
-                    <small>EMAIL</small>
-                    <p>{{ $staff->email ?: 'Not recorded' }}</p>
-                </div>
-
-                <div class="detail-box">
-                    <small>PHONE</small>
-                    <p>{{ $staff->phone_number ?: 'Not recorded' }}</p>
-                </div>
-
-                <div class="detail-box">
-                    <small>TOTAL BOOKINGS</small>
-                    <p>{{ $staff->appointments_count }} booking(s)</p>
-                </div>
-
-                <div class="detail-box">
-                    <small>ASSIGNED SERVICES</small>
-                    <p>{{ $staff->services->count() }} service(s)</p>
-                </div>
-            </div>
-
-            <div class="skill-box">
-                <small>ASSIGNED SERVICES FROM SERVICE MANAGEMENT</small>
-
-                @forelse ($staff->services as $service)
-                    <span class="skill-chip">{{ $service->service_name }}</span>
-                @empty
-                    <span class="skill-chip">No services assigned</span>
-                @endforelse
-            </div>
-
-            @if ($hasDayOff)
-                <div class="dayoff-box">
-                    <small>ACTIVE / UPCOMING DAY OFF</small>
-
-                    @foreach ($staff->activeDayOffs as $dayOff)
-                        <span class="dayoff-chip">
-                            {{ $dayOff->start_date->format('M d, Y') }}
-                            -
-                            {{ $dayOff->end_date->format('M d, Y') }}
-                        </span>
-                    @endforeach
-                </div>
-            @endif
-
-            <div class="actions">
-                <button type="button" class="action-btn light-btn" onclick="openStaffModal('editStaffModal{{ $staff->id }}')">
-                    Edit Staff
-                </button>
-
-                <form method="POST" action="{{ route('admin.staff.status', $staff) }}">
-                    @csrf
-                    @method('PATCH')
-
-                    <button type="submit" class="action-btn status-btn">
-                        {{ $staff->status === 'Active' ? 'Disable Staff' : 'Enable Staff' }}
-                    </button>
-                </form>
-
-                <button type="button" class="action-btn danger-btn" onclick="openStaffModal('deleteStaffModal{{ $staff->id }}')">
-                    Delete Staff
-                </button>
-            </div>
-        </section>
-    @empty
-        <div class="empty-state">
-            <h3>No staff found</h3>
-            <p>There are no staff records matching the current filters.</p>
-        </div>
-    @endforelse
-</div>
-
-<div class="pagination">
-    {{ $staffMembers->links() }}
-</div>
-
-@foreach ($staffMembers as $staff)
-    <div class="modal-overlay" id="editStaffModal{{ $staff->id }}">
-        <div class="modal large">
-            <h3>Edit Staff</h3>
+            <h2>Staff List</h2>
 
             <p>
-                Update staff profile, assigned services, and optional day-off schedule.
+                Manage existing staff and their day-off schedules
             </p>
+        </div>
 
-            <form method="POST" action="{{ route('admin.staff.update', $staff) }}">
-                @csrf
-                @method('PATCH')
+        <button
+            type="button"
+            class="light-btn"
+            onclick="openStaffModal('deletedStaffModal')"
+        >
+            Deleted Staff
 
-                <div class="modal-grid">
-                    <div>
-                        <label>Full Name</label>
-                        <input type="text" name="full_name" value="{{ old('full_name', $staff->full_name) }}" maxlength="150" required>
-                    </div>
+            @if ($deletedStaff->count() > 0)
+                ({{ $deletedStaff->count() }})
+            @endif
+        </button>
 
-                    <div>
-                        <label>Email</label>
-                        <input type="email" name="email" value="{{ old('email', $staff->email) }}" maxlength="150" required>
-                    </div>
+    </div>
 
-                    <div>
-                        <label>Phone Number</label>
-                        <input type="text" name="phone_number" value="{{ old('phone_number', $staff->phone_number) }}" maxlength="30">
-                    </div>
+    {{--
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Staff Cards
+    |--------------------------------------------------------------------------
+    --}}
 
-                    <div>
-                        <label>Status</label>
-                        <select name="status" required>
-                            <option value="Active" {{ old('status', $staff->status) === 'Active' ? 'selected' : '' }}>Active</option>
-                            <option value="Inactive" {{ old('status', $staff->status) === 'Inactive' ? 'selected' : '' }}>Inactive</option>
-                        </select>
-                    </div>
+    <div class="staff-list">
 
-                    <div class="full">
-                        <label>Services from Service Management</label>
+        @forelse ($staffMembers as $staff)
 
-                        <div class="checkbox-grid">
-                            @forelse ($services as $service)
-                                <label class="checkbox-pill">
-                                    <input
-                                        type="checkbox"
-                                        name="service_ids[]"
-                                        value="{{ $service->id }}"
-                                        {{ $staff->services->contains('id', $service->id) ? 'checked' : '' }}
-                                    >
-                                    {{ $service->service_name }}
-                                </label>
-                            @empty
-                                <small class="help">No services found. Please add services in Service Management first.</small>
-                            @endforelse
+            @php
+                $statusKey = strtolower($staff->status ?? 'Active');
+
+                $initials = collect(explode(' ', $staff->full_name))
+                    ->filter()
+                    ->take(2)
+                    ->map(fn ($word) => strtoupper(substr($word,0,1)))
+                    ->implode('');
+
+                $hasDayOff = $staff->activeDayOffs->count() > 0;
+            @endphp
+
+            <section class="staff-card">
+
+                <div class="staff-top">
+
+                    <div class="staff-main">
+
+                        <div class="staff-avatar" aria-hidden="true">
+                            {{ $initials ?: 'S' }}
                         </div>
+
+                        <div>
+                            <h3>{{ $staff->full_name }}</h3>
+
+                            <p>
+                                Staff ID:
+                                #ST-{{ str_pad($staff->id,4,'0',STR_PAD_LEFT) }}
+                            </p>
+
+                            <p>
+                                Created:
+                                {{ $staff->created_at?->format('F d, Y h:i A') ?? 'Not recorded' }}
+                            </p>
+                        </div>
+
                     </div>
 
-                    <div>
-                        <label>Day Off Start Date</label>
-                        <input type="date" name="off_start_date" min="{{ now()->toDateString() }}">
+                    <div class="badge-row">
+
+                        @if ($hasDayOff)
+                            <span class="dayoff-badge">
+                                Has Day Off
+                            </span>
+                        @endif
+
+                        <span class="status {{ $statusKey }}">
+                            {{ $staff->status }}
+                        </span>
+
                     </div>
 
-                    <div>
-                        <label>Day Off End Date</label>
-                        <input type="date" name="off_end_date" min="{{ now()->toDateString() }}">
-                    </div>
-
-                    <div class="full">
-                        <label>Day Off Reason</label>
-                        <textarea name="off_reason" placeholder="Optional reason for staff day off."></textarea>
-                        <small class="help">For one-day day off, use the same start and end date.</small>
-                    </div>
                 </div>
 
-                @if ($staff->activeDayOffs->count() > 0)
-                    <div class="dayoff-list">
-                        @foreach ($staff->activeDayOffs as $dayOff)
-                            <div class="dayoff-item">
-                                <p>
-                                    <strong>
-                                        {{ $dayOff->start_date->format('M d, Y') }}
-                                        -
-                                        {{ $dayOff->end_date->format('M d, Y') }}
-                                    </strong>
-                                    <br>
-                                    {{ $dayOff->reason ?: 'No reason provided.' }}
-                                </p>
+                <div class="details-grid">
 
-                                <button
-                                    type="submit"
-                                    form="deleteDayOffForm{{ $dayOff->id }}"
-                                    class="danger-btn"
-                                >
-                                    Remove
-                                </button>
-                            </div>
-                        @endforeach
+                    <div class="detail-box">
+                        <small>EMAIL</small>
+                        <p>{{ $staff->email ?: 'Not recorded' }}</p>
                     </div>
+
+                    <div class="detail-box">
+                        <small>PHONE</small>
+                        <p>{{ $staff->phone_number ?: 'Not recorded' }}</p>
+                    </div>
+
+                    <div class="detail-box">
+                        <small>TOTAL BOOKINGS</small>
+                        <p>{{ $staff->appointments_count }} bookings</p>
+                    </div>
+
+                    <div class="detail-box">
+                        <small>ASSIGNED SERVICES</small>
+                        <p>{{ $staff->services->count() }} services</p>
+                    </div>
+
+                </div>
+
+                <div class="skill-box">
+
+                    <small>ASSIGNED SERVICES FROM SERVICE MANAGEMENT</small>
+
+                    @forelse ($staff->services as $service)
+
+                        <span class="skill-chip">
+                            {{ $service->service_name }}
+                        </span>
+
+                    @empty
+
+                        <span class="skill-chip">
+                            No services assigned
+                        </span>
+
+                    @endforelse
+
+                </div>
+
+                @if ($hasDayOff)
+
+                    <div class="dayoff-box">
+
+                        <small>ACTIVE / UPCOMING DAY OFF</small>
+
+                        @foreach ($staff->activeDayOffs as $dayOff)
+
+                            <span class="dayoff-chip">
+                                {{ $dayOff->start_date->format('M d, Y') }}
+                                –
+                                {{ $dayOff->end_date->format('M d, Y') }}
+                            </span>
+
+                        @endforeach
+
+                    </div>
+
                 @endif
 
-                <div class="modal-actions">
-                    <button type="submit" class="modal-primary">
-                        Save Changes
+                <div class="actions">
+
+                    <button
+                        type="button"
+                        class="action-btn light-btn"
+                        onclick="openStaffModal('editStaffModal{{ $staff->id }}')"
+                    >
+                        Edit Staff
                     </button>
 
-                    <button type="button" class="modal-back" onclick="closeStaffModal('editStaffModal{{ $staff->id }}')">
-                        Back
-                    </button>
-                </div>
-            </form>
+                    <form
+                        method="POST"
+                        action="{{ route('admin.staff.status',$staff) }}"
+                    >
+                        @csrf
+                        @method('PATCH')
 
-            @foreach ($staff->activeDayOffs as $dayOff)
-                <form
-                    id="deleteDayOffForm{{ $dayOff->id }}"
-                    method="POST"
-                    action="{{ route('admin.staff.day-offs.destroy', $dayOff) }}"
-                    style="display:none;"
-                >
-                    @csrf
-                    @method('DELETE')
-                </form>
-            @endforeach
-        </div>
-    </div>
+                        <button
+                            type="submit"
+                            class="action-btn status-btn"
+                        >
+                            {{ $staff->status === 'Active' ? 'Disable Staff' : 'Enable Staff' }}
+                        </button>
+                    </form>
 
-    <div class="modal-overlay" id="deleteStaffModal{{ $staff->id }}">
-        <div class="modal">
-            <h3>Delete Staff</h3>
-
-            <div class="warning-box">
-                <strong>Are you sure you want to delete this staff?</strong>
-                <span>
-                    This staff will be moved to Deleted Staff first.
-                    It can be restored within 30 days.
-                </span>
-            </div>
-
-            <p>
-                Staff:
-                <strong>{{ $staff->full_name }}</strong>
-            </p>
-
-            <form method="POST" action="{{ route('admin.staff.destroy', $staff) }}">
-                @csrf
-                @method('DELETE')
-
-                <div class="modal-actions">
-                    <button type="submit" class="modal-danger">
+                    <button
+                        type="button"
+                        class="action-btn danger-btn"
+                        onclick="openStaffModal('deleteStaffModal{{ $staff->id }}')"
+                    >
                         Delete Staff
                     </button>
 
-                    <button type="button" class="modal-back" onclick="closeStaffModal('deleteStaffModal{{ $staff->id }}')">
-                        Back
-                    </button>
                 </div>
-            </form>
-        </div>
+
+            </section>
+
+        @empty
+
+            <div class="empty-state">
+                <h3>No Staff Found</h3>
+                <p>No staff records match the selected filters</p>
+            </div>
+
+        @endforelse
+
     </div>
-@endforeach
 
-<div class="modal-overlay" id="deletedStaffModal">
-    <div class="modal large">
-        <h3>Deleted Staff</h3>
+    <div class="pagination">
+        {{ $staffMembers->links() }}
+    </div>
 
-        <p>
-            Deleted staff can be restored within 30 days.
-            Permanent deletion is only allowed when no booking records are connected.
-        </p>
+    {{--
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Edit Staff and Emergency Day Off Popup
+    |--------------------------------------------------------------------------
+    --}}
 
-        <div class="staff-list">
-            @forelse ($deletedStaff as $staff)
-                @php
-                    $permanentDeleteDate = $staff->deleted_at
-                        ? $staff->deleted_at->copy()->addDays(30)
-                        : null;
-                @endphp
+    @foreach ($staffMembers as $staff)
 
-                <section class="deleted-card" style="padding:20px;">
-                    <div class="staff-top" style="margin-bottom:0;">
-                        <div class="staff-main">
-                            <div class="staff-avatar">
-                                {{ strtoupper(substr($staff->full_name, 0, 1)) }}
-                            </div>
+        <div
+            class="modal-overlay"
+            id="editStaffModal{{ $staff->id }}"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Edit Staff"
+        >
 
-                            <div>
-                                <h3>{{ $staff->full_name }}</h3>
+            <div class="modal large">
 
-                                <p>
-                                    Deleted:
-                                    {{ $staff->deleted_at ? $staff->deleted_at->format('F d, Y h:i A') : 'Not recorded' }}
-                                </p>
+                <h3>Edit Staff</h3>
 
-                                <p>
-                                    Permanent Deletion:
-                                    {{ $permanentDeleteDate ? $permanentDeleteDate->format('F d, Y') : 'Not recorded' }}
-                                </p>
+                <p>
+                    Update staff details, service assignments and day-off schedules
+                </p>
 
-                                <p>
-                                    Connected Bookings:
-                                    {{ $staff->appointments_count }}
-                                </p>
-                            </div>
+                <form
+                    method="POST"
+                    action="{{ route('admin.staff.update',$staff) }}"
+                    id="editStaffForm{{ $staff->id }}"
+                    onsubmit="return confirmStaffUpdate(event,{{ $staff->id }})"
+                >
+                    @csrf
+                    @method('PATCH')
+
+                    <div class="modal-grid">
+
+                        <div>
+                            <label for="staffName{{ $staff->id }}">Full Name</label>
+
+                            <input
+                                type="text"
+                                id="staffName{{ $staff->id }}"
+                                name="full_name"
+                                value="{{ $staff->full_name }}"
+                                maxlength="150"
+                                required
+                            >
                         </div>
 
-                        <div class="actions">
-                            <form method="POST" action="{{ route('admin.staff.restore', $staff->id) }}">
-                                @csrf
-                                @method('PATCH')
+                        <div>
+                            <label for="staffEmail{{ $staff->id }}">Email</label>
 
-                                <button type="submit" class="success-btn">
-                                    Restore
-                                </button>
-                            </form>
-
-                            <form method="POST" action="{{ route('admin.staff.force-delete', $staff->id) }}" onsubmit="return confirm('Permanently delete this staff now? This cannot be undone.')">
-                                @csrf
-                                @method('DELETE')
-
-                                <button type="submit" class="danger-btn">
-                                    Delete Now
-                                </button>
-                            </form>
+                            <input
+                                type="email"
+                                id="staffEmail{{ $staff->id }}"
+                                name="email"
+                                value="{{ $staff->email }}"
+                                maxlength="150"
+                                required
+                            >
                         </div>
+
+                        <div>
+                            <label for="staffPhone{{ $staff->id }}">Phone Number</label>
+
+                            <input
+                                type="text"
+                                id="staffPhone{{ $staff->id }}"
+                                name="phone_number"
+                                value="{{ $staff->phone_number }}"
+                                maxlength="30"
+                            >
+                        </div>
+
+                        <div>
+                            <label for="staffStatus{{ $staff->id }}">Status</label>
+
+                            <select
+                                id="staffStatus{{ $staff->id }}"
+                                name="status"
+                                required
+                            >
+                                <option
+                                    value="Active"
+                                    {{ $staff->status === 'Active' ? 'selected' : '' }}
+                                >
+                                    Active
+                                </option>
+
+                                <option
+                                    value="Inactive"
+                                    {{ $staff->status === 'Inactive' ? 'selected' : '' }}
+                                >
+                                    Inactive
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="full">
+
+                            <label>Assigned Services</label>
+
+                            <div class="checkbox-grid">
+
+                                @forelse ($services as $service)
+
+                                    <label class="checkbox-pill">
+
+                                        <input
+                                            type="checkbox"
+                                            name="service_ids[]"
+                                            value="{{ $service->id }}"
+                                            {{ $staff->services->contains('id',$service->id) ? 'checked' : '' }}
+                                        >
+
+                                        <span>
+                                            {{ $service->service_name }}
+                                        </span>
+
+                                    </label>
+
+                                @empty
+
+                                    <small class="help">
+                                        No services found in Service Management
+                                    </small>
+
+                                @endforelse
+
+                            </div>
+
+                        </div>
+
+                        {{--
+                        |--------------------------------------------------------------------------
+                        | NS BEAUTY COMMENT: Emergency or Regular Day Off
+                        |--------------------------------------------------------------------------
+                        | Uses existing controller fields
+                        |--------------------------------------------------------------------------
+                        --}}
+
+                        <div class="full">
+
+                            <div class="emergency-info">
+
+                                <h4>Staff Day Off and Emergency Scheduling</h4>
+
+                                <p>
+                                    When a new day off is recorded, the system checks
+                                    affected upcoming appointments
+                                </p>
+
+                                <ol>
+                                    <li>
+                                        <strong>Replacement available</strong> —
+                                        The system attempts to assign another active
+                                        beautician qualified for all selected services
+                                        without changing the appointment time
+                                    </li>
+
+                                    <li>
+                                        <strong>No replacement available</strong> —
+                                        The customer is notified that rescheduling is required
+                                    </li>
+
+                                    <li>
+                                        <strong>Notifications</strong> —
+                                        Customers receive an in-app notice through
+                                        the notification system, with email delivery
+                                        dependent on the configured notification service
+                                    </li>
+                                </ol>
+
+                                <p style="margin-top:12px">
+                                    Shop closing day: <strong>Every Sunday</strong>
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                        <div>
+                            <label for="offStart{{ $staff->id }}">
+                                Day Off Start Date
+                            </label>
+
+                            <input
+                                type="date"
+                                id="offStart{{ $staff->id }}"
+                                name="off_start_date"
+                                min="{{ \Carbon\Carbon::today('Asia/Kuala_Lumpur')->toDateString() }}"
+                            >
+                        </div>
+
+                        <div>
+                            <label for="offEnd{{ $staff->id }}">
+                                Day Off End Date
+                            </label>
+
+                            <input
+                                type="date"
+                                id="offEnd{{ $staff->id }}"
+                                name="off_end_date"
+                                min="{{ \Carbon\Carbon::today('Asia/Kuala_Lumpur')->toDateString() }}"
+                            >
+                        </div>
+
+                        <div class="full">
+
+                            <label for="offReason{{ $staff->id }}">
+                                Day Off Reason
+                            </label>
+
+                            <textarea
+                                id="offReason{{ $staff->id }}"
+                                name="off_reason"
+                                maxlength="1000"
+                                placeholder="Enter reason for leave or emergency"
+                            ></textarea>
+
+                            <small class="help">
+                                For a one-day absence, choose the same start and end date
+                            </small>
+
+                        </div>
+
+                        <div class="full">
+
+                            <label class="emergency-confirm">
+
+                                <input
+                                    type="checkbox"
+                                    id="emergencyAcknowledgement{{ $staff->id }}"
+                                >
+
+                                <span>
+                                    I understand that recording a new day off may
+                                    automatically reassign affected appointments
+                                    or notify customers that rescheduling is required
+                                </span>
+
+                            </label>
+
+                            <small class="help">
+                                Required only when a new day-off date range is entered
+                            </small>
+
+                        </div>
+
                     </div>
-                </section>
-            @empty
-                <div class="empty-state">
-                    <h3>No deleted staff</h3>
-                    <p>Deleted staff records will appear here.</p>
-                </div>
-            @endforelse
+
+                    {{--
+                    |--------------------------------------------------------------------------
+                    | NS BEAUTY COMMENT: Existing Day Off Records
+                    |--------------------------------------------------------------------------
+                    --}}
+
+                    @if ($staff->activeDayOffs->count() > 0)
+
+                        <div class="dayoff-list">
+
+                            @foreach ($staff->activeDayOffs as $dayOff)
+
+                                <div class="dayoff-item">
+
+                                    <p>
+                                        <strong>
+                                            {{ $dayOff->start_date->format('M d, Y') }}
+                                            –
+                                            {{ $dayOff->end_date->format('M d, Y') }}
+                                        </strong>
+
+                                        <span style="display:block;margin-top:5px">
+                                            {{ $dayOff->reason ?: 'No reason provided' }}
+                                        </span>
+                                    </p>
+
+                                    <button
+                                        type="submit"
+                                        form="deleteDayOffForm{{ $dayOff->id }}"
+                                        class="danger-btn"
+                                    >
+                                        Remove
+                                    </button>
+
+                                </div>
+
+                            @endforeach
+
+                        </div>
+
+                    @endif
+
+                    <div class="modal-actions">
+
+                        <button
+                            type="submit"
+                            class="modal-primary"
+                            id="saveStaffBtn{{ $staff->id }}"
+                        >
+                            Save Changes
+                        </button>
+
+                        <button
+                            type="button"
+                            class="modal-back"
+                            onclick="closeStaffModal('editStaffModal{{ $staff->id }}')"
+                        >
+                            Back
+                        </button>
+
+                    </div>
+
+                </form>
+
+                {{--
+                |--------------------------------------------------------------------------
+                | NS BEAUTY COMMENT: Separate Day Off Removal Forms
+                |--------------------------------------------------------------------------
+                --}}
+
+                @foreach ($staff->activeDayOffs as $dayOff)
+
+                    <form
+                        id="deleteDayOffForm{{ $dayOff->id }}"
+                        method="POST"
+                        action="{{ route('admin.staff.day-offs.destroy',$dayOff) }}"
+                        style="display:none"
+                    >
+                        @csrf
+                        @method('DELETE')
+                    </form>
+
+                @endforeach
+
+            </div>
         </div>
 
-        <div class="modal-actions">
-            <button type="button" class="modal-back" onclick="closeStaffModal('deletedStaffModal')">
-                Back
-            </button>
+        {{--
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Delete Staff Popup
+        |--------------------------------------------------------------------------
+        --}}
+
+        <div
+            class="modal-overlay"
+            id="deleteStaffModal{{ $staff->id }}"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Delete Staff"
+        >
+
+            <div class="modal">
+
+                <h3>Delete Staff</h3>
+
+                <div class="warning-box">
+
+                    <strong>Delete this staff member?</strong>
+
+                    <span>
+                        The staff account will be moved to Deleted Staff
+                        and may be restored within 30 days
+                    </span>
+
+                </div>
+
+                <p>
+                    Staff: <strong>{{ $staff->full_name }}</strong>
+                </p>
+
+                <form
+                    method="POST"
+                    action="{{ route('admin.staff.destroy',$staff) }}"
+                >
+                    @csrf
+                    @method('DELETE')
+
+                    <div class="modal-actions">
+
+                        <button
+                            type="submit"
+                            class="modal-danger"
+                        >
+                            Delete Staff
+                        </button>
+
+                        <button
+                            type="button"
+                            class="modal-back"
+                            onclick="closeStaffModal('deleteStaffModal{{ $staff->id }}')"
+                        >
+                            Back
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
         </div>
+
+    @endforeach
+
+    {{--
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Deleted Staff Popup
+    |--------------------------------------------------------------------------
+    --}}
+
+    <div
+        class="modal-overlay"
+        id="deletedStaffModal"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Deleted Staff"
+    >
+
+        <div class="modal large">
+
+            <h3>Deleted Staff</h3>
+
+            <p>
+                Deleted staff can be restored within 30 days
+                Permanent deletion is only allowed when no linked booking records exist
+            </p>
+
+            <div class="staff-list">
+
+                @forelse ($deletedStaff as $staff)
+
+                    @php
+                        $permanentDeleteDate = $staff->deleted_at
+                            ? $staff->deleted_at->copy()->addDays(30)
+                            : null;
+                    @endphp
+
+                    <section class="deleted-card" style="padding:20px">
+
+                        <div class="staff-top" style="margin-bottom:0">
+
+                            <div class="staff-main">
+
+                                <div class="staff-avatar">
+                                    {{ strtoupper(substr($staff->full_name,0,1)) }}
+                                </div>
+
+                                <div>
+                                    <h3>{{ $staff->full_name }}</h3>
+
+                                    <p>
+                                        Deleted:
+                                        {{ $staff->deleted_at?->format('F d, Y h:i A') ?? 'Not recorded' }}
+                                    </p>
+
+                                    <p>
+                                        Permanent Deletion:
+                                        {{ $permanentDeleteDate?->format('F d, Y') ?? 'Not recorded' }}
+                                    </p>
+
+                                    <p>
+                                        Connected Bookings:
+                                        {{ $staff->appointments_count }}
+                                    </p>
+                                </div>
+
+                            </div>
+
+                            <div class="actions">
+
+                                <form
+                                    method="POST"
+                                    action="{{ route('admin.staff.restore',$staff->id) }}"
+                                >
+                                    @csrf
+                                    @method('PATCH')
+
+                                    <button
+                                        type="submit"
+                                        class="success-btn"
+                                    >
+                                        Restore
+                                    </button>
+                                </form>
+
+                                <form
+                                    method="POST"
+                                    action="{{ route('admin.staff.force-delete',$staff->id) }}"
+                                    onsubmit="return confirm('Permanently delete this staff member? This action cannot be undone')"
+                                >
+                                    @csrf
+                                    @method('DELETE')
+
+                                    <button
+                                        type="submit"
+                                        class="danger-btn"
+                                    >
+                                        Delete Now
+                                    </button>
+                                </form>
+
+                            </div>
+
+                        </div>
+
+                    </section>
+
+                @empty
+
+                    <div class="empty-state">
+                        <h3>No Deleted Staff</h3>
+
+                        <p>
+                            Deleted staff records will appear here
+                        </p>
+                    </div>
+
+                @endforelse
+
+            </div>
+
+            <div class="modal-actions">
+
+                <button
+                    type="button"
+                    class="modal-back"
+                    onclick="closeStaffModal('deletedStaffModal')"
+                >
+                    Back
+                </button>
+
+            </div>
+
+        </div>
+
     </div>
+
 </div>
 
 @endsection
@@ -1189,49 +1876,129 @@ aside.sidebar,
 <script>
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT:
-| Staff Modal Script
+| NS BEAUTY COMMENT: Staff Management Popup Controls
 |--------------------------------------------------------------------------
-| Purpose:
-| - Opens edit staff popup.
-| - Opens delete staff popup.
-| - Opens deleted staff popup.
+| - Open and close modals
+| - Keep scroll position manageable
+| - No unnecessary close icons
 |--------------------------------------------------------------------------
 */
+
 function openStaffModal(id) {
     const modal = document.getElementById(id);
 
-    if (modal) {
-        modal.classList.add('show');
-
-        const modalBox = modal.querySelector('.modal');
-
-        if (modalBox) {
-            modalBox.scrollTop = 0;
-        }
-
-        modal.scrollTop = 0;
+    if (!modal) {
+        return;
     }
+
+    modal.classList.add("show");
+
+    const modalContent = modal.querySelector(".modal");
+
+    if (modalContent) {
+        modalContent.scrollTop = 0;
+    }
+
+    modal.scrollTop = 0;
 }
 
 function closeStaffModal(id) {
     const modal = document.getElementById(id);
 
     if (modal) {
-        modal.classList.remove('show');
+        modal.classList.remove("show");
     }
 }
 
-document.addEventListener('click', function(event) {
-    if (event.target.classList.contains('modal-overlay')) {
-        event.target.classList.remove('show');
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Day Off Confirmation
+|--------------------------------------------------------------------------
+| Require explicit acknowledgement only when day-off dates are entered
+|--------------------------------------------------------------------------
+*/
+
+function confirmStaffUpdate(event, staffId) {
+    const startInput = document.getElementById(
+        "offStart" + staffId
+    );
+
+    const endInput = document.getElementById(
+        "offEnd" + staffId
+    );
+
+    const acknowledgement = document.getElementById(
+        "emergencyAcknowledgement" + staffId
+    );
+
+    const start = startInput ? startInput.value : "";
+    const end = endInput ? endInput.value : "";
+
+    if ((start && !end) || (!start && end)) {
+        event.preventDefault();
+
+        alert("Please provide both the start and end dates for the day off");
+
+        return false;
+    }
+
+    if (start && end && end < start) {
+        event.preventDefault();
+
+        alert("The end date cannot be earlier than the start date");
+
+        return false;
+    }
+
+    if (start && end && acknowledgement && !acknowledgement.checked) {
+        event.preventDefault();
+
+        alert(
+            "Please acknowledge the emergency scheduling information before saving the day off"
+        );
+
+        return false;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Allow Normal Laravel Form Submission
+    |--------------------------------------------------------------------------
+    | CSRF and database validation remain on the controller
+    |--------------------------------------------------------------------------
+    */
+
+    const submitButton = document.getElementById(
+        "saveStaffBtn" + staffId
+    );
+
+    if (submitButton) {
+        submitButton.disabled = true;
+
+        submitButton.textContent = start && end
+            ? "Checking Affected Bookings"
+            : "Saving Changes";
+    }
+
+    return true;
+}
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Modal Background Controls
+|--------------------------------------------------------------------------
+*/
+
+document.addEventListener("click", function(event) {
+    if (event.target.classList.contains("modal-overlay")) {
+        event.target.classList.remove("show");
     }
 });
 
-document.addEventListener('keydown', function(event) {
-    if (event.key === 'Escape') {
-        document.querySelectorAll('.modal-overlay.show').forEach(function(modal) {
-            modal.classList.remove('show');
+document.addEventListener("keydown", function(event) {
+    if (event.key === "Escape") {
+        document.querySelectorAll(".modal-overlay.show").forEach(function(modal) {
+            modal.classList.remove("show");
         });
     }
 });
