@@ -1,221 +1,497 @@
+
 @extends('layouts.app')
+
+{{--
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: ADMIN SYSTEM SETTINGS
+|--------------------------------------------------------------------------
+| Nail Studio & Beauty
+|
+| Purpose:
+| - Display the documented booking policies
+| - Display the configured notification policies
+| - Display booking schedule information
+| - Provide operational and configuration references
+|
+| Important:
+| - Security Settings are excluded from this page.
+| - Business Information is managed through Content Management.
+| - Emergency closures are managed through Booking Management.
+| - This page is intentionally read-only.
+| - No database update or configuration changes occur here.
+|
+| Defense Explanation:
+| System Settings provides administrators with an overview of
+| business scheduling and notification policies. Security-related
+| configurations remain under developer/IT control to prevent
+| unauthorized changes to security restrictions.
+|--------------------------------------------------------------------------
+--}}
 
 @section('styles')
 <style>
-.page-header {
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Page Header
+|--------------------------------------------------------------------------
+*/
+
+.settings-page .page-header {
     margin-bottom: 28px;
 }
 
-.page-header h1 {
+.settings-page .page-header h1 {
     font-size: 34px;
     margin-bottom: 8px;
 }
 
-.page-header p {
+.settings-page .page-header p {
     color: var(--muted);
     font-size: 14px;
+    line-height: 1.7;
 }
 
-.settings-grid {
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Settings Grid
+|--------------------------------------------------------------------------
+*/
+
+.settings-page .settings-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 24px;
+    align-items: start;
 }
 
-.card {
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Main Cards
+| Border radius: 24px
+|--------------------------------------------------------------------------
+*/
+
+.settings-page .settings-card {
+    min-width: 0;
+    padding: 28px;
+
     background: var(--glass);
     backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+
     border: 1px solid var(--border);
-    border-radius: 30px;
-    padding: 28px;
+    border-radius: 24px;
+
     box-shadow:
         0 20px 60px rgba(47,33,24,.08),
         inset 0 1px 0 rgba(255,255,255,.7);
 }
 
-.card h3 {
-    margin-bottom: 18px;
+.settings-page .settings-card h3 {
+    margin: 0 0 8px;
+    font-size: 19px;
+    color: var(--dark);
 }
 
-label {
-    display: block;
-    margin-bottom: 8px;
-    font-size: 13px;
-    font-weight: 700;
-}
-
-input,
-select,
-textarea {
-    width: 100%;
-    padding: 14px;
-    border-radius: 16px;
-    border: 1px solid var(--border);
-    background: rgba(255,255,255,.65);
-    outline: none;
-    margin-bottom: 18px;
-}
-
-textarea {
-    height: 90px;
-    resize: none;
-}
-
-.save-btn {
-    padding: 14px 24px;
-    border: none;
-    border-radius: 999px;
-    background: linear-gradient(135deg,#8a7158,#5d3f2c);
-    color: white;
-    font-weight: 800;
-    cursor: pointer;
-}
-
-.setting-note {
-    padding: 16px;
-    border-radius: 20px;
-    background: rgba(255,255,255,.45);
-    border: 1px solid rgba(255,255,255,.65);
+.settings-page .card-description {
+    margin: 0 0 20px;
     color: var(--muted);
     font-size: 13px;
-    line-height: 1.6;
-    margin-bottom: 18px;
+    line-height: 1.7;
 }
 
-@media(max-width:900px) {
-    .settings-grid {
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Inner Information Cards
+| Border radius: 14px
+|--------------------------------------------------------------------------
+*/
+
+.settings-page .setting-item {
+    min-width: 0;
+    padding: 16px;
+    margin-bottom: 12px;
+
+    border-radius: 14px;
+
+    background: rgba(255,255,255,.45);
+    border: 1px solid rgba(255,255,255,.65);
+}
+
+.settings-page .setting-item:last-child {
+    margin-bottom: 0;
+}
+
+.settings-page .setting-item small {
+    display: block;
+    margin-bottom: 7px;
+
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 900;
+}
+
+.settings-page .setting-item p {
+    margin: 0;
+    color: var(--dark);
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+.settings-page .setting-item .secondary-text {
+    margin-top: 5px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Information Notes
+|--------------------------------------------------------------------------
+*/
+
+.settings-page .setting-note {
+    margin-top: 18px;
+    padding: 16px;
+
+    border-radius: 14px;
+
+    background: rgba(138,113,88,.08);
+    border: 1px solid rgba(138,113,88,.18);
+
+    color: #6f4e37;
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.settings-page .setting-note strong {
+    color: var(--dark);
+}
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Module Navigation
+|--------------------------------------------------------------------------
+*/
+
+.settings-page .settings-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.settings-page .settings-link {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+
+    min-height: 43px;
+    padding: 11px 18px;
+
+    border-radius: 14px;
+    border: 1px solid var(--border);
+
+    background: rgba(255,255,255,.65);
+    color: var(--dark);
+
+    font-size: 12px;
+    font-weight: 800;
+    text-decoration: none;
+
+    transition: background .2s ease;
+}
+
+.settings-page .settings-link:hover {
+    background: rgba(255,255,255,.95);
+}
+
+.settings-page .settings-link:focus-visible {
+    outline: 3px solid rgba(138,113,88,.30);
+    outline-offset: 3px;
+}
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Responsive Layout
+|--------------------------------------------------------------------------
+*/
+
+@media (max-width: 900px) {
+    .settings-page .settings-grid {
         grid-template-columns: 1fr;
     }
 }
+
+@media (max-width: 550px) {
+    .settings-page .page-header h1 {
+        font-size: 28px;
+    }
+
+    .settings-page .settings-card {
+        padding: 20px;
+    }
+
+    .settings-page .settings-link {
+        width: 100%;
+    }
+}
+
 </style>
 @endsection
 
 @section('content')
 
-<div class="page-header">
-    <h1>System Settings</h1>
-    <p>Manage booking rules, security settings, reminders, and business configuration.</p>
-</div>
+<div class="settings-page">
 
-<div class="settings-grid">
+    {{--
+    |--------------------------------------------------------------------------
+    | NS BEAUTY COMMENT: Page Header
+    |--------------------------------------------------------------------------
+    --}}
 
-    <section class="card">
-        <h3>Booking Rules</h3>
+    <div class="page-header">
+        <h1>System Settings</h1>
 
-        <form>
-            <label>Maximum Services Per Booking</label>
-            <input type="number" value="3">
+        <p>
+            Review booking policies, notification configuration,
+            scheduling rules, and operational information.
+        </p>
+    </div>
 
-            <label>New Customer Active Booking Limit</label>
-            <input type="number" value="1">
+    <div class="settings-grid">
 
-            <label>Returning Customer Active Booking Limit</label>
-            <input type="number" value="2">
+        {{--
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Booking Policies
+        |--------------------------------------------------------------------------
+        | Values are informational.
+        | Changing policies requires updating the relevant
+        | backend validation and booking configuration.
+        |--------------------------------------------------------------------------
+        --}}
 
-            <label>Advance Booking Limit</label>
-            <select>
-                <option selected>7 Days</option>
-                <option>14 Days</option>
-                <option>30 Days</option>
-            </select>
+        <section class="settings-card">
 
-            <label>Slot Hold Duration</label>
-            <select>
-                <option selected>5 Minutes</option>
-                <option>10 Minutes</option>
-                <option>15 Minutes</option>
-            </select>
+            <h3>Booking Policies</h3>
 
-            <button type="button" class="save-btn">Save Booking Rules</button>
-        </form>
-    </section>
+            <p class="card-description">
+                Standard booking policies documented for
+                Nail Studio & Beauty.
+            </p>
 
-    <section class="card">
-        <h3>Security Settings</h3>
+            <div class="setting-item">
+                <small>MAXIMUM SERVICES PER BOOKING</small>
+                <p>3 Services</p>
+            </div>
 
-        <form>
-            <label>Login Attempt Limit</label>
-            <input type="number" value="5">
+            <div class="setting-item">
+                <small>NEW CUSTOMER ACTIVE BOOKING LIMIT</small>
+                <p>1 Active Booking</p>
+            </div>
 
-            <label>Account Lock Duration</label>
-            <select>
-                <option selected>5 Minutes</option>
-                <option>10 Minutes</option>
-                <option>30 Minutes</option>
-            </select>
+            <div class="setting-item">
+                <small>RETURNING CUSTOMER ACTIVE BOOKING LIMIT</small>
+                <p>2 Active Bookings</p>
+            </div>
 
-            <label>Session Timeout</label>
-            <select>
-                <option selected>15 Minutes</option>
-                <option>30 Minutes</option>
-                <option>1 Hour</option>
-            </select>
+            <div class="setting-item">
+                <small>ADVANCE BOOKING WINDOW</small>
+                <p>7 Calendar Days</p>
+            </div>
 
-            <label>Booking Request Rate Limit</label>
-            <select>
-                <option selected>1 request every 10 seconds</option>
-                <option>1 request every 30 seconds</option>
-                <option>1 request every 1 minute</option>
-            </select>
+            <div class="setting-item">
+                <small>BOOKING SLOT HOLD DURATION</small>
+                <p>5 Minutes</p>
+            </div>
 
-            <button type="button" class="save-btn">Save Security Settings</button>
-        </form>
-    </section>
+            <div class="setting-note">
+                <strong>Booking Policy Notice</strong>
 
-    <section class="card">
-        <h3>Notification Settings</h3>
+                These values are provided for reference only.
+                Actual booking restrictions are controlled by
+                the booking system and cannot be edited here.
+            </div>
 
-        <form>
-            <label>Email Confirmation</label>
-            <select>
-                <option selected>Enabled</option>
-                <option>Disabled</option>
-            </select>
+        </section>
 
-            <label>Reminder Before Appointment</label>
-            <select>
-                <option selected>24 Hours Before</option>
-                <option>12 Hours Before</option>
-                <option>6 Hours Before</option>
-            </select>
+        {{--
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Notification Configuration
+        |--------------------------------------------------------------------------
+        | This section describes intended notification behavior.
+        | It does not report live email delivery status.
+        |--------------------------------------------------------------------------
+        --}}
 
-            <label>Admin Alert for Suspicious Activity</label>
-            <select>
-                <option selected>Enabled</option>
-                <option>Disabled</option>
-            </select>
+        <section class="settings-card">
 
-            <button type="button" class="save-btn">Save Notification Settings</button>
-        </form>
-    </section>
+            <h3>Notification Configuration</h3>
 
-    <section class="card">
-        <h3>Business Settings</h3>
+            <p class="card-description">
+                Review the notification features configured
+                for bookings and customer updates.
+            </p>
 
-        <form>
-            <label>Business Name</label>
-            <input type="text" value="Nail Studio & Beauty">
+            <div class="setting-item">
+                <small>BOOKING CONFIRMATION</small>
+                <p>Email and In-App Notifications</p>
+            </div>
 
-            <label>Business Location</label>
-            <textarea>Kedai Sedco Block E, Lot 3, Ground Floor, Donggongon, Penampang, Sabah, Malaysia</textarea>
+            <div class="setting-item">
+                <small>APPOINTMENT REMINDERS</small>
+                <p>24 Hours and 2 Hours Before</p>
+            </div>
 
-            <label>Default Currency</label>
-            <select>
-                <option selected>MYR / RM</option>
-                <option>PHP / ₱</option>
-                <option>USD / $</option>
-            </select>
+            <div class="setting-item">
+                <small>BOOKING STATUS UPDATES</small>
+                <p>In-App Notification System</p>
+            </div>
 
-            <label>Operating Status</label>
-            <select>
-                <option selected>Open</option>
-                <option>Temporarily Closed</option>
-                <option>Maintenance Mode</option>
-            </select>
+            <div class="setting-item">
+                <small>EMERGENCY CLOSURE NOTIFICATIONS</small>
+                <p>Email and In-App Notifications</p>
+            </div>
 
-            <button type="button" class="save-btn">Save Business Settings</button>
-        </form>
-    </section>
+            <div class="setting-note">
+                <strong>Notification Notice</strong>
+
+                Reminder delivery depends on the email
+                configuration and scheduled command.
+                This page does not verify whether notifications
+                were successfully delivered.
+            </div>
+
+        </section>
+
+        {{--
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: Booking Schedule
+        |--------------------------------------------------------------------------
+        | Do not confuse public-facing opening hours with
+        | booking availability enforced by the backend.
+        |--------------------------------------------------------------------------
+        --}}
+
+        <section class="settings-card">
+
+            <h3>Booking Schedule</h3>
+
+            <p class="card-description">
+                Reference information about appointment
+                scheduling and studio availability.
+            </p>
+
+            <div class="setting-item">
+                <small>BOOKABLE DAYS</small>
+                <p>Monday to Saturday</p>
+            </div>
+
+            <div class="setting-item">
+                <small>REGULAR CLOSED DAY</small>
+                <p>Sunday</p>
+            </div>
+
+            <div class="setting-item">
+                <small>APPOINTMENT START TIMES</small>
+                <p>10:00 AM to 4:00 PM</p>
+
+                <p class="secondary-text">
+                    Based on the documented booking schedule.
+                    Actual availability also depends on service
+                    duration and staff availability.
+                </p>
+            </div>
+
+            <div class="setting-item">
+                <small>TIME ZONE</small>
+                <p>Asia/Kuala_Lumpur (MYT)</p>
+            </div>
+
+            <div class="setting-item">
+                <small>EMERGENCY STUDIO CLOSURES</small>
+                <p>Managed through Booking Management</p>
+            </div>
+
+            <div class="setting-note">
+                <strong>Scheduling Notice</strong>
+
+                Public opening hours are managed separately
+                through Content Management. The booking
+                backend determines which appointment
+                slots can actually be selected.
+            </div>
+
+        </section>
+
+        {{--
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: System Status
+        |--------------------------------------------------------------------------
+        | Avoid displaying misleading "Online" or "Healthy"
+        | labels without real backend health checks.
+        |--------------------------------------------------------------------------
+        --}}
+
+        <section class="settings-card">
+
+            <h3>System Status</h3>
+
+            <p class="card-description">
+                General information about system configuration
+                and operational responsibilities.
+            </p>
+
+            <div class="setting-item">
+                <small>WEBSITE CONTENT</small>
+                <p>Managed through Content Management</p>
+            </div>
+
+            <div class="setting-item">
+                <small>APPOINTMENT MANAGEMENT</small>
+                <p>Managed through Booking Management</p>
+            </div>
+
+            <div class="setting-item">
+                <small>EMAIL DELIVERY STATUS</small>
+                <p>Not monitored on this page</p>
+
+                <p class="secondary-text">
+                    Requires verification of the production
+                    email configuration and delivery logs.
+                </p>
+            </div>
+
+            <div class="setting-item">
+                <small>REMINDER SCHEDULER STATUS</small>
+                <p>Not monitored on this page</p>
+
+                <p class="secondary-text">
+                    Requires a production scheduler check
+                    and confirmation of actual reminder delivery.
+                </p>
+            </div>
+
+            <div class="setting-item">
+                <small>SECURITY CONFIGURATION</small>
+                <p>Managed by authorized IT personnel</p>
+            </div>
+
+            <div class="setting-note">
+                <strong>System Status Notice</strong>
+
+                This section provides configuration
+                information only. It does not perform
+                real-time system health monitoring.
+            </div>
+
+        </section>
+
+    </div>
 
 </div>
 
