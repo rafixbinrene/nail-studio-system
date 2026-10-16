@@ -12,17 +12,21 @@
 | - Staff
 | - Customer
 |
-| Improvements:
+| Features preserved:
 | - Mark as Read without leaving the Notifications page
 | - Mark All as Read without redirecting
-| - Update notification appearance immediately after server success
-| - Prevent duplicate button submissions
-| - Preserve existing PATCH routes and CSRF protection
-| - Preserve pagination and read/unread statuses
+| - AJAX requests using existing Laravel PATCH routes
+| - CSRF protection
+| - Read and unread notification states
+| - Notification titles, messages and timestamps
+| - Database persistence through existing controllers
+| - Pagination
 |
-| Backend:
-| Existing notification controllers remain responsible for
-| updating notification read_at in the database.
+| Frontend improvements:
+| - Fixed oversized Laravel pagination arrow
+| - Main notification cards: 24px radius
+| - Buttons and alerts: 14px radius
+| - Responsive pagination and mobile layout
 |--------------------------------------------------------------------------
 --}}
 
@@ -31,9 +35,14 @@
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Notification Page
+| NS BEAUTY COMMENT: Notification Page Header
 |--------------------------------------------------------------------------
 */
+
+.ns-notifications {
+    width: 100%;
+    min-width: 0;
+}
 
 .ns-notifications .page-header {
     display: flex;
@@ -51,6 +60,7 @@
 .ns-notifications .page-header p {
     color: var(--muted);
     font-size: 14px;
+    line-height: 1.6;
 }
 
 /*
@@ -81,7 +91,7 @@
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Header Button
+| NS BEAUTY COMMENT: Mark All as Read Button
 |--------------------------------------------------------------------------
 */
 
@@ -104,18 +114,29 @@
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Notification Cards
+| NS BEAUTY COMMENT: Notification List
 |--------------------------------------------------------------------------
 */
 
 .ns-notifications .notification-list {
     display: grid;
     gap: 16px;
+    min-width: 0;
 }
 
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Notification Cards
+|--------------------------------------------------------------------------
+| Main card radius: 24px.
+|--------------------------------------------------------------------------
+*/
+
 .ns-notifications .notification-card {
+    min-width: 0;
     background: var(--glass);
     backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
     border: 1px solid var(--border);
     border-radius: 24px;
     padding: 22px;
@@ -146,6 +167,7 @@
 
 .ns-notifications .notification-top h3 {
     font-size: 16px;
+    overflow-wrap: anywhere;
 }
 
 .ns-notifications .notification-time {
@@ -211,7 +233,7 @@
 
 /*
 |--------------------------------------------------------------------------
-| NS BEAUTY COMMENT: Empty State
+| NS BEAUTY COMMENT: Empty Notification State
 |--------------------------------------------------------------------------
 */
 
@@ -229,8 +251,119 @@
     margin-bottom: 8px;
 }
 
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: FIX OVERSIZED PAGINATION ICONS
+|--------------------------------------------------------------------------
+|
+| Problem:
+| Laravel's default pagination uses SVG arrow icons.
+| Without appropriate SVG sizing, a global stylesheet or
+| missing Tailwind utility classes can make the arrows huge.
+|
+| Solution:
+| Limit the pagination arrow dimensions to 20px.
+|
+| Scope:
+| Only the shared Notifications page.
+| Does not affect any other website icons or charts.
+|--------------------------------------------------------------------------
+*/
+
 .ns-notifications .pagination-wrap {
     margin-top: 22px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Pagination SVG Size
+|--------------------------------------------------------------------------
+| Prevent previous and next arrows from stretching.
+|--------------------------------------------------------------------------
+*/
+
+.ns-notifications .pagination-wrap svg {
+    display: inline-block !important;
+
+    width: 20px !important;
+    height: 20px !important;
+
+    min-width: 20px !important;
+    min-height: 20px !important;
+
+    max-width: 20px !important;
+    max-height: 20px !important;
+
+    flex: 0 0 20px !important;
+
+    vertical-align: middle;
+}
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Pagination Navigation Container
+|--------------------------------------------------------------------------
+*/
+
+.ns-notifications .pagination-wrap nav {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    font-size: 13px;
+    color: var(--muted);
+}
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Pagination Alignment
+|--------------------------------------------------------------------------
+*/
+
+.ns-notifications .pagination-wrap a,
+.ns-notifications .pagination-wrap span {
+    box-sizing: border-box;
+}
+
+.ns-notifications .pagination-wrap a svg,
+.ns-notifications .pagination-wrap span svg {
+    width: 20px !important;
+    height: 20px !important;
+    max-width: 20px !important;
+    max-height: 20px !important;
+}
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Pagination Button Appearance
+|--------------------------------------------------------------------------
+| Preserve Laravel's pagination links and current-page state.
+|--------------------------------------------------------------------------
+*/
+
+.ns-notifications .pagination-wrap a {
+    border-radius: 14px;
+    text-decoration: none;
+    transition: background .2s ease;
+}
+
+.ns-notifications .pagination-wrap a:hover {
+    background-color: rgba(138,113,88,.08);
+}
+
+/*
+|--------------------------------------------------------------------------
+| NS BEAUTY COMMENT: Pagination Focus State
+|--------------------------------------------------------------------------
+*/
+
+.ns-notifications .pagination-wrap a:focus-visible {
+    outline: 2px solid rgba(138,113,88,.4);
+    outline-offset: 2px;
 }
 
 /*
@@ -266,6 +399,10 @@
     .ns-notifications .read-all-btn {
         width: 100%;
     }
+
+    .ns-notifications .pagination-wrap {
+        margin-top: 18px;
+    }
 }
 
 </style>
@@ -278,7 +415,7 @@
     |--------------------------------------------------------------------------
     | NS BEAUTY COMMENT: Shared Role-Based Notification Routes
     |--------------------------------------------------------------------------
-    | Preserve original Admin, Staff and Customer routes.
+    | Original Admin, Staff and Customer routes preserved.
     |--------------------------------------------------------------------------
     */
 
@@ -318,8 +455,8 @@
         |--------------------------------------------------------------------------
         | NS BEAUTY COMMENT: Mark All as Read
         |--------------------------------------------------------------------------
-        | Keep the existing Laravel PATCH route.
-        | JavaScript prevents the browser redirect.
+        | Keep existing Laravel PATCH route.
+        | JavaScript prevents browser navigation.
         |--------------------------------------------------------------------------
         --}}
 
@@ -396,7 +533,7 @@
                         | NS BEAUTY COMMENT: Individual Mark as Read
                         |--------------------------------------------------------------------------
                         | No Open button.
-                        | Submit via JavaScript without changing page.
+                        | AJAX submission without leaving the page.
                         |--------------------------------------------------------------------------
                         --}}
 
@@ -442,6 +579,9 @@
     |--------------------------------------------------------------------------
     | NS BEAUTY COMMENT: Pagination
     |--------------------------------------------------------------------------
+    | SVG arrows are constrained by the CSS rules above.
+    | Original Laravel pagination functionality is preserved.
+    |--------------------------------------------------------------------------
     --}}
 
     <div class="pagination-wrap">
@@ -461,12 +601,10 @@
 |--------------------------------------------------------------------------
 |
 | Purpose:
-| - Send the existing PATCH forms without navigating away.
-| - Keep CSRF protection.
-| - Preserve Admin, Staff, and Customer route handling.
-| - Update the card only after Laravel responds successfully.
-|
-| Backend controllers still update read_at in the database.
+| - Submit existing PATCH forms without redirecting.
+| - Preserve CSRF protection.
+| - Support Admin, Staff and Customer routes.
+| - Update notification cards after successful responses.
 |--------------------------------------------------------------------------
 */
 
@@ -484,11 +622,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: Display Result Message
+    | NS BEAUTY COMMENT: Display Feedback Message
     |--------------------------------------------------------------------------
     */
 
     function showMessage(message, isError = false) {
+
         if (!feedback) {
             return;
         }
@@ -503,7 +642,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: Mark a Card as Read
+    | NS BEAUTY COMMENT: Update Read State
     |--------------------------------------------------------------------------
     */
 
@@ -525,7 +664,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Replace Button with Read Label
+        | NS BEAUTY COMMENT: Replace Mark as Read Button
         |--------------------------------------------------------------------------
         */
 
@@ -542,7 +681,6 @@ document.addEventListener('DOMContentLoaded', function () {
             const label = document.createElement('span');
 
             label.className = 'read-label';
-
             label.textContent = 'Read';
 
             actions.appendChild(label);
@@ -551,15 +689,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: AJAX PATCH Request
+    | NS BEAUTY COMMENT: Submit Existing Laravel Form
     |--------------------------------------------------------------------------
     |
-    | FormData includes:
-    | - _token
-    | - _method = PATCH
+    | The existing POST form includes:
+    | - CSRF token
+    | - _method PATCH
     |
-    | The request is sent to the existing Laravel route.
-    | The browser itself never navigates to the redirect.
+    | Fetch processes the response without changing pages.
     |--------------------------------------------------------------------------
     */
 
@@ -582,7 +719,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Handle Expired Authentication
+        | NS BEAUTY COMMENT: Authentication Error Handling
         |--------------------------------------------------------------------------
         */
 
@@ -604,7 +741,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Do Not Treat Login Redirect as Success
+        | NS BEAUTY COMMENT: Check Login Redirect
         |--------------------------------------------------------------------------
         */
 
@@ -648,7 +785,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 button.disabled = true;
-
                 button.textContent = 'Saving...';
 
                 try {
@@ -664,7 +800,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 } catch (error) {
 
                     button.disabled = false;
-
                     button.textContent = 'Mark as Read';
 
                     showMessage(
@@ -682,10 +817,6 @@ document.addEventListener('DOMContentLoaded', function () {
     /*
     |--------------------------------------------------------------------------
     | NS BEAUTY COMMENT: Mark All as Read
-    |--------------------------------------------------------------------------
-    |
-    | Existing role-based PATCH route is preserved.
-    | All visible cards are updated after the server succeeds.
     |--------------------------------------------------------------------------
     */
 
@@ -708,7 +839,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             markAllButton.disabled = true;
-
             markAllButton.textContent = 'Saving...';
 
             try {
