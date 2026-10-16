@@ -129,22 +129,32 @@
             color: var(--brown-dark);
         }
 
-        .logo-mark {
-            width: 38px;
-            height: 38px;
+        
+/* NS BEAUTY COMMENT: Circular Registration Logo */
 
-            border-radius: var(--radius-small);
+.logo-mark {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    min-height: 42px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f6f2;
+    border: 1px solid rgba(111,78,55,.14);
+}
 
-            display: grid;
-            place-items: center;
+.logo-mark img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    border-radius: 50%;
+}
 
-            color: white;
-            font-size: 13px;
-            font-weight: 900;
-
-            background:
-                linear-gradient(135deg,#8a7158,#5d3f2c);
-        }
 
         h1 {
             text-align: center;
@@ -651,15 +661,24 @@
         |--------------------------------------------------------------------------
         --}}
 
-        <div class="logo">
-            <span class="logo-mark" aria-hidden="true">
-                NS
-            </span>
+        
+{{-- NS BEAUTY COMMENT: Official Round Business Logo --}}
 
-            <span>
-                NS &amp; Beauty
-            </span>
-        </div>
+<div class="logo">
+    <span class="logo-mark">
+        <img
+            src="{{ asset('images/nsbeauty-logo.png') }}"
+            alt="NS & Beauty Logo"
+            width="42"
+            height="42"
+        >
+    </span>
+
+    <span class="logo-name">
+        NS &amp; Beauty
+    </span>
+</div>
+
 
         <h1>Create Account</h1>
 
