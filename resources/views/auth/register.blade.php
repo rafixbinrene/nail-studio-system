@@ -9,7 +9,7 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>Create Account | Nail Studio &amp; Beauty</title>
+    <title>Create Account | NS &amp; Beauty</title>
 
     <style>
         /*
@@ -1016,7 +1016,7 @@
 
                 <p class="agreement-description">
                     Please review the following information
-                    before creating your Nail Studio &amp; Beauty account.
+                    before creating your NS &amp; Beauty account.
                 </p>
 
                 {{--
@@ -1088,7 +1088,7 @@
 
                         <p>
                             <strong>8. Contact and Questions</strong>
-                            Customers may contact Nail Studio &amp; Beauty
+                            Customers may contact NS &amp; Beauty
                             through its published official business
                             contact channels for questions concerning
                             bookings or accounts.
@@ -1111,14 +1111,14 @@
                 <details class="policy-details">
 
                     <summary>
-                        Privacy Notice / Notis Privasi
+                        Privacy Notice 
                     </summary>
 
                     <div class="policy-content">
 
                         <p>
                             <strong>1. Personal Information</strong>
-                            Nail Studio &amp; Beauty collects the
+                            NS &amp; Beauty collects the
                             personal information submitted during
                             registration, including your name,
                             phone number, email address, and

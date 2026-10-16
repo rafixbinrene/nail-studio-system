@@ -556,7 +556,7 @@
 
         <div class="logo">
             <span class="logo-mark" aria-hidden="true">NS</span>
-            <span>Nail Studio &amp; Beauty</span>
+            <span>NS &amp; Beauty</span>
         </div>
 
         <h1>Welcome Back</h1>
