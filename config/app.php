@@ -56,16 +56,13 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Application Timezone
+    | NS BEAUTY COMMENT: MALAYSIA STANDARD TIME
     |--------------------------------------------------------------------------
-    |
-    | Here you may specify the default timezone for your application, which
-    | will be used by the PHP date and date-time functions. The timezone
-    | is set to "UTC" by default as it is suitable for most use cases.
-    |
+    | All business appointments operate in Asia/Kuala_Lumpur (UTC+8).
+    |--------------------------------------------------------------------------
     */
 
-    'timezone' => 'UTC',
+    'timezone' => 'Asia/Kuala_Lumpur',
 
     /*
     |--------------------------------------------------------------------------
