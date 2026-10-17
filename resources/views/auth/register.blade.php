@@ -1,12 +1,12 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Create Account | NS &amp; Beauty</title>
 
-    {{-- NS BEAUTY COMMENT: Shared logo for local and Laravel Cloud --}}
+    {{-- NS BEAUTY COMMENT: Official business logo --}}
     <link rel="icon" type="image/png"
           href="{{ asset('images/nsbeauty-logo.png') }}">
     <link rel="apple-touch-icon"
@@ -15,10 +15,9 @@
     <style>
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: REGISTRATION DESIGN
+        | NS BEAUTY COMMENT: REGISTRATION PAGE DESIGN
         |--------------------------------------------------------------------------
-        | Muji-inspired cream, brown and glass appearance.
-        | The existing registration route and field names are preserved.
+        | Preserves the original brown, cream and glass design.
         |--------------------------------------------------------------------------
         */
 
@@ -32,15 +31,10 @@
         :root {
             --brown: #6f4e37;
             --brown-dark: #2f2118;
-            --brown-soft: #8a7158;
-            --cream: #f8f6f2;
             --muted: #7d6d60;
             --placeholder: #aa9e93;
             --glass: rgba(255,255,255,.54);
             --border: rgba(255,255,255,.70);
-            --radius-card: 24px;
-            --radius-input: 14px;
-            --radius-button: 14px;
         }
 
         body {
@@ -51,12 +45,22 @@
             padding: 24px 16px;
             color: var(--brown-dark);
             background:
-                radial-gradient(circle at 15% 18%,
-                    rgba(255,255,255,.78), transparent 28%),
-                radial-gradient(circle at 88% 12%,
-                    rgba(234,216,196,.88), transparent 30%),
-                linear-gradient(135deg,
-                    #f1e6d8 0%, #fffdf9 45%, #e7d2bd 100%);
+                radial-gradient(
+                    circle at 15% 18%,
+                    rgba(255,255,255,.78),
+                    transparent 28%
+                ),
+                radial-gradient(
+                    circle at 88% 12%,
+                    rgba(234,216,196,.88),
+                    transparent 30%
+                ),
+                linear-gradient(
+                    135deg,
+                    #f1e6d8 0%,
+                    #fffdf9 45%,
+                    #e7d2bd 100%
+                );
         }
 
         .card {
@@ -67,7 +71,7 @@
             backdrop-filter: blur(28px);
             -webkit-backdrop-filter: blur(28px);
             border: 1px solid var(--border);
-            border-radius: var(--radius-card);
+            border-radius: 24px;
             box-shadow:
                 0 20px 50px rgba(47,33,24,.12),
                 inset 0 1px 0 rgba(255,255,255,.7);
@@ -75,19 +79,19 @@
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: OFFICIAL ROUND LOGO
+        | NS BEAUTY COMMENT: BRANDING
         |--------------------------------------------------------------------------
         */
 
         .logo {
             display: flex;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
             gap: 11px;
             margin-bottom: 20px;
-            color: var(--brown-dark);
             font-size: 15px;
             font-weight: 900;
+            color: var(--brown-dark);
         }
 
         .logo-mark {
@@ -104,9 +108,9 @@
         }
 
         .logo-mark img {
-            display: block;
             width: 100%;
             height: 100%;
+            display: block;
             object-fit: cover;
             border-radius: 50%;
         }
@@ -114,11 +118,14 @@
         h1 {
             text-align: center;
             margin-bottom: 12px;
-            font-size: clamp(28px,4vw,34px);
+            font-size: clamp(28px, 4vw, 34px);
             letter-spacing: -.7px;
             line-height: 1.2;
             background: linear-gradient(
-                135deg,#2f2118,#6f4e37,#a38468
+                135deg,
+                #2f2118,
+                #6f4e37,
+                #a38468
             );
             -webkit-background-clip: text;
             background-clip: text;
@@ -126,16 +133,16 @@
         }
 
         .subtitle {
+            margin-bottom: 28px;
             text-align: center;
             color: var(--muted);
-            margin-bottom: 28px;
             font-size: 14px;
             line-height: 1.7;
         }
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: FORM INPUTS
+        | NS BEAUTY COMMENT: FORM FIELDS
         |--------------------------------------------------------------------------
         */
 
@@ -155,8 +162,8 @@
             width: 100%;
             min-height: 50px;
             padding: 14px 16px;
-            border-radius: var(--radius-input);
             border: 1px solid rgba(111,78,55,.16);
+            border-radius: 14px;
             background: rgba(255,255,255,.68);
             color: var(--brown-dark);
             font-size: 14px;
@@ -187,8 +194,6 @@
         |--------------------------------------------------------------------------
         | NS BEAUTY COMMENT: PASSWORD VISIBILITY
         |--------------------------------------------------------------------------
-        | Hide Edge's native reveal button to avoid two eye icons.
-        |--------------------------------------------------------------------------
         */
 
         input[type="password"]::-ms-reveal,
@@ -213,27 +218,21 @@
             right: 8px;
             top: 50%;
             transform: translateY(-50%);
-            width: 40px;
-            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
+            width: 40px;
+            height: 40px;
             border: none;
             border-radius: 12px;
             background: transparent;
             color: var(--muted);
             cursor: pointer;
-            z-index: 2;
         }
 
         .password-toggle:hover {
-            background: rgba(111,78,55,.08);
             color: var(--brown);
-        }
-
-        .password-toggle:focus-visible {
-            outline: 2px solid var(--brown);
-            outline-offset: 2px;
+            background: rgba(111,78,55,.08);
         }
 
         .password-toggle svg {
@@ -258,42 +257,42 @@
         */
 
         .alert {
-            padding: 14px 16px;
-            border-radius: var(--radius-input);
             margin-bottom: 20px;
+            padding: 14px 16px;
+            border-radius: 14px;
             font-size: 13px;
             line-height: 1.6;
         }
 
         .alert-error {
-            background: rgba(150,45,35,.10);
             color: #7a241d;
+            background: rgba(150,45,35,.10);
             border: 1px solid rgba(150,45,35,.18);
         }
 
         .alert-success {
-            background: rgba(50,130,85,.10);
             color: #285c3f;
+            background: rgba(50,130,85,.10);
             border: 1px solid rgba(50,130,85,.18);
         }
 
         .error-text {
             margin-top: 7px;
-            font-size: 12px;
-            line-height: 1.5;
             color: #8a2f24;
+            font-size: 12px;
             font-weight: 700;
+            line-height: 1.5;
         }
 
         .note {
-            font-size: 13px;
-            color: var(--muted);
-            line-height: 1.7;
             margin-bottom: 22px;
-            background: rgba(255,255,255,.44);
-            border: 1px solid rgba(255,255,255,.70);
-            border-radius: var(--radius-input);
             padding: 14px 16px;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,.70);
+            background: rgba(255,255,255,.44);
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.7;
         }
 
         .note strong {
@@ -302,39 +301,38 @@
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: BILINGUAL TERMS AND PRIVACY
+        | NS BEAUTY COMMENT: LEGAL DOCUMENTS
         |--------------------------------------------------------------------------
-        | Each document has its own EN / BM selector.
-        | English is the default displayed language.
+        | English and Bahasa Malaysia policy switching.
         |--------------------------------------------------------------------------
         */
 
         .agreement-section {
             margin: 6px 0 20px;
             padding: 18px;
-            background: rgba(255,255,255,.46);
+            border-radius: 14px;
             border: 1px solid rgba(111,78,55,.14);
-            border-radius: var(--radius-input);
+            background: rgba(255,255,255,.46);
         }
 
         .agreement-heading {
+            margin-bottom: 8px;
+            color: var(--brown-dark);
             font-size: 15px;
             font-weight: 850;
-            color: var(--brown-dark);
-            margin-bottom: 8px;
         }
 
         .agreement-description {
+            margin-bottom: 14px;
             color: var(--muted);
             font-size: 12px;
             line-height: 1.7;
-            margin-bottom: 14px;
         }
 
         .policy-details {
             margin-bottom: 11px;
-            border: 1px solid rgba(111,78,55,.14);
             border-radius: 14px;
+            border: 1px solid rgba(111,78,55,.14);
             background: rgba(255,255,255,.58);
             overflow: hidden;
         }
@@ -397,7 +395,8 @@
             box-shadow: 0 3px 8px rgba(47,33,24,.06);
         }
 
-        .policy-language-btn:focus-visible {
+        .policy-language-btn:focus-visible,
+        .password-toggle:focus-visible {
             outline: 2px solid var(--brown);
             outline-offset: 2px;
         }
@@ -405,11 +404,11 @@
         .policy-content {
             max-height: 350px;
             overflow-y: auto;
+            overscroll-behavior: contain;
             padding: 3px 5px 3px 0;
             color: var(--muted);
             font-size: 12px;
             line-height: 1.85;
-            overscroll-behavior: contain;
         }
 
         .policy-content[hidden] {
@@ -417,10 +416,10 @@
         }
 
         .policy-content h3 {
-            margin: 12px 0 6px;
+            margin: 14px 0 6px;
+            color: var(--brown-dark);
             font-size: 13px;
             line-height: 1.5;
-            color: var(--brown-dark);
         }
 
         .policy-content p {
@@ -431,17 +430,23 @@
             color: var(--brown-dark);
         }
 
-        .policy-disclaimer {
+        .policy-contact {
+            color: var(--brown);
+            overflow-wrap: anywhere;
+        }
+
+        .policy-pending {
+            margin: 12px 0;
             padding: 12px;
-            border-radius: 12px;
+            border-radius: 10px;
             background: rgba(111,78,55,.07);
-            font-size: 11px;
-            line-height: 1.7;
+            border: 1px solid rgba(111,78,55,.12);
+            color: var(--brown-dark);
         }
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: MANDATORY AGREEMENT
+        | NS BEAUTY COMMENT: AGREEMENT CHECKBOX
         |--------------------------------------------------------------------------
         */
 
@@ -476,6 +481,12 @@
             line-height: 1.6;
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | NS BEAUTY COMMENT: SUBMISSION AND NAVIGATION
+        |--------------------------------------------------------------------------
+        */
+
         .submit-btn {
             display: inline-flex;
             justify-content: center;
@@ -485,11 +496,11 @@
             padding: 14px 20px;
             margin-top: 4px;
             border: none;
-            border-radius: var(--radius-button);
+            border-radius: 14px;
+            background: linear-gradient(135deg,#8a7158,#5d3f2c);
             color: white;
             font-size: 14px;
             font-weight: 850;
-            background: linear-gradient(135deg,#8a7158,#5d3f2c);
             cursor: pointer;
             transition: transform .2s ease, opacity .2s ease;
         }
@@ -501,11 +512,6 @@
         .submit-btn:disabled {
             opacity: .48;
             cursor: not-allowed;
-        }
-
-        .submit-btn:focus-visible {
-            outline: 3px solid rgba(111,78,55,.4);
-            outline-offset: 3px;
         }
 
         .footer {
@@ -524,8 +530,8 @@
 
         .back {
             display: block;
-            text-align: center;
             margin-top: 20px;
+            text-align: center;
             color: var(--muted);
             text-decoration: none;
             font-size: 13px;
@@ -550,10 +556,6 @@
             .agreement-section {
                 padding: 15px;
             }
-
-            .policy-toolbar {
-                align-items: flex-start;
-            }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -571,11 +573,7 @@
 
 <main class="card">
 
-    {{--
-    |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: ROUND BUSINESS LOGO
-    |--------------------------------------------------------------------------
-    --}}
+    {{-- NS BEAUTY COMMENT: OFFICIAL ROUND LOGO --}}
 
     <div class="logo">
         <span class="logo-mark">
@@ -595,7 +593,7 @@
         Join our beauty community today
     </p>
 
-    {{-- NS BEAUTY COMMENT: Session and validation messages --}}
+    {{-- NS BEAUTY COMMENT: SESSION MESSAGES --}}
 
     @if (session('status'))
         <div class="alert alert-success" role="status">
@@ -611,10 +609,9 @@
 
     {{--
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: EXISTING REGISTRATION FORM
+    | NS BEAUTY COMMENT: CUSTOMER REGISTRATION FORM
     |--------------------------------------------------------------------------
-    | These routes and field names must remain unchanged so the
-    | backend registration and OTP process continue to work.
+    | Existing controller route, field names and OTP workflow preserved.
     |--------------------------------------------------------------------------
     --}}
 
@@ -625,8 +622,13 @@
     >
         @csrf
 
+        {{-- Full Name --}}
+
         <div class="form-group">
-            <label class="form-label" for="name">Full Name</label>
+            <label class="form-label" for="name">
+                Full Name
+            </label>
+
             <input
                 class="form-input @error('name') is-invalid @enderror"
                 type="text"
@@ -638,6 +640,7 @@
                 autocomplete="name"
                 @error('name') aria-invalid="true" @enderror
             >
+
             @error('name')
                 <div class="error-text" role="alert">
                     {{ $message }}
@@ -645,10 +648,13 @@
             @enderror
         </div>
 
+        {{-- Phone Number --}}
+
         <div class="form-group">
             <label class="form-label" for="phone_number">
                 Phone Number
             </label>
+
             <input
                 class="form-input @error('phone_number') is-invalid @enderror"
                 type="tel"
@@ -660,6 +666,7 @@
                 autocomplete="tel"
                 @error('phone_number') aria-invalid="true" @enderror
             >
+
             @error('phone_number')
                 <div class="error-text" role="alert">
                     {{ $message }}
@@ -667,10 +674,13 @@
             @enderror
         </div>
 
+        {{-- Optional Address --}}
+
         <div class="form-group">
             <label class="form-label" for="address">
                 Address
             </label>
+
             <input
                 class="form-input @error('address') is-invalid @enderror"
                 type="text"
@@ -681,6 +691,7 @@
                 autocomplete="street-address"
                 @error('address') aria-invalid="true" @enderror
             >
+
             @error('address')
                 <div class="error-text" role="alert">
                     {{ $message }}
@@ -688,10 +699,13 @@
             @enderror
         </div>
 
+        {{-- Email Address --}}
+
         <div class="form-group">
             <label class="form-label" for="email">
                 Email Address
             </label>
+
             <input
                 class="form-input @error('email') is-invalid @enderror"
                 type="email"
@@ -703,6 +717,7 @@
                 autocomplete="email"
                 @error('email') aria-invalid="true" @enderror
             >
+
             @error('email')
                 <div class="error-text" role="alert">
                     {{ $message }}
@@ -710,17 +725,15 @@
             @enderror
         </div>
 
+        {{-- NS BEAUTY COMMENT: Mandatory registration email OTP --}}
+
         <div class="note">
             <strong>Email verification</strong>
             — A one-time verification code will be sent to
             your email address during registration.
         </div>
 
-        {{--
-        |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: PASSWORD
-        |--------------------------------------------------------------------------
-        --}}
+        {{-- Password --}}
 
         <div class="form-group">
             <label class="form-label" for="password">
@@ -728,6 +741,7 @@
             </label>
 
             <div class="password-wrapper">
+
                 <input
                     class="form-input @error('password') is-invalid @enderror"
                     type="password"
@@ -747,13 +761,17 @@
                     aria-pressed="false"
                     aria-controls="password"
                 >
-                    <svg class="eye-icon" viewBox="0 0 24 24"
+                    <svg class="eye-icon"
+                         viewBox="0 0 24 24"
                          aria-hidden="true">
                         <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/>
                         <circle cx="12" cy="12" r="3"/>
                     </svg>
-                    <svg class="eye-off-icon" viewBox="0 0 24 24"
-                         aria-hidden="true" hidden>
+
+                    <svg class="eye-off-icon"
+                         viewBox="0 0 24 24"
+                         aria-hidden="true"
+                         hidden>
                         <path d="M10.6 5.2A10.5 10.5 0 0 1 12 5c6.5 0 10 7 10 7a15.5 15.5 0 0 1-3.2 4.1"/>
                         <path d="M6.1 6.1A15 15 0 0 0 2 12s3.5 7 10 7a10 10 0 0 0 5.3-1.5"/>
                         <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>
@@ -769,11 +787,7 @@
             @enderror
         </div>
 
-        {{--
-        |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: CONFIRM PASSWORD
-        |--------------------------------------------------------------------------
-        --}}
+        {{-- Confirm Password --}}
 
         <div class="form-group">
             <label class="form-label" for="password_confirmation">
@@ -781,6 +795,7 @@
             </label>
 
             <div class="password-wrapper">
+
                 <input
                     class="form-input"
                     type="password"
@@ -799,58 +814,75 @@
                     aria-pressed="false"
                     aria-controls="password_confirmation"
                 >
-                    <svg class="eye-icon" viewBox="0 0 24 24"
+                    <svg class="eye-icon"
+                         viewBox="0 0 24 24"
                          aria-hidden="true">
                         <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/>
                         <circle cx="12" cy="12" r="3"/>
                     </svg>
-                    <svg class="eye-off-icon" viewBox="0 0 24 24"
-                         aria-hidden="true" hidden>
+
+                    <svg class="eye-off-icon"
+                         viewBox="0 0 24 24"
+                         aria-hidden="true"
+                         hidden>
                         <path d="M10.6 5.2A10.5 10.5 0 0 1 12 5c6.5 0 10 7 10 7a15.5 15.5 0 0 1-3.2 4.1"/>
-                        <path d="M6.1 6.1A15 15 0 0 0 2 12s3.5 7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" hidden/>
                         <path d="M6.1 6.1A15 15 0 0 0 2 12s3.5 7 10 7a10 10 0 0 0 5.3-1.5"/>
                         <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>
                         <path d="M3 3l18 18"/>
                     </svg>
                 </button>
+
             </div>
         </div>
 
         {{--
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: BILINGUAL LEGAL DOCUMENTS
+        | NS BEAUTY COMMENT: TERMS AND PRIVACY DOCUMENTS
         |--------------------------------------------------------------------------
-        | These are working policy drafts, not independently verified
-        | legal-compliance certifications.
+        | Owner-confirmed details:
+        | - Contact: nailstudio.beautyofficial@gmail.com
+        | - Promotional emails: Not currently sent
         |
-        | OWNER MUST CONFIRM:
-        | - Official privacy contact
-        | - Specific retention/deletion practices
-        | - All data recipients and infrastructure locations
-        | - Applicable customer rights and actual handling procedures
-        | - Final language and legal accuracy
+        | Still pending:
+        | - Approved personal-data retention and deletion schedule
+        | - Exact overseas cloud/database locations
+        | - External provider and cross-border safeguards verification
+        | - Final owner/legal approval and effective date
+        |
+        | The pending items are intentionally NOT invented.
         |--------------------------------------------------------------------------
         --}}
 
-        <section class="agreement-section"
-                 aria-labelledby="agreementHeading">
+        <section
+            class="agreement-section"
+            aria-labelledby="agreementHeading"
+        >
 
-            <h2 class="agreement-heading" id="agreementHeading">
+            <h2
+                class="agreement-heading"
+                id="agreementHeading"
+            >
                 Terms, Conditions &amp; Privacy
             </h2>
 
             <p class="agreement-description">
-                Please review the Terms and Conditions and Privacy
-                Notice in English or Bahasa Malaysia before creating
-                your NS &amp; Beauty account.
+                Review both documents in English or Bahasa Malaysia
+                before creating your account.
             </p>
 
-            {{-- =====================================================
-                 NS BEAUTY COMMENT: TERMS AND CONDITIONS
-                 ===================================================== --}}
+            {{--
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: TERMS AND CONDITIONS
+            |--------------------------------------------------------------------------
+            --}}
 
-            <details class="policy-details" id="termsDetails">
-                <summary>Terms and Conditions / Terma dan Syarat</summary>
+            <details
+                class="policy-details"
+                id="termsDetails"
+            >
+                <summary>
+                    Terms and Conditions / Terma dan Syarat
+                </summary>
 
                 <div class="policy-container">
 
@@ -859,161 +891,171 @@
                             Document language / Bahasa dokumen
                         </span>
 
-                        <div class="policy-language-buttons"
-                             role="group"
-                             aria-label="Terms language">
-
-                            <button type="button"
-                                    class="policy-language-btn active"
-                                    data-policy="terms"
-                                    data-language="en"
-                                    aria-pressed="true">
+                        <div
+                            class="policy-language-buttons"
+                            role="group"
+                            aria-label="Terms language"
+                        >
+                            <button
+                                type="button"
+                                class="policy-language-btn active"
+                                data-policy="terms"
+                                data-language="en"
+                                aria-pressed="true"
+                            >
                                 English
                             </button>
 
-                            <button type="button"
-                                    class="policy-language-btn"
-                                    data-policy="terms"
-                                    data-language="ms"
-                                    aria-pressed="false">
+                            <button
+                                type="button"
+                                class="policy-language-btn"
+                                data-policy="terms"
+                                data-language="ms"
+                                aria-pressed="false"
+                            >
                                 Bahasa Malaysia
                             </button>
                         </div>
                     </div>
 
                     {{--
-                    | NS BEAUTY COMMENT: ENGLISH TERMS
+                    | NS BEAUTY COMMENT: ENGLISH TERMS AND CONDITIONS
                     --}}
 
-                    <div class="policy-content"
-                         id="terms-en"
-                         lang="en">
+                    <div
+                        class="policy-content"
+                        id="terms-en"
+                        lang="en"
+                    >
 
                         <h3>1. Introduction and Acceptance</h3>
                         <p>
-                            These Terms and Conditions govern the use of
-                            the NS &amp; Beauty online appointment
-                            booking system. By registering and using
-                            the service, customers agree to comply
-                            with these terms and applicable booking
-                            policies displayed on the website.
+                            These Terms and Conditions govern access
+                            to and use of the NS &amp; Beauty online
+                            appointment booking system. By creating
+                            an account, customers agree to comply
+                            with these Terms and the booking policies
+                            displayed when using the system.
                         </p>
 
                         <h3>2. Account Registration</h3>
                         <p>
-                            Customers must provide accurate and current
-                            personal information. Accounts are intended
-                            for their registered users. Customers are
-                            responsible for keeping their account details
-                            reasonably up to date.
+                            Customers must provide accurate, complete
+                            and current registration information.
+                            Each account is intended for use by
+                            its registered account holder.
+                            Customers are responsible for updating
+                            information when necessary.
                         </p>
 
                         <h3>3. Account Security</h3>
                         <p>
-                            Customers must keep their passwords and
-                            one-time verification codes confidential.
-                            NS &amp; Beauty may apply email verification,
-                            login limits, and other security measures
-                            to protect customer accounts. Suspected
-                            unauthorized access should be reported
-                            through the business's official channels.
+                            Customers are responsible for protecting
+                            their passwords and email verification
+                            codes. Passwords and OTP codes must
+                            not be shared. NS &amp; Beauty may
+                            apply login restrictions, email
+                            verification and other measures to
+                            protect customer accounts.
                         </p>
 
-                        <h3>4. Appointment Booking</h3>
+                        <h3>4. Appointment Bookings</h3>
                         <p>
-                            Appointment bookings depend on service
-                            availability, staff schedules, service
-                            duration, and the booking restrictions
-                            displayed by the system. Submission of
-                            a booking does not guarantee that a
-                            particular staff member or service will
-                            remain available if an operational issue
-                            arises.
+                            Appointments are subject to available
+                            dates, times, staff schedules, service
+                            durations and the booking limitations
+                            displayed by the system. Customers
+                            should review their booking information
+                            before confirming an appointment.
                         </p>
 
                         <h3>5. Cancellations and Rescheduling</h3>
                         <p>
-                            Customers may request appointment changes
-                            where the system permits them. Requests
-                            remain subject to the applicable booking
-                            rules, available time slots, and
-                            operational requirements. Appointment
-                            status changes may be recorded in
+                            Appointment cancellations and changes
+                            are subject to the booking policies
+                            and functions available in the system.
+                            A requested time slot may be unavailable
+                            when an appointment is rescheduled.
+                            Relevant changes may be recorded in
                             booking history.
                         </p>
 
-                        <h3>6. Services, Prices and Payments</h3>
+                        <h3>6. Services, Pricing and Payments</h3>
                         <p>
-                            Service descriptions, estimated durations,
-                            and prices are displayed in the booking
-                            system. NS &amp; Beauty currently handles
-                            payments outside this online registration
-                            and booking platform. Any changes to
-                            service prices or payment arrangements
-                            should be confirmed with the business.
+                            Service descriptions, estimated durations
+                            and prices are displayed through the
+                            booking system. Payments are currently
+                            handled directly by NS &amp; Beauty
+                            outside the online booking platform.
+                            The system does not process customer
+                            online payments.
                         </p>
 
-                        <h3>7. Business Schedule Changes</h3>
+                        <h3>7. Operating Hours and Closures</h3>
                         <p>
-                            Operating schedules and appointments
-                            may be affected by staff absences,
-                            emergency closures, or other reasonable
-                            business circumstances. NS &amp; Beauty
-                            may contact affected customers using
-                            their registered contact information.
+                            Service availability may change because
+                            of staff absences, operational matters
+                            or emergency studio closures.
+                            Affected customers may be contacted
+                            regarding appointment changes or
+                            available rescheduling options.
                         </p>
 
                         <h3>8. Responsible Use</h3>
                         <p>
                             Customers must not create fraudulent
-                            appointments, impersonate other persons,
-                            attempt to bypass security controls,
-                            interfere with the platform, or access
-                            information without authorization.
-                            Accounts may be restricted when misuse
-                            or security risks are reasonably identified.
+                            bookings, impersonate another person,
+                            attempt unauthorized access, interfere
+                            with the website or misuse customer
+                            information. Accounts may be restricted
+                            in response to suspected misuse or
+                            legitimate security concerns.
                         </p>
 
-                        <h3>9. Notifications and Communications</h3>
+                        <h3>9. Account and Booking Notifications</h3>
                         <p>
-                            The system may send essential communications
-                            such as email verification codes, appointment
-                            confirmations, reminders, cancellation
-                            updates, and security-related messages.
-                            Optional promotional messages should be
-                            managed separately from necessary service
-                            communications.
+                            NS &amp; Beauty may send essential
+                            communications, including registration
+                            verification codes, appointment
+                            confirmations, reminders, booking
+                            changes and security-related messages.
+                            These messages support the services
+                            requested by customers.
+                        </p>
+                        <p>
+                            NS &amp; Beauty does not currently
+                            send promotional marketing emails.
                         </p>
 
-                        <h3>10. Accuracy and Availability</h3>
+                        <h3>10. Website Availability</h3>
                         <p>
-                            NS &amp; Beauty aims to maintain accurate
-                            appointment information and a reliable
-                            website. Temporary interruptions, technical
-                            errors, or schedule changes may occur.
-                            Customers should contact the business
-                            if they believe an appointment record
-                            is incorrect.
+                            NS &amp; Beauty aims to keep the
+                            booking system available and accurate.
+                            However, maintenance, technical
+                            issues or unexpected disruptions
+                            may occasionally affect access
+                            or appointment availability.
                         </p>
 
-                        <h3>11. Changes to These Terms</h3>
+                        <h3>11. Changes to the Terms</h3>
                         <p>
-                            These Terms may be updated to reflect
-                            changes in business operations, security
-                            requirements, or applicable law. Material
-                            changes should be communicated appropriately.
-                            Customers should review the current terms
-                            when using the platform.
+                            These Terms may be revised to reflect
+                            operational, technical or legal changes.
+                            Material changes will be communicated
+                            where required by applicable law.
+                            Customers should review the current
+                            Terms when using the service.
                         </p>
 
-                        <h3>12. Applicable Law and Contact</h3>
+                        <h3>12. Governing Law and Contact</h3>
                         <p>
-                            These Terms are governed by applicable
-                            Malaysian law. Questions relating to
-                            account access, appointments, or these
-                            Terms may be directed to NS &amp; Beauty
-                            through its published official contact
-                            channels.
+                            These Terms are subject to applicable
+                            Malaysian law. Questions concerning
+                            accounts, appointments or these Terms
+                            may be submitted to NS &amp; Beauty at
+                            <strong class="policy-contact">
+                                nailstudio.beautyofficial@gmail.com
+                            </strong>.
                         </p>
 
                     </div>
@@ -1022,151 +1064,183 @@
                     | NS BEAUTY COMMENT: BAHASA MALAYSIA TERMS
                     --}}
 
-                    <div class="policy-content"
-                         id="terms-ms"
-                         lang="ms"
-                         hidden>
+                    <div
+                        class="policy-content"
+                        id="terms-ms"
+                        lang="ms"
+                        hidden
+                    >
 
                         <h3>1. Pengenalan dan Persetujuan</h3>
                         <p>
-                            Terma dan Syarat ini mengawal penggunaan
-                            sistem tempahan janji temu dalam talian
-                            NS &amp; Beauty. Dengan mendaftar dan
-                            menggunakan perkhidmatan ini, pelanggan
-                            bersetuju untuk mematuhi terma ini serta
-                            dasar tempahan yang dipaparkan dalam
-                            laman web.
+                            Terma dan Syarat ini mengawal akses
+                            dan penggunaan sistem tempahan janji
+                            temu dalam talian NS &amp; Beauty.
+                            Dengan mendaftar akaun, pelanggan
+                            bersetuju mematuhi Terma ini serta
+                            dasar tempahan yang dipaparkan
+                            semasa menggunakan sistem.
                         </p>
 
                         <h3>2. Pendaftaran Akaun</h3>
                         <p>
-                            Pelanggan hendaklah memberikan maklumat
-                            peribadi yang tepat dan terkini. Akaun
-                            adalah untuk kegunaan pemilik akaun
-                            yang berdaftar. Pelanggan bertanggungjawab
-                            memastikan maklumat akaun mereka sentiasa
-                            dikemas kini apabila perlu.
+                            Pelanggan hendaklah memberikan
+                            maklumat pendaftaran yang tepat,
+                            lengkap dan terkini. Setiap akaun
+                            adalah untuk kegunaan pemegang
+                            akaun berdaftar. Pelanggan
+                            bertanggungjawab mengemas kini
+                            maklumat apabila perlu.
                         </p>
 
                         <h3>3. Keselamatan Akaun</h3>
                         <p>
-                            Pelanggan hendaklah merahsiakan kata laluan
-                            dan kod pengesahan sekali guna. NS &amp;
-                            Beauty boleh menggunakan pengesahan e-mel,
-                            had percubaan log masuk dan langkah
-                            keselamatan lain untuk melindungi akaun.
-                            Sebarang akses tanpa kebenaran yang disyaki
-                            hendaklah dilaporkan melalui saluran rasmi
-                            perniagaan.
+                            Pelanggan bertanggungjawab melindungi
+                            kata laluan dan kod pengesahan e-mel
+                            mereka. Kata laluan dan kod OTP tidak
+                            boleh dikongsi. NS &amp; Beauty boleh
+                            mengenakan had log masuk, pengesahan
+                            e-mel dan langkah keselamatan lain
+                            untuk melindungi akaun pelanggan.
                         </p>
 
                         <h3>4. Tempahan Janji Temu</h3>
                         <p>
-                            Tempahan adalah tertakluk pada ketersediaan
-                            perkhidmatan, jadual kakitangan, tempoh
-                            perkhidmatan dan had tempahan yang
-                            dipaparkan oleh sistem. Tempahan yang
-                            dibuat tidak menjamin kakitangan atau
-                            perkhidmatan tertentu akan kekal tersedia
-                            sekiranya timbul masalah operasi.
+                            Janji temu tertakluk pada tarikh,
+                            masa, jadual kakitangan, tempoh
+                            perkhidmatan serta had tempahan
+                            yang tersedia dalam sistem.
+                            Pelanggan hendaklah menyemak
+                            maklumat tempahan sebelum
+                            mengesahkan janji temu.
                         </p>
 
                         <h3>5. Pembatalan dan Penjadualan Semula</h3>
                         <p>
-                            Pelanggan boleh memohon perubahan janji
-                            temu apabila fungsi tersebut dibenarkan
-                            oleh sistem. Permohonan tertakluk pada
-                            peraturan tempahan, slot masa yang tersedia
-                            serta keperluan operasi perniagaan.
-                            Perubahan status janji temu boleh direkodkan
+                            Pembatalan dan perubahan janji temu
+                            tertakluk pada dasar tempahan serta
+                            fungsi yang tersedia dalam sistem.
+                            Slot masa yang diminta mungkin
+                            tidak tersedia apabila janji temu
+                            dijadualkan semula. Perubahan
+                            berkaitan boleh direkodkan
                             dalam sejarah tempahan.
                         </p>
 
                         <h3>6. Perkhidmatan, Harga dan Pembayaran</h3>
                         <p>
-                            Penerangan perkhidmatan, anggaran tempoh
-                            dan harga dipaparkan dalam sistem tempahan.
-                            NS &amp; Beauty pada masa ini menguruskan
-                            pembayaran di luar platform pendaftaran
-                            dan tempahan dalam talian ini. Sebarang
-                            perubahan harga atau kaedah pembayaran
-                            hendaklah disahkan dengan pihak perniagaan.
+                            Penerangan perkhidmatan, anggaran
+                            tempoh dan harga dipaparkan melalui
+                            sistem tempahan. Pembayaran pada
+                            masa ini diuruskan secara langsung
+                            oleh NS &amp; Beauty di luar
+                            platform tempahan dalam talian.
+                            Sistem ini tidak memproses
+                            pembayaran pelanggan secara
+                            dalam talian.
                         </p>
 
-                        <h3>7. Perubahan Jadual Perniagaan</h3>
+                        <h3>7. Waktu Operasi dan Penutupan</h3>
                         <p>
-                            Waktu operasi dan janji temu boleh terjejas
-                            akibat ketidakhadiran kakitangan, penutupan
-                            kecemasan atau keadaan operasi yang
-                            munasabah. NS &amp; Beauty boleh menghubungi
-                            pelanggan yang terlibat menggunakan
-                            maklumat hubungan yang didaftarkan.
+                            Ketersediaan perkhidmatan boleh
+                            berubah akibat ketidakhadiran
+                            kakitangan, urusan operasi atau
+                            penutupan studio secara kecemasan.
+                            Pelanggan yang terjejas boleh
+                            dihubungi berhubung perubahan
+                            janji temu atau pilihan
+                            penjadualan semula yang tersedia.
                         </p>
 
                         <h3>8. Penggunaan yang Bertanggungjawab</h3>
                         <p>
                             Pelanggan tidak dibenarkan membuat
-                            tempahan palsu, menyamar sebagai orang
-                            lain, memintas kawalan keselamatan,
-                            mengganggu sistem atau mengakses maklumat
-                            tanpa kebenaran. Akaun boleh dihadkan
-                            jika penyalahgunaan atau risiko keselamatan
-                            dikenal pasti secara munasabah.
+                            tempahan palsu, menyamar sebagai
+                            orang lain, cuba mengakses sistem
+                            tanpa kebenaran, mengganggu
+                            laman web atau menyalahgunakan
+                            maklumat pelanggan. Akaun boleh
+                            dihadkan sekiranya terdapat
+                            penyalahgunaan yang disyaki
+                            atau kebimbangan keselamatan
+                            yang munasabah.
                         </p>
 
-                        <h3>9. Pemberitahuan dan Komunikasi</h3>
+                        <h3>9. Pemberitahuan Akaun dan Tempahan</h3>
                         <p>
-                            Sistem boleh menghantar komunikasi penting
-                            seperti kod pengesahan e-mel, pengesahan
-                            janji temu, peringatan, makluman pembatalan
-                            dan mesej keselamatan. Mesej promosi
-                            pilihan hendaklah diuruskan secara berasingan
-                            daripada komunikasi perkhidmatan yang perlu.
+                            NS &amp; Beauty boleh menghantar
+                            komunikasi penting seperti
+                            kod pengesahan pendaftaran,
+                            pengesahan janji temu, peringatan,
+                            perubahan tempahan dan mesej
+                            berkaitan keselamatan.
+                            Mesej ini menyokong perkhidmatan
+                            yang diminta oleh pelanggan.
+                        </p>
+                        <p>
+                            NS &amp; Beauty pada masa ini
+                            tidak menghantar e-mel
+                            pemasaran atau promosi.
                         </p>
 
-                        <h3>10. Ketepatan dan Ketersediaan</h3>
+                        <h3>10. Ketersediaan Laman Web</h3>
                         <p>
-                            NS &amp; Beauty berusaha mengekalkan
-                            maklumat janji temu yang tepat serta
-                            laman web yang boleh dipercayai.
-                            Gangguan sementara, ralat teknikal atau
-                            perubahan jadual mungkin berlaku.
-                            Pelanggan hendaklah menghubungi perniagaan
-                            jika terdapat rekod janji temu yang
-                            dipercayai tidak tepat.
+                            NS &amp; Beauty berusaha
+                            memastikan sistem tempahan
+                            sentiasa tersedia dan tepat.
+                            Walau bagaimanapun, penyelenggaraan,
+                            masalah teknikal atau gangguan
+                            luar jangka mungkin menjejaskan
+                            akses atau ketersediaan
+                            janji temu.
                         </p>
 
-                        <h3>11. Pindaan Terma</h3>
+                        <h3>11. Perubahan kepada Terma</h3>
                         <p>
-                            Terma ini boleh dikemas kini berdasarkan
-                            perubahan operasi perniagaan, keperluan
-                            keselamatan atau undang-undang yang
-                            terpakai. Perubahan penting hendaklah
-                            dimaklumkan melalui kaedah yang bersesuaian.
-                            Pelanggan digalakkan menyemak terma
-                            semasa apabila menggunakan platform.
+                            Terma ini boleh disemak semula
+                            bagi mencerminkan perubahan
+                            operasi, teknikal atau
+                            undang-undang. Perubahan penting
+                            akan dimaklumkan apabila
+                            dikehendaki oleh undang-undang
+                            yang terpakai. Pelanggan
+                            hendaklah menyemak Terma
+                            semasa ketika menggunakan
+                            perkhidmatan.
                         </p>
 
                         <h3>12. Undang-undang dan Hubungan</h3>
                         <p>
-                            Terma ini tertakluk pada undang-undang
-                            Malaysia yang berkenaan. Pertanyaan
-                            mengenai akses akaun, janji temu atau
-                            terma ini boleh diajukan kepada
-                            NS &amp; Beauty melalui saluran hubungan
-                            rasmi yang diterbitkan oleh perniagaan.
+                            Terma ini tertakluk pada
+                            undang-undang Malaysia yang
+                            terpakai. Pertanyaan mengenai
+                            akaun, janji temu atau Terma
+                            ini boleh dihantar kepada
+                            NS &amp; Beauty melalui
+                            <strong class="policy-contact">
+                                nailstudio.beautyofficial@gmail.com
+                            </strong>.
                         </p>
 
                     </div>
                 </div>
             </details>
 
-            {{-- =====================================================
-                 NS BEAUTY COMMENT: PRIVACY NOTICE
-                 ===================================================== --}}
+            {{--
+            |--------------------------------------------------------------------------
+            | NS BEAUTY COMMENT: PRIVACY NOTICE
+            |--------------------------------------------------------------------------
+            | Both versions contain 12 corresponding sections.
+            |--------------------------------------------------------------------------
+            --}}
 
-            <details class="policy-details" id="privacyDetails">
-                <summary>Privacy Notice / Notis Privasi</summary>
+            <details
+                class="policy-details"
+                id="privacyDetails"
+            >
+                <summary>
+                    Privacy Notice / Notis Privasi
+                </summary>
 
                 <div class="policy-container">
 
@@ -1175,23 +1249,28 @@
                             Document language / Bahasa dokumen
                         </span>
 
-                        <div class="policy-language-buttons"
-                             role="group"
-                             aria-label="Privacy notice language">
-
-                            <button type="button"
-                                    class="policy-language-btn active"
-                                    data-policy="privacy"
-                                    data-language="en"
-                                    aria-pressed="true">
+                        <div
+                            class="policy-language-buttons"
+                            role="group"
+                            aria-label="Privacy notice language"
+                        >
+                            <button
+                                type="button"
+                                class="policy-language-btn active"
+                                data-policy="privacy"
+                                data-language="en"
+                                aria-pressed="true"
+                            >
                                 English
                             </button>
 
-                            <button type="button"
-                                    class="policy-language-btn"
-                                    data-policy="privacy"
-                                    data-language="ms"
-                                    aria-pressed="false">
+                            <button
+                                type="button"
+                                class="policy-language-btn"
+                                data-policy="privacy"
+                                data-language="ms"
+                                aria-pressed="false"
+                            >
                                 Bahasa Malaysia
                             </button>
                         </div>
@@ -1201,212 +1280,277 @@
                     | NS BEAUTY COMMENT: ENGLISH PRIVACY NOTICE
                     --}}
 
-                    <div class="policy-content"
-                         id="privacy-en"
-                         lang="en">
+                    <div
+                        class="policy-content"
+                        id="privacy-en"
+                        lang="en"
+                    >
 
                         <h3>1. Introduction and Data Controller</h3>
                         <p>
-                            NS &amp; Beauty, operating in Donggongon,
-                            Penampang, Sabah, Malaysia, is responsible
-                            for personal information processed for
-                            its booking and customer account services.
-                            This Privacy Notice explains how information
-                            is collected, used, disclosed, secured,
-                            retained and managed.
+                            NS &amp; Beauty operates in
+                            Donggongon, Penampang, Sabah,
+                            Malaysia. This Privacy Notice
+                            explains how we collect,
+                            use, process, store, disclose
+                            and protect personal information
+                            associated with customer accounts,
+                            appointments and related services.
                         </p>
                         <p>
-                            Customers should use the privacy contact
-                            published by NS &amp; Beauty to make
-                            enquiries about personal data. The business
-                            must confirm and publish its official
-                            privacy contact details before launch.
+                            NS &amp; Beauty determines the
+                            purposes and means of processing
+                            customer information for its
+                            booking and business operations.
+                            Privacy enquiries may be directed to
+                            <strong class="policy-contact">
+                                nailstudio.beautyofficial@gmail.com
+                            </strong>.
                         </p>
 
                         <h3>2. Personal Information We Collect</h3>
                         <p>
-                            Information may include your name, email
-                            address, phone number, address if supplied,
-                            account identifiers, booking selections,
-                            appointment schedules, assigned staff,
-                            appointment statuses, feedback, and
-                            records needed for account security.
-                            Passwords should be stored using secure
-                            one-way hashing rather than as readable text.
+                            We collect or process personal
+                            information relevant to registration,
+                            accounts and appointments. This
+                            may include full name, email address,
+                            phone number, optional address,
+                            account identifiers, authentication
+                            records, booked services, appointment
+                            schedules, assigned staff, booking
+                            statuses, cancellation and rescheduling
+                            history, customer feedback and ratings.
+                        </p>
+                        <p>
+                            Technical and security information
+                            may also be processed where necessary
+                            to manage accounts, record activity
+                            and protect the platform. Account
+                            passwords are handled through the
+                            application's authentication mechanisms.
                         </p>
 
                         <h3>3. Sources of Personal Information</h3>
                         <p>
-                            Personal information is primarily obtained
-                            directly from customers during registration,
-                            booking, account updates, feedback, and
-                            communications with the business. Relevant
-                            booking updates may also be entered by
-                            authorized staff. Technical and security
-                            records may be generated through use of
-                            the website.
+                            Personal information is obtained
+                            directly from customers when
+                            registering, booking appointments,
+                            updating account details, providing
+                            feedback or contacting the business.
+                            Authorized personnel may enter or
+                            update booking-related information
+                            during business operations.
+                        </p>
+                        <p>
+                            Certain technical records may
+                            also be generated when customers
+                            access or use the website.
                         </p>
 
                         <h3>4. Purposes of Processing</h3>
                         <p>
-                            Information is processed to create and
-                            manage accounts, authenticate users,
-                            verify email addresses, schedule and
-                            manage appointments, communicate booking
+                            We process information to register
+                            and manage customer accounts,
+                            authenticate users, verify email
+                            addresses, organize appointments,
+                            assign staff, communicate booking
                             updates, provide customer support,
-                            secure the platform, investigate misuse,
-                            and generate operational reporting.
-                            Information should not be used for
-                            unrelated purposes without an appropriate
-                            legal basis and notice.
+                            maintain booking history and
+                            prepare internal operational reports.
+                        </p>
+                        <p>
+                            Information is also processed
+                            for appropriate account protection,
+                            security monitoring and investigation
+                            of suspected misuse.
+                        </p>
+                        <p>
+                            <strong>
+                                NS &amp; Beauty does not
+                                currently send promotional
+                                marketing emails.
+                            </strong>
+                        </p>
+                        <p>
+                            Email messages from the system
+                            are intended for account
+                            verification, security and
+                            necessary service notifications.
                         </p>
 
                         <h3>5. Mandatory and Optional Information</h3>
                         <p>
-                            A name, phone number, email address, and
-                            password are required by the current
-                            registration form. An address is optional
-                            in the form. Without required information,
-                            the business may be unable to create
-                            an account, complete email verification,
-                            or support online appointments.
-                            Optional information should not be
-                            required unnecessarily.
+                            Registration requires a full name,
+                            phone number, email address and
+                            password. Providing an address
+                            is optional in the current
+                            registration form.
+                        </p>
+                        <p>
+                            Without the required information,
+                            we may be unable to register
+                            an account, complete email
+                            verification or provide access
+                            to online appointment booking.
                         </p>
 
                         <h3>6. Appointment and Booking Records</h3>
                         <p>
-                            The system may retain appointment dates
-                            and times, selected beauty services,
-                            assigned staff, booking status,
-                            cancellations, rescheduling activity,
-                            feedback, and related operational
-                            records. Such information is used to
-                            manage customer appointments, coordinate
-                            staff, maintain records, and support
-                            authorized business reporting.
+                            We process booking information
+                            including appointment dates,
+                            times, selected services,
+                            assigned staff, booking statuses
+                            and related changes.
+                        </p>
+                        <p>
+                            Authorized personnel use
+                            this information to coordinate
+                            services, manage staff availability,
+                            respond to customer enquiries
+                            and maintain business records.
+                            Relevant information may also
+                            be used for internal operational
+                            analytics.
                         </p>
 
-                        <h3>7. Disclosure to Staff and Service Providers</h3>
+                        <h3>7. Disclosure to Authorized Personnel and Providers</h3>
                         <p>
-                            Personal information may be accessed by
-                            authorized NS &amp; Beauty personnel according
-                            to their duties and permissions. Providers
-                            supporting website hosting, databases,
-                            email delivery, or other necessary
-                            infrastructure may process information
-                            only to the extent needed to deliver
-                            those services.
+                            Customer information may be accessed
+                            by authorized administrators and
+                            staff where necessary to carry out
+                            their responsibilities.
                         </p>
                         <p>
-                            The business must verify its actual
-                            providers, categories of recipients
-                            and contractual arrangements before
-                            publishing the final notice. Personal
-                            information should not be disclosed
-                            to unrelated parties without a lawful
-                            basis.
+                            Technical providers supporting
+                            application hosting, database
+                            services, email delivery and
+                            related infrastructure may
+                            process information required
+                            to provide those services.
+                        </p>
+                        <p>
+                            NS &amp; Beauty does not sell
+                            customer personal information
+                            to advertisers. Information
+                            may also be disclosed when
+                            required or permitted by law.
                         </p>
 
-                        <h3>8. Data Security</h3>
+
+                        <h3>8. Personal Data Security</h3>
                         <p>
-                            NS &amp; Beauty applies or intends to apply
-                            appropriate security safeguards such as
-                            authenticated access, role-based permissions,
-                            password protection, email verification,
-                            input validation, and account activity
-                            controls. Access to personal data should
-                            be limited to authorized users.
+                            The NS &amp; Beauty system includes
+                            security measures designed to
+                            protect customer information,
+                            including account authentication,
+                            role-based access restrictions,
+                            email verification and controls
+                            intended to prevent unauthorized
+                            activity.
                         </p>
                         <p>
-                            No internet-based service can guarantee
-                            absolute security. The business should
-                            maintain suitable backup, incident
-                            handling, and access management procedures.
+                            Access to customer information
+                            is intended to be restricted
+                            according to authorized user
+                            responsibilities. No internet-based
+                            system can guarantee absolute security.
+                            Appropriate access management,
+                            backups and incident handling
+                            remain important operational
+                            responsibilities.
                         </p>
 
                         <h3>9. Data Retention and Deletion</h3>
                         <p>
-                            Personal information should be retained
-                            only for as long as necessary for legitimate
-                            business purposes, applicable legal
-                            requirements, and the handling of relevant
-                            enquiries or disputes. Information that
-                            is no longer required should be securely
-                            deleted, anonymized, or otherwise handled
-                            under an approved retention procedure.
+                            NS &amp; Beauty processes personal
+                            information for customer account
+                            management, appointment services,
+                            operational records and applicable
+                            legal purposes.
                         </p>
                         <p>
-                            The business must establish and disclose
-                            its actual retention periods or the
-                            criteria used to determine them before
-                            finalizing this notice.
+                            Personal information should be
+                            retained only for as long as
+                            necessary for the relevant purpose
+                            or as required or permitted by
+                            applicable law.
                         </p>
 
-                        <h3>10. Customer Rights and Requests</h3>
+
+                        <h3>10. Customer Rights and Privacy Requests</h3>
                         <p>
-                            Subject to applicable Malaysian law,
-                            customers may have rights to request
-                            access to and correction of personal data,
-                            withdraw consent where permitted, and
-                            exercise other applicable statutory rights.
-                            Requests can be submitted through the
-                            business's official privacy contact.
+                            Subject to applicable Malaysian
+                            personal data protection law,
+                            customers may request access
+                            to their personal information,
+                            seek correction of inaccurate
+                            information and exercise other
+                            applicable rights.
                         </p>
                         <p>
-                            NS &amp; Beauty may need to verify the
-                            requester's identity before responding.
-                            Certain information may need to be retained
-                            where required or permitted by law.
-                            Customers may also raise concerns with
-                            the relevant Malaysian data protection
-                            authority where applicable.
+                            Where permitted by law,
+                            customers may request restrictions
+                            on processing or withdraw
+                            consent. Requests are subject
+                            to applicable legal requirements.
+                        </p>
+                        <p>
+                            Customers may submit enquiries
+                            or privacy requests to
+                            <strong class="policy-contact">
+                                nailstudio.beautyofficial@gmail.com
+                            </strong>.
+                            Reasonable identity verification
+                            may be required before processing
+                            requests to prevent unauthorized
+                            disclosures.
+                        </p>
+                        <p>
+                            Customers may also raise applicable
+                            complaints with the Malaysian
+                            Personal Data Protection Commissioner.
                         </p>
 
                         <h3>11. International Data Transfers</h3>
                         <p>
-                            Website hosting, email delivery, technical
-                            support, or connected infrastructure may
-                            involve processing or access outside
-                            Malaysia, depending on the services and
-                            regions configured by the business.
-                            Such transfers must comply with applicable
-                            Malaysian personal data protection
-                            requirements.
+                            NS &amp; Beauty uses cloud-based
+                            services to operate its website
+                            and online appointment system.
+                            Depending on service configurations,
+                            customer information may be
+                            stored, processed or accessed
+                            outside Malaysia.
                         </p>
                         <p>
-                            NS &amp; Beauty must verify where personal
-                            information is stored or accessed and
-                            what safeguards apply before making
-                            definitive statements about international
-                            data transfers.
+                            International transfers, where
+                            applicable, must comply with
+                            Malaysian personal data
+                            protection requirements.
                         </p>
+
 
                         <h3>12. Contact Information and Notice Updates</h3>
                         <p>
-                            Customers may contact NS &amp; Beauty
-                            through its official published channels
-                            for privacy enquiries, access or correction
-                            requests, and concerns regarding the use
-                            of personal data.
+                            For questions about personal data,
+                            requests for access or correction,
+                            and concerns regarding information
+                            processing, please contact:
                         </p>
                         <p>
-                            This Notice may be revised when processing
-                            practices, providers, legal requirements,
-                            or operational needs change. The latest
-                            approved notice should identify its
-                            effective date and be made accessible
-                            to customers.
+                            <strong>NS &amp; Beauty</strong><br>
+                            Donggongon, Penampang,<br>
+                            Sabah, Malaysia<br>
+                            <strong class="policy-contact">
+                                nailstudio.beautyofficial@gmail.com
+                            </strong>
                         </p>
-
-                        <p class="policy-disclaimer">
-                            <strong>Implementation note:</strong>
-                            This is a draft notice. The business must
-                            verify its actual processing practices,
-                            official privacy contact, data recipients,
-                            retention arrangements, and international
-                            transfers before relying on it as its
-                            final public privacy notice.
+                        <p>
+                            We may update this Privacy Notice
+                            to reflect relevant changes in
+                            business practices, technology
+                            or applicable law. The approved
+                            notice will identify its effective
+                            date and version.
                         </p>
 
                     </div>
@@ -1415,234 +1559,315 @@
                     | NS BEAUTY COMMENT: BAHASA MALAYSIA PRIVACY NOTICE
                     --}}
 
-                    <div class="policy-content"
-                         id="privacy-ms"
-                         lang="ms"
-                         hidden>
+                    <div
+                        class="policy-content"
+                        id="privacy-ms"
+                        lang="ms"
+                        hidden
+                    >
 
                         <h3>1. Pengenalan dan Pengawal Data</h3>
                         <p>
-                            NS &amp; Beauty, yang beroperasi di
-                            Donggongon, Penampang, Sabah, Malaysia,
-                            bertanggungjawab terhadap maklumat
-                            peribadi yang diproses bagi perkhidmatan
-                            akaun pelanggan dan tempahan janji temu.
-                            Notis Privasi ini menerangkan cara
-                            maklumat dikumpulkan, digunakan,
-                            didedahkan, dilindungi, disimpan
-                            dan diuruskan.
+                            NS &amp; Beauty beroperasi di
+                            Donggongon, Penampang, Sabah,
+                            Malaysia. Notis Privasi ini
+                            menerangkan cara kami mengumpul,
+                            menggunakan, memproses, menyimpan,
+                            mendedahkan dan melindungi
+                            maklumat peribadi berkaitan
+                            akaun pelanggan, janji temu
+                            serta perkhidmatan berkaitan.
                         </p>
                         <p>
-                            Pelanggan boleh menggunakan maklumat
-                            hubungan privasi rasmi yang diterbitkan
-                            oleh NS &amp; Beauty untuk mengemukakan
-                            pertanyaan. Pihak perniagaan hendaklah
-                            mengesahkan dan menerbitkan maklumat
-                            hubungan privasi rasmi sebelum pelancaran.
+                            NS &amp; Beauty menentukan
+                            tujuan dan kaedah pemprosesan
+                            maklumat pelanggan bagi sistem
+                            tempahan dan operasi perniagaan.
+                            Pertanyaan berkaitan privasi
+                            boleh dihantar kepada
+                            <strong class="policy-contact">
+                                nailstudio.beautyofficial@gmail.com
+                            </strong>.
                         </p>
 
                         <h3>2. Maklumat Peribadi yang Dikumpulkan</h3>
                         <p>
-                            Maklumat yang boleh dikumpulkan termasuk
-                            nama, alamat e-mel, nombor telefon,
-                            alamat jika diberikan, pengecam akaun,
-                            pilihan tempahan, jadual janji temu,
-                            kakitangan yang ditugaskan, status
-                            tempahan, maklum balas dan rekod
-                            yang diperlukan untuk keselamatan akaun.
-                            Kata laluan sepatutnya disimpan menggunakan
-                            kaedah pencincangan sehala yang selamat,
-                            bukannya dalam bentuk teks yang boleh dibaca.
+                            Kami mengumpul atau memproses
+                            maklumat peribadi yang berkaitan
+                            dengan pendaftaran, akaun
+                            dan janji temu. Maklumat ini
+                            boleh merangkumi nama penuh,
+                            alamat e-mel, nombor telefon,
+                            alamat pilihan, pengecam akaun,
+                            rekod pengesahan, perkhidmatan
+                            yang ditempah, jadual janji temu,
+                            kakitangan yang ditugaskan,
+                            status tempahan, sejarah pembatalan
+                            dan penjadualan semula, serta
+                            maklum balas dan penilaian pelanggan.
+                        </p>
+                        <p>
+                            Maklumat teknikal dan keselamatan
+                            juga boleh diproses apabila
+                            diperlukan untuk mengurus akaun,
+                            merekodkan aktiviti dan melindungi
+                            platform. Kata laluan akaun
+                            dikendalikan melalui mekanisme
+                            pengesahan aplikasi.
                         </p>
 
                         <h3>3. Sumber Maklumat Peribadi</h3>
                         <p>
-                            Maklumat peribadi diperoleh terutamanya
-                            secara langsung daripada pelanggan melalui
-                            pendaftaran, tempahan, kemas kini akaun,
-                            maklum balas dan komunikasi dengan
-                            perniagaan. Kakitangan yang diberi kuasa
-                            juga boleh memasukkan kemas kini tempahan.
-                            Rekod teknikal dan keselamatan boleh
-                            dijana melalui penggunaan laman web.
+                            Maklumat peribadi diperoleh
+                            secara langsung daripada pelanggan
+                            semasa mendaftar, membuat tempahan,
+                            mengemas kini butiran akaun,
+                            memberikan maklum balas atau
+                            menghubungi perniagaan.
+                        </p>
+                        <p>
+                            Kakitangan yang diberi kuasa
+                            boleh memasukkan atau mengemas
+                            kini maklumat tempahan semasa
+                            operasi perniagaan. Rekod teknikal
+                            tertentu juga boleh dijana
+                            apabila pelanggan mengakses
+                            atau menggunakan laman web.
                         </p>
 
                         <h3>4. Tujuan Pemprosesan</h3>
                         <p>
-                            Maklumat diproses untuk membuka dan
-                            mengurus akaun, mengesahkan pengguna,
-                            mengesahkan alamat e-mel, menjadualkan
-                            serta mengurus janji temu, menghantar
-                            makluman tempahan, memberikan sokongan
-                            pelanggan, melindungi sistem, menyiasat
-                            penyalahgunaan dan menghasilkan laporan
-                            operasi. Maklumat tidak sepatutnya
-                            digunakan untuk tujuan yang tidak berkaitan
-                            tanpa asas undang-undang dan notis
-                            yang sewajarnya.
+                            Kami memproses maklumat untuk
+                            mendaftar dan mengurus akaun
+                            pelanggan, mengesahkan pengguna
+                            dan alamat e-mel, mengurus
+                            janji temu, menugaskan kakitangan,
+                            menyampaikan makluman tempahan,
+                            memberikan sokongan pelanggan,
+                            menyimpan sejarah tempahan
+                            dan menyediakan laporan operasi
+                            dalaman.
+                        </p>
+                        <p>
+                            Maklumat juga diproses untuk
+                            perlindungan akaun, pemantauan
+                            keselamatan yang bersesuaian
+                            dan penyiasatan penyalahgunaan
+                            yang disyaki.
+                        </p>
+                        <p>
+                            <strong>
+                                NS &amp; Beauty pada masa
+                                ini tidak menghantar e-mel
+                                pemasaran atau promosi.
+                            </strong>
+                        </p>
+                        <p>
+                            Mesej e-mel daripada sistem
+                            bertujuan untuk pengesahan
+                            akaun, keselamatan dan
+                            pemberitahuan perkhidmatan
+                            yang diperlukan.
                         </p>
 
                         <h3>5. Maklumat Wajib dan Pilihan</h3>
                         <p>
-                            Nama, nombor telefon, alamat e-mel dan
-                            kata laluan diperlukan dalam borang
-                            pendaftaran semasa. Alamat adalah
-                            maklumat pilihan. Tanpa maklumat wajib,
-                            perniagaan mungkin tidak dapat membuka
-                            akaun, melengkapkan pengesahan e-mel
-                            atau menyediakan tempahan janji temu
-                            dalam talian. Maklumat pilihan tidak
-                            sepatutnya diwajibkan tanpa keperluan.
+                            Pendaftaran memerlukan nama
+                            penuh, nombor telefon,
+                            alamat e-mel dan kata laluan.
+                            Pemberian alamat adalah
+                            pilihan dalam borang
+                            pendaftaran semasa.
+                        </p>
+                        <p>
+                            Tanpa maklumat wajib, kami
+                            mungkin tidak dapat membuka
+                            akaun, melengkapkan pengesahan
+                            e-mel atau memberikan akses
+                            kepada tempahan janji temu
+                            secara dalam talian.
                         </p>
 
                         <h3>6. Rekod Janji Temu dan Tempahan</h3>
                         <p>
-                            Sistem boleh menyimpan tarikh dan masa
-                            janji temu, perkhidmatan kecantikan yang
-                            dipilih, kakitangan yang ditugaskan,
-                            status tempahan, pembatalan, aktiviti
-                            penjadualan semula, maklum balas dan
-                            rekod operasi yang berkaitan. Maklumat
-                            tersebut digunakan untuk mengurus
-                            janji temu, menyelaraskan kakitangan,
-                            menyimpan rekod dan menyediakan laporan
-                            perniagaan yang dibenarkan.
+                            Kami memproses maklumat tempahan
+                            termasuk tarikh dan masa janji
+                            temu, perkhidmatan yang dipilih,
+                            kakitangan yang ditugaskan,
+                            status tempahan dan perubahan
+                            berkaitan.
+                        </p>
+                        <p>
+                            Kakitangan yang diberi kuasa
+                            menggunakan maklumat ini untuk
+                            menyelaraskan perkhidmatan,
+                            mengurus ketersediaan kakitangan,
+                            menjawab pertanyaan pelanggan
+                            dan menyimpan rekod perniagaan.
+                            Maklumat berkaitan juga boleh
+                            digunakan bagi analisis
+                            operasi dalaman.
                         </p>
 
                         <h3>7. Pendedahan kepada Kakitangan dan Penyedia Perkhidmatan</h3>
                         <p>
-                            Maklumat peribadi boleh diakses oleh
-                            kakitangan NS &amp; Beauty yang diberi
-                            kuasa mengikut tugas serta kebenaran
-                            masing-masing. Penyedia pengehosan
-                            laman web, pangkalan data, penghantaran
-                            e-mel atau infrastruktur lain boleh
-                            memproses maklumat setakat yang diperlukan
-                            bagi menyediakan perkhidmatan tersebut.
+                            Maklumat pelanggan boleh diakses
+                            oleh pentadbir dan kakitangan
+                            yang diberi kuasa apabila
+                            diperlukan untuk melaksanakan
+                            tanggungjawab mereka.
                         </p>
                         <p>
-                            Pihak perniagaan hendaklah mengesahkan
-                            penyedia sebenar, kategori penerima
-                            maklumat dan perjanjian berkaitan sebelum
-                            menerbitkan notis akhir. Maklumat
-                            peribadi tidak sepatutnya didedahkan
-                            kepada pihak yang tidak berkaitan tanpa
-                            asas yang sah.
+                            Penyedia teknikal yang menyokong
+                            pengehosan aplikasi, perkhidmatan
+                            pangkalan data, penghantaran
+                            e-mel dan infrastruktur berkaitan
+                            boleh memproses maklumat yang
+                            diperlukan bagi menyediakan
+                            perkhidmatan tersebut.
+                        </p>
+                        <p>
+                            NS &amp; Beauty tidak menjual
+                            maklumat peribadi pelanggan
+                            kepada pengiklan. Maklumat
+                            juga boleh didedahkan apabila
+                            dikehendaki atau dibenarkan
+                            oleh undang-undang.
                         </p>
 
-                        <h3>8. Keselamatan Data</h3>
+
+                        <h3>8. Keselamatan Data Peribadi</h3>
                         <p>
-                            NS &amp; Beauty menggunakan atau merancang
-                            untuk menggunakan langkah keselamatan
-                            yang bersesuaian seperti pengesahan
-                            pengguna, kawalan akses berasaskan peranan,
-                            perlindungan kata laluan, pengesahan
-                            e-mel, pengesahan input dan kawalan
-                            aktiviti akaun. Akses kepada data
-                            peribadi hendaklah dihadkan kepada
-                            pengguna yang diberi kuasa.
+                            Sistem NS &amp; Beauty mempunyai
+                            langkah keselamatan yang bertujuan
+                            melindungi maklumat pelanggan,
+                            termasuk pengesahan akaun,
+                            sekatan akses berasaskan peranan,
+                            pengesahan e-mel dan kawalan
+                            untuk mencegah aktiviti
+                            tanpa kebenaran.
                         </p>
                         <p>
-                            Tiada perkhidmatan internet yang dapat
-                            menjamin keselamatan mutlak. Perniagaan
-                            hendaklah menyediakan prosedur sandaran,
-                            pengendalian insiden dan pengurusan
-                            akses yang sesuai.
+                            Akses kepada maklumat pelanggan
+                            bertujuan dihadkan mengikut
+                            tanggungjawab pengguna yang
+                            diberi kuasa. Tiada sistem
+                            berasaskan internet yang
+                            dapat menjamin keselamatan
+                            mutlak. Pengurusan akses,
+                            sandaran dan pengendalian
+                            insiden yang bersesuaian
+                            kekal sebagai tanggungjawab
+                            operasi yang penting.
                         </p>
 
                         <h3>9. Tempoh Penyimpanan dan Pemadaman Data</h3>
                         <p>
-                            Maklumat peribadi hendaklah disimpan
-                            hanya selama diperlukan untuk tujuan
-                            perniagaan yang sah, keperluan
-                            undang-undang yang terpakai serta
-                            pengendalian pertanyaan atau pertikaian
-                            yang berkaitan. Maklumat yang tidak
-                            lagi diperlukan hendaklah dipadam
-                            dengan selamat, dinyahkenal pasti
-                            atau diuruskan mengikut prosedur
-                            penyimpanan data yang diluluskan.
+                            NS &amp; Beauty memproses
+                            maklumat peribadi untuk
+                            pengurusan akaun pelanggan,
+                            perkhidmatan janji temu,
+                            rekod operasi dan tujuan
+                            undang-undang yang terpakai.
                         </p>
                         <p>
-                            Perniagaan hendaklah menetapkan dan
-                            memaklumkan tempoh penyimpanan sebenar
-                            atau kriteria yang digunakan untuk
-                            menentukannya sebelum notis ini
-                            dimuktamadkan.
+                            Maklumat peribadi hendaklah
+                            disimpan hanya selama diperlukan
+                            bagi tujuan berkaitan atau
+                            sebagaimana dikehendaki atau
+                            dibenarkan oleh undang-undang
+                            yang terpakai.
                         </p>
 
-                        <h3>10. Hak dan Permohonan Pelanggan</h3>
+
+                        <h3>10. Hak Pelanggan dan Permohonan Privasi</h3>
                         <p>
-                            Tertakluk pada undang-undang Malaysia
-                            yang berkenaan, pelanggan mungkin mempunyai
-                            hak untuk meminta akses kepada data
-                            peribadi, membetulkan data yang tidak
-                            tepat, menarik balik persetujuan apabila
-                            dibenarkan dan menggunakan hak berkanun
-                            lain yang terpakai. Permohonan boleh
-                            dikemukakan melalui saluran hubungan
-                            privasi rasmi perniagaan.
+                            Tertakluk pada undang-undang
+                            perlindungan data peribadi
+                            Malaysia yang terpakai,
+                            pelanggan boleh memohon akses
+                            kepada maklumat peribadi,
+                            meminta pembetulan maklumat
+                            yang tidak tepat serta
+                            menggunakan hak lain yang
+                            terpakai.
                         </p>
                         <p>
-                            NS &amp; Beauty mungkin perlu mengesahkan
-                            identiti pemohon sebelum memberikan
-                            maklum balas. Sesetengah maklumat
-                            mungkin perlu disimpan apabila
-                            dikehendaki atau dibenarkan oleh
-                            undang-undang. Pelanggan juga boleh
-                            mengemukakan aduan kepada pihak berkuasa
-                            perlindungan data Malaysia yang berkaitan
-                            apabila berkenaan.
+                            Apabila dibenarkan oleh
+                            undang-undang, pelanggan
+                            boleh memohon sekatan
+                            pemprosesan atau menarik
+                            balik persetujuan. Permohonan
+                            tertakluk pada keperluan
+                            undang-undang yang berkenaan.
+                        </p>
+                        <p>
+                            Pertanyaan atau permohonan
+                            privasi boleh dihantar kepada
+                            <strong class="policy-contact">
+                                nailstudio.beautyofficial@gmail.com
+                            </strong>.
+                            Pengesahan identiti yang
+                            munasabah mungkin diperlukan
+                            sebelum memproses permohonan
+                            bagi mengelakkan pendedahan
+                            tanpa kebenaran.
+                        </p>
+                        <p>
+                            Pelanggan juga boleh mengemukakan
+                            aduan yang berkaitan kepada
+                            Pesuruhjaya Perlindungan
+                            Data Peribadi Malaysia.
                         </p>
 
                         <h3>11. Pemindahan Data Antarabangsa</h3>
                         <p>
-                            Pengehosan laman web, penghantaran e-mel,
-                            sokongan teknikal atau infrastruktur
-                            berkaitan mungkin melibatkan pemprosesan
-                            atau akses dari luar Malaysia, bergantung
-                            pada penyedia dan wilayah yang digunakan.
-                            Pemindahan sedemikian hendaklah mematuhi
-                            keperluan undang-undang perlindungan
-                            data peribadi Malaysia yang terpakai.
+                            NS &amp; Beauty menggunakan
+                            perkhidmatan berasaskan awan
+                            untuk mengendalikan laman web
+                            dan sistem tempahan janji
+                            temu dalam talian.
+                            Bergantung pada konfigurasi
+                            perkhidmatan, maklumat
+                            pelanggan mungkin disimpan,
+                            diproses atau diakses
+                            dari luar Malaysia.
                         </p>
                         <p>
-                            NS &amp; Beauty hendaklah mengesahkan
-                            lokasi penyimpanan atau akses maklumat
-                            peribadi serta langkah perlindungan
-                            yang digunakan sebelum membuat
-                            kenyataan muktamad tentang pemindahan
-                            data antarabangsa.
+                            Pemindahan antarabangsa,
+                            apabila berkenaan, hendaklah
+                            mematuhi keperluan undang-undang
+                            perlindungan data peribadi
+                            Malaysia.
                         </p>
+
 
                         <h3>12. Maklumat Hubungan dan Kemas Kini Notis</h3>
                         <p>
-                            Pelanggan boleh menghubungi NS &amp;
-                            Beauty melalui saluran rasmi yang
-                            diterbitkan untuk pertanyaan privasi,
-                            permohonan akses atau pembetulan,
-                            dan kebimbangan mengenai penggunaan
-                            maklumat peribadi.
+                            Untuk pertanyaan mengenai
+                            data peribadi, permohonan
+                            akses atau pembetulan, serta
+                            kebimbangan mengenai pemprosesan
+                            maklumat, sila hubungi:
                         </p>
                         <p>
-                            Notis ini boleh disemak semula apabila
-                            terdapat perubahan amalan pemprosesan,
-                            penyedia perkhidmatan, keperluan
-                            undang-undang atau operasi. Notis
-                            terkini yang diluluskan hendaklah
-                            menyatakan tarikh kuat kuasa dan
-                            tersedia kepada pelanggan.
+                            <strong>NS &amp; Beauty</strong><br>
+                            Donggongon, Penampang,<br>
+                            Sabah, Malaysia<br>
+                            <strong class="policy-contact">
+                                nailstudio.beautyofficial@gmail.com
+                            </strong>
                         </p>
-
-                        <p class="policy-disclaimer">
-                            <strong>Nota pelaksanaan:</strong>
-                            Ini merupakan draf notis. Pihak
-                            perniagaan perlu mengesahkan amalan
-                            pemprosesan sebenar, maklumat hubungan
-                            privasi rasmi, penerima data, aturan
-                            penyimpanan data dan pemindahan
-                            antarabangsa sebelum menggunakan
-                            notis ini sebagai notis privasi akhir.
+                        <p>
+                            Kami boleh mengemas kini
+                            Notis Privasi ini bagi
+                            mencerminkan perubahan
+                            amalan perniagaan, teknologi
+                            atau undang-undang yang
+                            terpakai. Notis yang
+                            diluluskan akan menyatakan
+                            tarikh kuat kuasa dan
+                            nombor versinya.
                         </p>
 
                     </div>
@@ -1653,13 +1878,15 @@
             |--------------------------------------------------------------------------
             | NS BEAUTY COMMENT: MANDATORY AGREEMENT CHECKBOX
             |--------------------------------------------------------------------------
-            | This is not prechecked and does not authorize optional
-            | promotional marketing.
+            | The backend controller must validate:
+            | 'terms_accepted' => ['required', 'accepted']
             |--------------------------------------------------------------------------
             --}}
 
-            <label for="terms_accepted" class="agreement-label">
-
+            <label
+                for="terms_accepted"
+                class="agreement-label"
+            >
                 <input
                     type="checkbox"
                     class="agreement-checkbox"
@@ -1678,14 +1905,13 @@
                     of NS &amp; Beauty.
 
                     <span style="display:block;margin-top:6px;">
-                        Saya telah membaca dan bersetuju dengan
-                        <strong>Terma dan Syarat</strong>
+                        Saya telah membaca dan bersetuju
+                        dengan <strong>Terma dan Syarat</strong>
                         serta mengakui
                         <strong>Notis Privasi</strong>
                         NS &amp; Beauty.
                     </span>
                 </span>
-
             </label>
 
             @error('terms_accepted')
@@ -1695,21 +1921,21 @@
             @enderror
 
             <p class="agreement-footnote">
-                This agreement applies to registration and necessary
-                service communications, not optional promotional marketing.
+                Agreement covers registration and essential
+                service communications only. It does not
+                authorize optional promotional marketing.
 
-                Persetujuan ini berkaitan dengan pendaftaran dan
-                komunikasi perkhidmatan yang perlu, bukan pemasaran
-                promosi pilihan.
+                Persetujuan meliputi pendaftaran dan
+                komunikasi perkhidmatan yang perlu sahaja.
+                Ia tidak memberikan kebenaran untuk
+                pemasaran promosi pilihan.
             </p>
 
         </section>
 
         {{--
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: SUBMIT REGISTRATION
-        |--------------------------------------------------------------------------
-        | Retains existing register.store route and email OTP workflow.
+        | NS BEAUTY COMMENT: REGISTER AND SEND EMAIL OTP
         |--------------------------------------------------------------------------
         --}}
 
@@ -1724,12 +1950,19 @@
 
     </form>
 
+    {{-- NS BEAUTY COMMENT: FOOTER NAVIGATION --}}
+
     <div class="footer">
         Already have an account?
-        <a href="{{ route('login') }}">Sign In</a>
+        <a href="{{ route('login') }}">
+            Sign In
+        </a>
     </div>
 
-    <a href="{{ route('home') }}" class="back">
+    <a
+        href="{{ route('home') }}"
+        class="back"
+    >
         ← Back to Home
     </a>
 
@@ -1738,17 +1971,20 @@
 <script>
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: PASSWORD VISIBILITY TOGGLES
-    |--------------------------------------------------------------------------
-    | Independent control for Password and Confirm Password.
+    | NS BEAUTY COMMENT: PASSWORD VISIBILITY BUTTONS
     |--------------------------------------------------------------------------
     */
 
-    document.querySelectorAll(".password-toggle").forEach(function (button) {
+    document.querySelectorAll(
+        ".password-toggle"
+    ).forEach(function (button) {
 
         button.addEventListener("click", function () {
 
-            const inputId = button.getAttribute("data-password-target");
+            const inputId = button.getAttribute(
+                "data-password-target"
+            );
+
             const input = document.getElementById(inputId);
 
             if (!input) {
@@ -1774,12 +2010,16 @@
                 inputId === "password_confirmation";
 
             const label = wasHidden
-                ? (isConfirmation
-                    ? "Hide confirm password"
-                    : "Hide password")
-                : (isConfirmation
-                    ? "Show confirm password"
-                    : "Show password");
+                ? (
+                    isConfirmation
+                        ? "Hide confirm password"
+                        : "Hide password"
+                )
+                : (
+                    isConfirmation
+                        ? "Show confirm password"
+                        : "Show password"
+                );
 
             button.setAttribute("aria-label", label);
             button.setAttribute(
@@ -1792,12 +2032,9 @@
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: INDEPENDENT POLICY LANGUAGE SWITCHES
+    | NS BEAUTY COMMENT: POLICY LANGUAGE SWITCHES
     |--------------------------------------------------------------------------
-    |
-    | Terms and Privacy use independent selectors.
-    | Switching language does not submit the registration form.
-    | Both language versions remain present in the page.
+    | Terms and Privacy can be switched independently.
     |--------------------------------------------------------------------------
     */
 
@@ -1854,10 +2091,10 @@
 
     /*
     |--------------------------------------------------------------------------
-    | NS BEAUTY COMMENT: MANDATORY TERMS AGREEMENT
+    | NS BEAUTY COMMENT: AGREEMENT VALIDATION
     |--------------------------------------------------------------------------
-    | The button is disabled until the checkbox is checked.
-    | Server-side validation must also enforce required|accepted.
+    | Frontend validation supplements backend validation.
+    | Checkbox is never preselected.
     |--------------------------------------------------------------------------
     */
 
@@ -1893,7 +2130,6 @@
             updateAgreementState
         );
 
-        // Handle browser back/forward form restoration.
         window.addEventListener(
             "pageshow",
             updateAgreementState
@@ -1902,16 +2138,19 @@
 
     if (registrationForm && agreementCheckbox) {
 
-        registrationForm.addEventListener("submit", function (event) {
+        registrationForm.addEventListener(
+            "submit",
+            function (event) {
 
-            if (!agreementCheckbox.checked) {
+                if (!agreementCheckbox.checked) {
 
-                event.preventDefault();
+                    event.preventDefault();
 
-                agreementCheckbox.reportValidity();
-                agreementCheckbox.focus();
+                    agreementCheckbox.reportValidity();
+                    agreementCheckbox.focus();
+                }
             }
-        });
+        );
     }
 </script>
 
