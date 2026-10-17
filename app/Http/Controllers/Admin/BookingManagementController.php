@@ -235,13 +235,16 @@ class BookingManagementController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | NS BEAUTY COMMENT: Paginated Appointment List
+        | NS BEAUTY COMMENT: BOOKING RECORD ORDER
+        |--------------------------------------------------------------------------
+        | Display the newest created bookings first.
+        | If two bookings share the same timestamp, sort by booking ID.
         |--------------------------------------------------------------------------
         */
 
         $bookings = $query
-            ->orderByDesc('appointment_date')
-            ->orderByDesc('start_time')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->paginate(10)
             ->withQueryString();
 
