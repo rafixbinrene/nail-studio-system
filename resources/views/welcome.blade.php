@@ -433,16 +433,13 @@ if ($statCards->isEmpty()) {
         ],
         [
             'value' => '4',
-            'label' => 'Owner and Staff',
+            'label' => 'Staff',
         ],
         [
             'value' => $landingServices->count(),
             'label' => 'Available Services',
         ],
-        [
-            'value' => 'Sabah',
-            'label' => 'Our Location',
-        ],
+
     ]);
 }
 
@@ -896,7 +893,7 @@ if ($whyCards->isEmpty()) {
             width: min(1180px,92%);
             margin: 0 auto 22px;
             display: grid;
-            grid-template-columns: repeat(4,1fr);
+            grid-template-columns: repeat(3,minmax(0,1fr));
             gap: 18px;
         }
 
