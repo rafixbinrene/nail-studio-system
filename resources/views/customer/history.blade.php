@@ -756,7 +756,7 @@
 
     <div class="history-grid">
 
-        @forelse ($appointments as $appointment)
+         @forelse ($appointments->sortByDesc('id') as $appointment)
 
             @php
                 /*
